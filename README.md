@@ -13,6 +13,13 @@ Assinador Bitcoin de propósito geral para a LilyGO T-Display original, baseado 
 
 A seed, a senha e a passphrase são inseridas somente na placa. O navegador mantém apenas a conta pública e envia PSBTs para conferência e aprovação física. O servidor consulta o Electrum local e transmite transações assinadas; não recebe chaves privadas nem credenciais do LND. Não existe fallback automático para serviços públicos.
 
+O app inclui **Preparar meu LilyGO**: instalação inicial pelo USB do computador,
+com firmware e instalador servidos pelo próprio LOS. Use Chrome/Edge com HTTPS
+confiável, selecione a T-Display original ESP32 de 4 MB sem carteira, confira a
+versão e autorize a gravação. Depois, use **Conectar por USB** para parear o
+assinador e criar ou recuperar a carteira nos botões. Atualizar uma placa com
+carteira ainda não é suportado. A gravação física está pendente de validação.
+
 O piloto usa ESP32 da Espressif, com dependência desse fabricante. Hardware comum e código aberto facilitam reposição e inspeção; não eliminam essa dependência ou os riscos de cadeia de fornecimento. O backup BIP39 e a configuração pública permitem recuperação fora do LOS e desta placa.
 
 Licença MIT do upstream preservada. Dependências vendorizadas mantêm suas licenças. Nunca publique seeds reais, passphrases, lançamentos privados de dados ou backups de membros.

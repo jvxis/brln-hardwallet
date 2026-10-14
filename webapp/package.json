@@ -19,6 +19,7 @@
     "bip32": "^5.0.1",
     "bitcoinjs-lib": "^7.0.1",
     "bs58check": "^4.0.0",
+    "esptool-js": "0.7.0",
     "lucide-svelte": "^1.0.1",
     "qrcode": "^1.5.4"
   },

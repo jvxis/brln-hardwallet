@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import { BRLNDevice } from '$lib/brln-device'
+  import FirmwareInstaller from '$lib/FirmwareInstaller.svelte'
   import { api, scanAccount, getTxHex } from '$lib/brln-chain'
   import { ACCOUNT_PATH, publicAccount, preparePayment } from '$lib/brln-wallet'
   import { deriveAddress, finalizePsbt } from '$lib/bitcoin'
@@ -114,7 +115,8 @@
   <div class="status"><span>Node · {height === null ? 'indisponível' : 'bloco ' + height}</span><span>Electrum · {source==='club' ? 'clube via Tailscale' : source==='local' ? 'meu node' : 'não consultado'}</span><span>Placa · {connected ? unlocked ? 'desbloqueada' : 'bloqueada' : 'desconectada'}</span><span>Bitcoin mainnet · BIP84</span></div>
   {#if source==='club'}<p>O servidor do clube pode observar e correlacionar suas consultas. As chaves continuam na placa. A escolha do servidor é feita na loja do LOS, sem fallback automático.</p>{/if}
   {#if message}<p class:failure role="status" aria-live="polite">{busy ? 'Em andamento · ' : ''}{message}</p>{/if}
-  <section><h2>01 <span>Conectar o assinador</span></h2><p>Conecte a placa por USB a este computador. Use Chromium, Chrome ou Edge com HTTPS confiável e confira o código de pareamento na tela da placa.</p>
+  <FirmwareInstaller bind:busy {connected} hasProposal={!!proposal} />
+  <section><h2>01 <span>Conectar o assinador</span></h2><p>Com o firmware já instalado, conecte a placa por USB a este computador. Use Chromium, Chrome ou Edge com HTTPS confiável e confira o código de pareamento na tela da placa.</p>
     <div class="buttons"><button disabled={busy || connected} on:click={() => run(() => device.connect())}>Conectar por USB</button><button class="secondary" disabled={busy || !connected} on:click={() => run(() => device.disconnect())}>Desconectar</button></div>
     {#if connected}<div class="buttons">{#each operations as operation}<button class="secondary" disabled={busy || (operation.id==='backup' && !unlocked)} on:click={() => run(async () => {message='Continue pelos dois botões da placa.'; await device.local(operation.id)})}>{operation.label}</button>{/each}<button class="secondary" disabled={busy || !unlocked} on:click={() => run(() => device.logout())}>Bloquear</button></div>{/if}
   </section>

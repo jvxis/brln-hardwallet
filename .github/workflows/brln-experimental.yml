@@ -30,12 +30,23 @@ jobs:
           /tmp/brln-rng
           bash tools/test_libwally.sh
           python3 -m unittest tests/test_package_firmware.py
+          python3 -m unittest tests/test_package_brln_firmware.py
       - name: Compile BRLN original T-Display
         run: bash tools/build_firmware.sh brln_tdisplay
       - name: Record firmware checksums
         run: |
           cd build/brln_tdisplay
           sha256sum *.bin > SHA256SUMS
+      - name: Package local browser installer
+        run: |
+          python3 tools/package_brln_firmware.py --build build/brln_tdisplay \
+            --boot-app0 "$HOME/.arduino15/packages/esp32/hardware/esp32/2.0.17/tools/partitions/boot_app0.bin" \
+            --output webapp/static/firmware/brln-tdisplay --commit "$GITHUB_SHA" --version 0.1.0-brln
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: brln-browser-firmware-${{ github.sha }}
+          path: webapp/static/firmware/brln-tdisplay/
+          if-no-files-found: error
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: brln-tdisplay-experimental-${{ github.sha }}
@@ -43,10 +54,15 @@ jobs:
             build/brln_tdisplay/*.bin
             build/brln_tdisplay/SHA256SUMS
   app:
+    needs: firmware
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: brln-browser-firmware-${{ github.sha }}
+          path: webapp/static/firmware/brln-tdisplay/
       - uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130
       - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f
       - name: Authenticate GHCR

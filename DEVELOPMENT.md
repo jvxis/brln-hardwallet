@@ -71,6 +71,54 @@ do servidor Electrum. Não há RPC genérico, seed import, backup remoto ou logs
 
 ## Verificação e distribuição
 
+### Instalador USB integrado
+
+`FirmwareInstaller.svelte` usa `esptool-js@0.7.0` (Apache-2.0) empacotado pelo
+Vite, incluindo os stubs; não usa CDN, iframe ou site externo. A CSP continua
+restrita à mesma origem. Nenhum endpoint privilegiado novo é necessário: USB
+pertence ao computador do navegador, não ao container nem ao node. O broker
+continua gerenciando exclusivamente a instalação/ciclo de vida do app.
+
+O workflow compila `brln_tdisplay` antes da imagem OCI e inclui o pacote daquele
+mesmo commit em `/firmware/brln-tdisplay/`. Arquivos e manifesto são protegidos
+pela sessão LOS, como o restante da interface. O Docker build falha sem o pacote.
+Para construir a imagem localmente, após compilar o firmware:
+
+```sh
+python3 tools/package_brln_firmware.py --build build/brln_tdisplay \
+  --boot-app0 "$HOME/.arduino15/packages/esp32/hardware/esp32/2.0.17/tools/partitions/boot_app0.bin" \
+  --output webapp/static/firmware/brln-tdisplay \
+  --commit "$(git rev-parse HEAD)" --version 0.1.0-brln
+```
+
+O empacotador verifica o digest embutido da aplicação, layout de partições,
+tamanhos e commit; o navegador verifica SHA-256 de todos os arquivos antes da
+gravação. O chip deve ser ESP32 original com flash 4 MB. A identificação carrega
+somente o stub em RAM. Uma segunda ação explícita autoriza gravar bootloader
+`0x1000`, partições `0x8000`, boot_app0 `0xe000` e aplicação `0x10000`.
+Não há `eraseAll`, escrita em NVS/SPIFFS, alteração de eFuses ou tentativa
+automática após falha. O MD5 calculado pelo stub confere as regiões gravadas
+antes de reiniciar; é uma verificação de transporte, não uma assinatura.
+
+SHA-256 e HTTPS não substituem revisão do firmware, proveniência do build ou
+confiança na imagem pinada pelo LOS. O instalador não verifica por USB o modelo
+da tela nem identifica todas as carteiras existentes: o membro confirma o modelo
+e que a placa não contém uma carteira a preservar. A opção de atualização fica
+bloqueada; não prometer preservação de seed porque não há eraseAll.
+
+Conexão do assinador e gravação têm exclusão mútua; proposta de transação ativa
+bloqueia o instalador. Não há upload de firmware arbitrário, URL customizada,
+leitura de seed ou backup de flash. Uma falha de gravação nunca libera uma
+mensagem de sucesso ou repetição automática. O browser tenta liberar a porta
+também em cancelamento/erro; uma falha pode exigir reconectar o cabo.
+
+Faltam testes físicos: auto-reset/BOOT, gravação, readback, boot BR⚡LN, queda de
+USB, nova tentativa e posterior pareamento/criação/recuperação. Use somente
+placas de laboratório sem carteira ou fundos reais. Referência da biblioteca:
+https://github.com/espressif/esptool-js/tree/v0.7.0
+
+### Checks
+
 - `cd backend && go test ./... && go vet ./...`
 - `cd webapp && npm ci && npm test && npm run check && npm run build`
 - `bash tools/build_firmware.sh brln_tdisplay` com Arduino CLI 1.5.1,

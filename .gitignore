@@ -8,6 +8,7 @@ __pycache__/
 /build/
 /firmware-build/
 /built-firmware/
+/webapp/static/firmware/brln-tdisplay/
 /installer/firmware/esp32/current/*/
 
 # TFT_eSPI is vendored as Arduino runtime source only. Keep upstream examples,

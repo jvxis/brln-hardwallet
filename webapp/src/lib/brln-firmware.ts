@@ -1,0 +1,111 @@
+// Only this fixed board/layout can be installed. No remote URLs or user binaries.
+export const FIRMWARE_ROOT = '/firmware/brln-tdisplay/'
+const layout = [
+  ['bootloader.bin', 0x1000, 0x7000],
+  ['partitions.bin', 0x8000, 0x1000],
+  ['boot_app0.bin', 0xe000, 0x2000],
+  ['firmware.bin', 0x10000, 0x140000],
+] as const
+export type FirmwarePart = { path: string; offset: number; size: number; sha256: string; md5: string }
+export type FirmwareManifest = {
+  schema: number; board: string; chip: string; flash_size: number
+  version: string; source_commit: string; parts: FirmwarePart[]
+}
+export type FirmwareBundle = { manifest: FirmwareManifest; binaries: Uint8Array[] }
+
+export function validateManifest(value: unknown): FirmwareManifest {
+  const m = value as FirmwareManifest | null
+  if (!m || m.schema !== 1 || m.board !== 'brln_tdisplay' || m.chip !== 'ESP32' ||
+      m.flash_size !== 4194304 || !/^\d+\.\d+\.\d+-brln$/.test(m.version) ||
+      !/^[0-9a-f]{40}$/.test(m.source_commit) || !Array.isArray(m.parts) || m.parts.length !== 4)
+    throw new Error('Pacote de firmware incompatível com a T-Display original.')
+  m.parts.forEach((part, index) => {
+    const [path, offset, max] = layout[index]
+    if (!part || part.path !== path || part.offset !== offset || !Number.isSafeInteger(part.size) ||
+        part.size <= 0 || part.size > max || part.size % 4 !== 0 ||
+        !/^[0-9a-f]{64}$/.test(part.sha256) || !/^[0-9a-f]{32}$/.test(part.md5))
+      throw new Error('Arquivo ou endereço de gravação inválido no pacote.')
+  })
+  return m
+}
+
+async function readLocal(path: string, limit: number): Promise<Uint8Array> {
+  const response = await fetch(FIRMWARE_ROOT + path, {
+    credentials: 'same-origin', cache: 'no-store', redirect: 'error', signal: AbortSignal.timeout(30000),
+  })
+  if (!response.ok || !response.body) throw new Error('Firmware indisponível. Confira sua sessão do LOS e recarregue a página.')
+  const reader = response.body.getReader(), chunks: Uint8Array[] = []
+  let length = 0
+  try {
+    while (true) {
+      const { value, done } = await reader.read()
+      if (done) break
+      length += value.length
+      if (length > limit) throw new Error('Arquivo de firmware maior que o permitido.')
+      chunks.push(value)
+    }
+  } finally { await reader.cancel(); reader.releaseLock() }
+  const result = new Uint8Array(length)
+  let offset = 0
+  for (const chunk of chunks) { result.set(chunk, offset); offset += chunk.length }
+  return result
+}
+
+export async function verifyBundle(bundle: FirmwareBundle): Promise<void> {
+  const manifest = validateManifest(bundle.manifest)
+  if (bundle.binaries.length !== manifest.parts.length) throw new Error('Pacote incompleto.')
+  for (const [index, part] of manifest.parts.entries()) {
+    const data = bundle.binaries[index]
+    if (!(data instanceof Uint8Array) || data.length !== part.size) throw new Error('Tamanho de firmware incorreto.')
+    const digest = await crypto.subtle.digest('SHA-256', new Uint8Array(data))
+    const hex = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('')
+    if (hex !== part.sha256) throw new Error('SHA-256 divergente. Nenhum firmware foi gravado.')
+  }
+}
+
+export async function loadFirmware(): Promise<FirmwareBundle> {
+  const manifest = validateManifest(JSON.parse(new TextDecoder().decode(await readLocal('manifest.json', 8192))))
+  const binaries = await Promise.all(manifest.parts.map(part => readLocal(part.path, part.size)))
+  const bundle = { manifest, binaries }
+  await verifyBundle(bundle)
+  return bundle
+}
+
+// The port remains exclusively owned by this session until release().
+export interface FirmwareLoader {
+  chip: { CHIP_NAME: string }; secureDownloadMode: boolean
+  detectChip(mode: 'default_reset', attempts: number): Promise<void>
+  runStub(): Promise<unknown>
+  detectFlashSize(): Promise<string | undefined>
+  writeFlash(options: import('esptool-js').FlashOptions): Promise<void>
+  flashMd5sum(offset: number, size: number): Promise<string>
+  after(mode: 'hard_reset'): Promise<void>
+}
+
+export async function identifyBoard(loader: FirmwareLoader): Promise<void> {
+  await loader.detectChip('default_reset', 3)
+  if (loader.chip.CHIP_NAME !== 'ESP32' || loader.secureDownloadMode)
+    throw new Error('Chip incompatível. Use somente a T-Display original ESP32, não S3 ou C3.')
+  await loader.runStub() // RAM only: no erase or flash write during identification.
+  if (await loader.detectFlashSize() !== '4MB') throw new Error('Esta versão exige a T-Display original com flash de 4 MB.')
+}
+
+export async function writeFirmware(loader: FirmwareLoader, bundle: FirmwareBundle, progress: (percent: number) => void): Promise<void> {
+  if (loader.chip.CHIP_NAME !== 'ESP32' || loader.secureDownloadMode) throw new Error('Chip incompatível.')
+  await verifyBundle(bundle) // All bytes checked again before the first destructive operation.
+  if (await loader.detectFlashSize() !== '4MB') throw new Error('Flash incompatível.')
+  await loader.writeFlash({
+    fileArray: bundle.manifest.parts.map((part, index) => ({ address: part.offset, data: bundle.binaries[index] })),
+    flashMode: 'keep', flashFreq: 'keep', flashSize: 'keep', eraseAll: false, compress: true,
+    reportProgress: (index, written, total) => progress(Math.min(90, Math.floor((index + written / total) / 4 * 90))),
+  })
+  // The ROM/stub MD5 checks transport integrity, not publisher authenticity.
+  // SHA-256 above checks downloaded bytes. No wallet memory is read or uploaded.
+  for (const [index, part] of bundle.manifest.parts.entries()) {
+    if ((await loader.flashMd5sum(part.offset, part.size)).toLowerCase() !== part.md5)
+      throw new Error('A verificação da gravação falhou. Não crie uma carteira; reconecte a placa e repita a instalação.')
+    progress(90 + (index + 1) * 2)
+  }
+  await loader.after('hard_reset')
+  progress(100)
+}

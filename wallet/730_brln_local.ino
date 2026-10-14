@@ -29,6 +29,7 @@ int brlnChoice(const String &title,const char *const *items,int count) {
 
 bool brlnConfirm(const String &title,const String &detail) {
   brlnScreen(title,detail,"A: confirm   B: cancel");
+  tft.fillRect(0,110,tft.width(),25,TFT_BLACK);
   return awaitPhysicalReviewApproval();
 }
 
@@ -69,16 +70,18 @@ bool brlnWord(const String &title,String &word) {
   while (true) {
     String options[29];int count=0;
     options[count++]="CANCEL";if(prefix.length())options[count++]="BACK";
-    int matches=0;const char *unique=NULL;
+    int matches=0;const char *unique=NULL;bool exact=false;
     for(int i=0;i<2048;i++) {
       const char *candidate=bip39_get_word_by_index(NULL,i);
-      if(candidate && String(candidate).startsWith(prefix)){matches++;unique=candidate;}
+      if(candidate && String(candidate).startsWith(prefix)){matches++;unique=candidate;if(String(candidate)==prefix)exact=true;}
     }
     if(matches==1) {
       if(brlnConfirm(title,String(unique))) {word=unique;brlnClear(prefix);return true;}
       if(prefix.length())prefix.remove(prefix.length()-1);
       selected=0;continue;
     }
+    // Some valid words (e.g. "act") are also prefixes of other BIP39 words.
+    if(exact)options[count++]="USE WORD";
     for(char letter='a';letter<='z';letter++) {
       bool exists=false;String next=prefix+letter;
       for(int i=0;i<2048 && !exists;i++) {
@@ -93,6 +96,10 @@ bool brlnWord(const String &title,String &word) {
     if(key=='*')selected=(selected+1)%count;
     if(key=='#') {
       if(options[selected]=="CANCEL"){brlnClear(prefix);return false;}
+      if(options[selected]=="USE WORD"){
+        if(brlnConfirm(title,prefix)){word=prefix;brlnClear(prefix);return true;}
+        selected=0;continue;
+      }
       if(options[selected]=="BACK")prefix.remove(prefix.length()-1);else prefix+=options[selected];
       selected=0;
     }

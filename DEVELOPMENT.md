@@ -38,6 +38,21 @@ de Bitcoin/LND, socket Docker ou dispositivos USB. Não há banco de carteiras.
 `BRLN_ELECTRUM_ADDR=electrs:50001`, `BRLN_AUTH_TOKEN_FILE=/run/auth/proxy_token`.
 Nenhum endereço de servidor é aceito pela API; não há fallback público.
 
+A integração está na [PR LOS #260](https://github.com/jvxis/brln-os-light/pull/260),
+com destino a `agent/0.5.45-release`. A loja oferece duas escolhas explícitas:
+Electrs local (`BRLN_ELECTRUM_SOURCE=local`, transporte `tcp` na rede Docker)
+ou Electrs do clube (`BRLN_ELECTRUM_SOURCE=club`, transporte `tailscale`).
+No segundo caso, o backend só aceita destinos IPv4 no intervalo Tailscale
+`100.64.0.0/10`; não tenta o endpoint TCP público se a conexão privada falhar.
+O servidor do clube pode associar as consultas de endereços dessa carteira.
+
+O HTTPS da interface usa a CA local do LOS e uma chave própria do app. Todas
+as rotas passam pela autenticação da sessão LOS. O usuário abre o LOS e o app
+pelo mesmo hostname/IP da tailnet, confia na CA e conecta a placa ao computador
+do navegador. A imagem não recebe a chave da CA, credenciais LND ou USB do node.
+O ciclo completo de instalação, troca de fonte, certificados e autenticação
+ainda precisa de validação em runtime; a PR permanece em rascunho.
+
 `GET /healthz` é apenas liveness. Demais rotas exigem token privado injetado pelo
 proxy após autenticação LOS. POST também exige Origin HTTPS igual ao Host e
 `X-BRLN-Request: 1`; sem CORS. O token nunca é entregue ao navegador.

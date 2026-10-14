@@ -1,0 +1,74 @@
+name: BRLN experimental firmware and app
+on:
+  push:
+    branches: [brln/tdisplay-los, main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  packages: write
+jobs:
+  firmware:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - name: Install verified Arduino CLI
+        run: |
+          curl -fLsS https://github.com/arduino/arduino-cli/releases/download/v1.5.1/arduino-cli_1.5.1_Linux_64bit.tar.gz -o /tmp/arduino-cli.tar.gz
+          echo '28a8e119c498a25607821c36cb2dc49e8463941b261a0d99091baa7bc692dd2b  /tmp/arduino-cli.tar.gz' | sha256sum --check --strict
+          tar -xzf /tmp/arduino-cli.tar.gz -C /usr/local/bin arduino-cli
+          arduino-cli config init
+          arduino-cli config add board_manager.additional_urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
+          arduino-cli core update-index
+      - name: Test native policy and cryptography
+        run: |
+          g++ -std=c++11 -Wall -Wextra -Werror -pedantic tests/brln_policy_test.cpp -o /tmp/brln-policy
+          /tmp/brln-policy
+          g++ -std=c++11 -Wall -Wextra -Werror -pedantic tests/input_debounce_test.cpp -o /tmp/brln-input
+          /tmp/brln-input
+          g++ -std=c++11 -Wall -Wextra -Werror -pedantic tests/rng_health_test.cpp -o /tmp/brln-rng
+          /tmp/brln-rng
+          bash tools/test_libwally.sh
+          python3 -m unittest tests/test_package_firmware.py
+      - name: Compile BRLN original T-Display
+        run: bash tools/build_firmware.sh brln_tdisplay
+      - name: Record firmware checksums
+        run: |
+          cd build/brln_tdisplay
+          sha256sum *.bin > SHA256SUMS
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: brln-tdisplay-experimental-${{ github.sha }}
+          path: |
+            build/brln_tdisplay/*.bin
+            build/brln_tdisplay/SHA256SUMS
+  app:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f
+      - name: Authenticate GHCR
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u '${{ github.actor }}' --password-stdin
+      - uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8
+        id: image
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ghcr.io/jvxis/brln-hardwallet:sha-${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/jvxis/brln-hardwallet
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.licenses=MIT
+      - name: Record immutable image reference
+        env:
+          DIGEST: ${{ steps.image.outputs.digest }}
+        run: echo "ghcr.io/jvxis/brln-hardwallet:sha-${GITHUB_SHA}@${DIGEST}" | tee image-reference.txt >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: brln-image-${{ github.sha }}
+          path: image-reference.txt

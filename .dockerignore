@@ -1,0 +1,11 @@
+*
+!Dockerfile
+!LICENSE
+!backend/
+!backend/**
+!webapp/
+!webapp/**
+webapp/node_modules
+webapp/.svelte-kit
+webapp/build
+backend/bin

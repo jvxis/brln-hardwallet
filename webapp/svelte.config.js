@@ -11,7 +11,7 @@ const config = {
         'style-src': ['self'],
         'img-src': ['self', 'data:', 'blob:'],
         'font-src': ['self'],
-        'connect-src': ['self', 'https:', 'http:', 'wss:', 'ws:'],
+        'connect-src': ['self'],
         'object-src': ['none'],
         'base-uri': ['none'],
         'form-action': ['none'],

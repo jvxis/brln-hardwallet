@@ -1,4 +1,8 @@
 .vscode
+/upstream/
+/tools-local/
+/backend/bin/
+/artifacts/
 __pycache__/
 *.pyc
 /build/

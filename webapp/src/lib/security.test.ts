@@ -14,7 +14,7 @@ const sourceFiles = (directory: string): string[] =>
   })
 
 const runtimeSources = sourceFiles(sourceRoot).map((path) => ({
-  name: relative(sourceRoot, path),
+  name: relative(sourceRoot, path).replaceAll('\\', '/'),
   text: readFileSync(path, 'utf8'),
 }))
 

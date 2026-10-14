@@ -53,6 +53,29 @@ bool isNotCommandEvent(String type) {
 
 
 CommandResponse executeCommand(Command c) {
+#ifdef BOWSER_BRLN
+  // The BRLN wiring is compiled in. A host cannot remap physical approval pins
+  // or request a different persistence mode through the legacy pair options.
+  if (c.cmd == COMMAND_PAIR && c.data.indexOf(' ') != -1) {
+    sendCommandOutput(c.cmd, "0 invalid_pair_options");
+    return {"Pairing refused", "Use fixed BRLN wiring"};
+  }
+  if (brln::forbiddenHostSecretCommand(c.cmd.c_str())) {
+    sendCommandOutput(c.cmd, "0 device_only");
+    return {"Use local controls", "Host secrets refused"};
+  }
+  if (c.cmd == "/capabilities") {
+    sendCommandOutput(c.cmd, "brln-1 mainnet bip84 local-secrets physical-review");
+    return {"BRLN experimental", "No funds until tested"};
+  }
+  if (brln::localCommand(c.cmd.c_str())) {
+    if (!brln::allowedLocalCommand(c.cmd.c_str(), c.data.c_str())) {
+      sendCommandOutput(c.cmd,"0 invalid_request");
+      return {"Request refused", "No host arguments"};
+    }
+    return executeBrlnLocal(c.cmd);
+  }
+#endif
   if (c.cmd == COMMAND_PING)
     return executePing(c.data);
 

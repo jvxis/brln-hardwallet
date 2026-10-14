@@ -12,6 +12,14 @@ repository_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 wally_vendor="${repository_root}/libraries/libwally/vendor"
 
 case "${target}" in
+  brln_tdisplay)
+    core_version="2.0.17"
+    fqbn="esp32:esp32:ttgo-lora32"
+    profile="brln_tdisplay"
+    display_backend="display_backends/tft_espi.h"
+    tft_setup="${repository_root}/wallet/boards/${profile}/tft_setup.h"
+    compiler_c_flags="-MMD -c"
+    ;;
   lilygo_tdisplay)
     core_version="2.0.17"
     # Keep the project's established board definition. Although the ESP32 core

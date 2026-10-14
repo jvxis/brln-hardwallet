@@ -305,7 +305,7 @@ export class BowserDevice implements DeviceAdapter {
     if (data === 'sign') this.events.psbtReview({ stage: 'sign' })
   }
 
-  private async request(
+  protected async request(
     command: string,
     args: Array<string | number> = [],
     secure = true,

@@ -139,7 +139,11 @@ String serializeAccountPublicKey(
         account, BIP32_FLAG_KEY_PUBLIC, serialized, sizeof(serialized)
       ) != WALLY_OK) return "";
 
+#ifdef BOWSER_BRLN
+  const uint32_t version = mainnet ? BIP32_VER_MAIN_PUBLIC : BIP32_VER_TEST_PUBLIC;
+#else
   const uint32_t version = slip132PublicVersion(mainnet, path);
+#endif
   serialized[0] = (uint8_t)(version >> 24);
   serialized[1] = (uint8_t)(version >> 16);
   serialized[2] = (uint8_t)(version >> 8);

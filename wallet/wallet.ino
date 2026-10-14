@@ -14,6 +14,7 @@
 #include <SD.h>
 
 #include "board_profile.h"
+#include "brln_policy.h"
 #include "rng_health.h"
 #include "ui_scale.h"
 #include "ui_controls.h"

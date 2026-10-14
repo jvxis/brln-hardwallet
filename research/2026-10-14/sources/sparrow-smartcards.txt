@@ -1,0 +1,660 @@
+<!doctype html>
+<!--
+  Minimal Mistakes Jekyll Theme 4.19.3 by Michael Rose
+  Copyright 2013-2019 Michael Rose - mademistakes.com | @mmistakes
+  Free for personal and commercial use under the MIT license
+  https://github.com/mmistakes/minimal-mistakes/blob/master/LICENSE
+-->
+<html lang="en" class="no-js">
+  <head>
+    <meta charset="utf-8">
+
+<!-- begin _includes/seo.html --><title>Setup an airgapped smartcard wallet - Sparrow Wallet</title>
+<meta name="description" content="Sparrow is a modern desktop Bitcoin wallet application supporting most hardware wallets and built on common standards such as PSBT, with an emphasis on transparency and usability.">
+
+
+  <meta name="author" content="Sparrow Wallet">
+
+
+<meta property="og:type" content="website">
+<meta property="og:locale" content="en_US">
+<meta property="og:site_name" content="Sparrow Wallet">
+<meta property="og:title" content="Setup an airgapped smartcard wallet">
+<meta property="og:url" content="https://sparrowwallet.com/docs/airgapped-wallet-smartcard.html">
+
+
+  <meta property="og:description" content="Sparrow is a modern desktop Bitcoin wallet application supporting most hardware wallets and built on common standards such as PSBT, with an emphasis on transparency and usability.">
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="canonical" href="https://sparrowwallet.com/docs/airgapped-wallet-smartcard.html">
+
+
+
+
+<script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    
+      "@type": "Person",
+      "name": "Sparrow Wallet",
+      "url": "https://sparrowwallet.com/"
+    
+  }
+</script>
+
+
+
+
+
+
+<!-- end _includes/seo.html -->
+
+
+<link href="/feed.xml" type="application/atom+xml" rel="alternate" title="Sparrow Wallet Feed">
+
+<!-- https://t.co/dKP3o1e -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script>
+  document.documentElement.className = document.documentElement.className.replace(/\bno-js\b/g, '') + ' js ';
+</script>
+
+<!-- For all browsers -->
+<link rel="stylesheet" href="/assets/css/main.css">
+
+<!--[if IE]>
+  <style>
+    /* old IE unsupported flexbox fixes */
+    .greedy-nav .site-title {
+      padding-right: 3em;
+    }
+    .greedy-nav button {
+      position: absolute;
+      top: 0;
+      right: 0;
+      height: 100%;
+    }
+  </style>
+<![endif]-->
+
+
+
+    <!-- start custom head snippets -->
+
+
+<!-- end custom head snippets -->
+  </head>
+
+  <body class="layout--single">
+    <nav class="skip-links">
+  <h2 class="screen-reader-text">Skip links</h2>
+  <ul>
+    <li><a href="#site-nav" class="screen-reader-shortcut">Skip to primary navigation</a></li>
+    <li><a href="#main" class="screen-reader-shortcut">Skip to content</a></li>
+    <li><a href="#footer" class="screen-reader-shortcut">Skip to footer</a></li>
+  </ul>
+</nav>
+
+    <!--[if lt IE 9]>
+<div class="notice--danger align-center" style="margin: 0;">You are using an <strong>outdated</strong> browser. Please <a href="https://browsehappy.com/">upgrade your browser</a> to improve your experience.</div>
+<![endif]-->
+
+    
+
+<div class="masthead">
+  <div class="masthead__inner-wrap">
+    <div class="masthead__menu">
+      <nav id="site-nav" class="greedy-nav">
+        
+        <a class="site-title" href="/">
+          Sparrow Wallet
+          <span class="site-subtitle">Financial self sovereignty</span>
+        </a>
+        <ul class="visible-links"><li class="masthead__menu-item">
+              <a href="/">Home</a>
+            </li><li class="masthead__menu-item">
+              <a href="/features/">Features</a>
+            </li><li class="masthead__menu-item">
+              <a href="/docs/">Docs</a>
+            </li><li class="masthead__menu-item">
+              <a href="/about/">About</a>
+            </li><li class="masthead__menu-item">
+              <a href="/donate/">Donate</a>
+            </li><li class="masthead__menu-item">
+              <a href="/download/">Download</a>
+            </li></ul>
+        
+        <button class="greedy-nav__toggle hidden" type="button">
+          <span class="visually-hidden">Toggle menu</span>
+          <div class="navicon"></div>
+        </button>
+        <ul class="hidden-links hidden"></ul>
+      </nav>
+    </div>
+  </div>
+</div>
+
+
+    <div class="initial-content">
+      
+
+
+
+<div id="main" role="main">
+  
+  <div class="sidebar sticky">
+  
+  
+    
+      
+      
+      
+      
+
+<nav class="nav__list">
+  
+  <input id="ac-toc" name="accordion-toc" type="checkbox" />
+  <label for="ac-toc">Toggle Menu</label>
+  <ul class="nav__items">
+    
+      <li>
+        
+          <a href="/docs/quick-start.html"><span class="nav__sub-title">Quick Start Guide</span></a>
+        
+
+        
+        <ul>
+          
+            <li><a href="/docs/quick-start.html#installation">Installation</a></li>
+          
+            <li><a href="/docs/quick-start.html#welcome-to-sparrow">Welcome to Sparrow</a></li>
+          
+            <li><a href="/docs/quick-start.html#sparrow-server-setup">Sparrow Server Setup</a></li>
+          
+            <li><a href="/docs/quick-start.html#creating-your-first-wallet">Creating Your First Wallet</a></li>
+          
+        </ul>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/docs/connect-node.html"><span class="nav__sub-title">Connect to Bitcoin Core</span></a>
+        
+
+        
+        <ul>
+          
+            <li><a href="/docs/connect-node.html#prerequistes">Prerequistes</a></li>
+          
+            <li><a href="/docs/connect-node.html#bitcoin-core-setup">Bitcoin Core setup</a></li>
+          
+            <li><a href="/docs/connect-node.html#sparrow-wallet-setup">Sparrow Wallet setup</a></li>
+          
+            <li><a href="/docs/connect-node.html#creating-your-wallet">Creating your Wallet</a></li>
+          
+        </ul>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/docs/connected-wallet.html"><span class="nav__sub-title">Setup a connected hardware wallet</span></a>
+        
+
+        
+        <ul>
+          
+            <li><a href="/docs/connected-wallet.html#prerequistes">Prerequistes</a></li>
+          
+            <li><a href="/docs/connected-wallet.html#why-use-a-hardware-wallet">Why use a hardware wallet?</a></li>
+          
+            <li><a href="/docs/connected-wallet.html#connected-or-airgapped">Connected or airgapped?</a></li>
+          
+            <li><a href="/docs/connected-wallet.html#why-trezor">Why Trezor?</a></li>
+          
+            <li><a href="/docs/connected-wallet.html#ordering-and-receiving">Ordering and receiving</a></li>
+          
+            <li><a href="/docs/connected-wallet.html#setting-up-your-trezor">Setting up your Trezor</a></li>
+          
+            <li><a href="/docs/connected-wallet.html#importing-your-trezor-into-sparrow">Importing your Trezor into Sparrow</a></li>
+          
+            <li><a href="/docs/connected-wallet.html#receiving-bitcoin">Receiving Bitcoin</a></li>
+          
+            <li><a href="/docs/connected-wallet.html#sending-bitcoin">Sending Bitcoin</a></li>
+          
+        </ul>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/docs/airgapped-wallet-qr.html"><span class="nav__sub-title">Setup an airgapped hardware wallet with QR codes</span></a>
+        
+
+        
+        <ul>
+          
+            <li><a href="/docs/airgapped-wallet-qr.html#prerequistes">Prerequistes</a></li>
+          
+            <li><a href="/docs/airgapped-wallet-qr.html#why-use-a-hardware-wallet">Why use a hardware wallet?</a></li>
+          
+            <li><a href="/docs/airgapped-wallet-qr.html#why-qr-codes">Why QR codes?</a></li>
+          
+            <li><a href="/docs/airgapped-wallet-qr.html#why-passport">Why Passport?</a></li>
+          
+            <li><a href="/docs/airgapped-wallet-qr.html#ordering-and-receiving">Ordering and receiving</a></li>
+          
+            <li><a href="/docs/airgapped-wallet-qr.html#setting-up-your-passport">Setting up your Passport</a></li>
+          
+            <li><a href="/docs/airgapped-wallet-qr.html#importing-your-passport-into-sparrow">Importing your Passport into Sparrow</a></li>
+          
+            <li><a href="/docs/airgapped-wallet-qr.html#receiving-bitcoin">Receiving Bitcoin</a></li>
+          
+            <li><a href="/docs/airgapped-wallet-qr.html#sending-bitcoin">Sending Bitcoin</a></li>
+          
+        </ul>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/docs/airgapped-wallet-sdcard.html"><span class="nav__sub-title">Setup an airgapped hardware wallet with SD cards</span></a>
+        
+
+        
+        <ul>
+          
+            <li><a href="/docs/airgapped-wallet-sdcard.html#prerequistes">Prerequistes</a></li>
+          
+            <li><a href="/docs/airgapped-wallet-sdcard.html#why-use-a-hardware-wallet">Why use a hardware wallet?</a></li>
+          
+            <li><a href="/docs/airgapped-wallet-sdcard.html#why-coldcard">Why Coldcard?</a></li>
+          
+            <li><a href="/docs/airgapped-wallet-sdcard.html#ordering-and-receiving">Ordering and receiving</a></li>
+          
+            <li><a href="/docs/airgapped-wallet-sdcard.html#setting-up-your-coldcard">Setting up your Coldcard</a></li>
+          
+            <li><a href="/docs/airgapped-wallet-sdcard.html#important-check-your-firmware-version">Important: Check your firmware version</a></li>
+          
+            <li><a href="/docs/airgapped-wallet-sdcard.html#creating-the-wallet-on-the-coldcard">Creating the wallet on the Coldcard</a></li>
+          
+            <li><a href="/docs/airgapped-wallet-sdcard.html#importing-the-coldcard-into-sparrow">Importing the Coldcard into Sparrow</a></li>
+          
+            <li><a href="/docs/airgapped-wallet-sdcard.html#receiving-bitcoin">Receiving Bitcoin</a></li>
+          
+            <li><a href="/docs/airgapped-wallet-sdcard.html#sending-bitcoin">Sending Bitcoin</a></li>
+          
+        </ul>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/docs/airgapped-wallet-smartcard.html"><span class="nav__sub-title">Setup an airgapped smartcard wallet</span></a>
+        
+
+        
+        <ul>
+          
+            <li><a href="/docs/airgapped-wallet-smartcard.html#prerequistes">Prerequistes</a></li>
+          
+            <li><a href="/docs/airgapped-wallet-smartcard.html#why-use-a-hardware-wallet">Why use a hardware wallet?</a></li>
+          
+            <li><a href="/docs/airgapped-wallet-smartcard.html#why-smartcards">Why smartcards?</a></li>
+          
+            <li><a href="/docs/airgapped-wallet-smartcard.html#why-keycard">Why Keycard?</a></li>
+          
+            <li><a href="/docs/airgapped-wallet-smartcard.html#ordering-and-receiving">Ordering and receiving</a></li>
+          
+            <li><a href="/docs/airgapped-wallet-smartcard.html#setting-up-your-keycard">Setting up your Keycard</a></li>
+          
+            <li><a href="/docs/airgapped-wallet-smartcard.html#importing-your-keycard-into-sparrow">Importing your Keycard into Sparrow</a></li>
+          
+            <li><a href="/docs/airgapped-wallet-smartcard.html#receiving-bitcoin">Receiving Bitcoin</a></li>
+          
+            <li><a href="/docs/airgapped-wallet-smartcard.html#sending-bitcoin">Sending Bitcoin</a></li>
+          
+        </ul>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/docs/spending-privately.html"><span class="nav__sub-title">Spending Privately</span></a>
+        
+
+        
+        <ul>
+          
+            <li><a href="/docs/spending-privately.html#prerequistes">Prerequistes</a></li>
+          
+            <li><a href="/docs/spending-privately.html#why-is-this-necessary">Why is this necessary?</a></li>
+          
+            <li><a href="/docs/spending-privately.html#fake-two-person-coinjoin">Fake two person coinjoin</a></li>
+          
+            <li><a href="/docs/spending-privately.html#paynym-payment-code">PayNym? Payment code?</a></li>
+          
+            <li><a href="/docs/spending-privately.html#paying-to-paynym">Paying to a PayNym</a></li>
+          
+            <li><a href="/docs/spending-privately.html#conclusion">Conclusion</a></li>
+          
+        </ul>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/docs/best-practices.html"><span class="nav__sub-title">Best Practices</span></a>
+        
+
+        
+        <ul>
+          
+            <li><a href="/docs/best-practices.html#how-to-store-bitcoin">How to Store Bitcoin</a></li>
+          
+            <li><a href="/docs/best-practices.html#how-much-are-you-storing">How Much Are You Storing?</a></li>
+          
+            <li><a href="/docs/best-practices.html#summary">Summary</a></li>
+          
+            <li><a href="/docs/best-practices.html#the-beginner-stage">The Beginner Stage</a></li>
+          
+            <li><a href="/docs/best-practices.html#the-intermediate-stage">The Intermediate Stage</a></li>
+          
+            <li><a href="/docs/best-practices.html#the-expert-stage">The Expert Stage</a></li>
+          
+        </ul>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/docs/faq.html"><span class="nav__sub-title">FAQ</span></a>
+        
+
+        
+      </li>
+    
+      <li>
+        
+          <a href="/docs/server-performance.html"><span class="nav__sub-title">Server Performance</span></a>
+        
+
+        
+      </li>
+    
+  </ul>
+</nav>
+
+    
+    
+  
+  </div>
+
+
+
+  <article class="page" itemscope itemtype="https://schema.org/CreativeWork">
+    <meta itemprop="headline" content="Setup an airgapped smartcard wallet">
+    
+    
+    
+
+    <div class="page__inner-wrap">
+      
+        <header>
+          <h1 id="page-title" class="page__title" itemprop="headline">Setup an airgapped smartcard wallet
+</h1>
+          
+        </header>
+      
+
+      <section class="page__content" itemprop="text">
+        
+        <h3 id="prerequistes"><a href="#prerequistes">Prerequistes</a></h3>
+
+<p>This guide explains how to setup an airgapped smartcard wallet with Sparrow to create a secure Bitcoin storage solution.
+A smartcard wallet is a hardware wallet in a credit card format - your keys are held on a secure element chip in the card, and data is exchanged through a card reader.
+Sparrow supports the Tapsigner, Satschip, Satochip and Keycard.</p>
+
+<p>You will need a card reader that the card can be inserted into or placed on top of.
+If you don’t have one, the <a href="https://store.coinkite.com/store/nfc-read-b" target="_blank">this NFC card reader</a> is a good choice.</p>
+
+<p>We will be using a Keycard in this guide, but the process is very similar for all smartcard wallets.
+If you would rather use a hardware wallet with a screen, see the <a href="/docs/connected-wallet.html">Setup a connected hardware wallet</a>, <a href="/docs/airgapped-wallet-qr.html">Setup an airgapped hardware wallet with QR codes</a> or <a href="/docs/airgapped-wallet-sdcard.html">Setup an airgapped hardware wallet with SD cards</a> guides.
+If you haven’t read the <a href="/docs/quick-start.html">Quick Start</a> guide yet, that’s a good place to learn how to install and get introduced to Sparrow.</p>
+
+<h3 id="why-use-a-hardware-wallet"><a href="#why-use-a-hardware-wallet">Why use a hardware wallet?</a></h3>
+
+<p>If you’ve followed the <a href="/docs/quick-start.html">Quick Start</a> guide, you will already have Sparrow running with a software wallet. 
+This is a good place to start getting familiar with sending and receiving Bitcoin transactions, and is a reasonable option to store small amounts.
+If your balance starts to grow however (to the point where you would care about losing it), then it’s time to consider purchasing a hardware wallet.</p>
+
+<p>Hardware wallets offer something that software wallets cannot - they are simple devices that store your private keys and sign transactions, but otherwise have very limited connectivity and functionality.
+This is a good thing, because it means they are very difficult to hack! 
+In a connected world of viruses and other malware, hardware wallets represent a major improvement in securing your Bitcoin.</p>
+
+<h3 id="why-smartcards"><a href="#why-smartcards">Why smartcards?</a></h3>
+
+<p>Smartcard wallets are the simplest hardware wallets of all - there is no battery, screen, buttons or cable, just a secure element chip embedded in a credit card sized package.
+This makes them inexpensive, durable and highly portable - a card can be stored discreetly in a wallet or safe.
+The card itself is never plugged into your computer - it communicates through the card reader using the same protocol as bank cards.
+Like other hardware wallets, the card only receives transactions to sign and only returns signatures - your private keys never leave the secure element.</p>
+
+<p>The trade-off is that a card has no screen, so you cannot independently verify addresses and transactions on the device as you can with other hardware wallets.
+This means you place more trust in the computer running Sparrow.
+Cards are well suited to storing small to medium amounts - for larger amounts, consider a hardware wallet with a screen using one of the other guides.</p>
+
+<h3 id="why-keycard"><a href="#why-keycard">Why Keycard?</a></h3>
+
+<p>There are many smartcard wallets available to purchase.
+The Keycard is a good choice because it:</p>
+<ul>
+  <li>Runs fully open source software that anyone can inspect</li>
+  <li>Is inexpensive compared to most hardware wallets</li>
+  <li>Uses a certified secure element chip to protect your keys</li>
+</ul>
+
+<p>It is worth noting however that other choices are also reasonable, and in fact it is preferable when setting up a multisig wallet to use multiple vendors.
+As mentioned above, this guide applies generally to all smartcard wallets.</p>
+
+<h3 id="ordering-and-receiving"><a href="#ordering-and-receiving">Ordering and receiving</a></h3>
+
+<p>The Keycard should be ordered from the <a href="https://keycard.tech" target="_blank">Keycard store</a> only, and not third party resellers. 
+The same advice applies to any hardware wallet vendor - buying direct removes the chance of receiving a device that has been tampered with along the way.
+Ideally, have it shipped to an address that is not your home - but don’t let this be a reason for not buying one!
+This is also a good time to order a card reader if you don’t have one - the <a href="https://store.coinkite.com/store/nfc-read-b" target="_blank">this NFC card reader</a> works well with all the supported cards.
+For the Keycard specifically, you can also order the Keycard Shell which gives you QR code capable hardware wallet with the Keycard at its core.</p>
+
+<p>Once you have received your Keycard, examine the packaging for tampering before opening it.
+Your vendor’s site will describe what to look for on your particular card.
+If you’re confident the package has not been tampered with, you can open it and proceed to setting up the card.</p>
+
+<h3 id="setting-up-your-keycard"><a href="#setting-up-your-keycard">Setting up your Keycard</a></h3>
+
+<p>Before Sparrow can use your Keycard, the card needs to be initialized - that is, create a new wallet seed and set a PIN.
+Unlike other hardware wallets, cards have no screen or buttons, so initialization is done through Sparrow itself.
+Connect your card reader to your computer, and insert the Keycard into it (or place the card on top, depending on your reader).</p>
+
+<p>In Sparrow, from the menu select File &gt; New Wallet and choose a name for your wallet.
+You will now see the Sparrow wallet Settings screen. You can leave all of the fields on the defaults and select ‘Airgapped Hardware Wallet’ from the four buttons below.
+(Although the card communicates through the connected card reader, it remains an airgapped device - the card itself is never plugged into your computer.)</p>
+
+<p><img srcset="/assets/images/docs/keycard-settings-airgapped-2x.png 2x" src="/assets/images/docs/keycard-settings-airgapped.png" alt="Keycard Airgapped Settings" itemprop="image" /></p>
+
+<p>You will see a list of different import options for various hardware wallets. Look for the Keycard option and click the button to read the card.
+(Note clicking on the ‘Details’ link will display the instructions for your particular card.)
+If the card is not found, check it is correctly positioned on the reader and try again.</p>
+
+<p><img srcset="/assets/images/docs/keycard-airgapped-import-2x.png 2x" src="/assets/images/docs/keycard-airgapped-import.png" alt="Keycard Airgapped Import" itemprop="image" /></p>
+
+<p>Since your card has not yet been initialized, Sparrow will offer to initialize it.
+You will be asked to choose a PIN.
+Similar to a phone passcode, this PIN is an important defense against others using the card to sign transactions and steal your Bitcoin.
+Choose a PIN that others cannot easily guess, and that you can remember.
+(Note that this varies between vendors - on the Tapsigner for example, the initial PIN is printed on the back of the card.)</p>
+
+<p><img srcset="/assets/images/docs/keycard-pin-2x.png 2x" src="/assets/images/docs/keycard-pin.png" alt="Keycard PIN Entry" itemprop="image" /></p>
+
+<p>During initialization, a unique, long random number is generated, which is the seed for your wallet.
+You may then be asked to backup the seed.
+Every vendor has a slightly different process - some cards provide a set of seed words to write down, while others (like the Tapsigner) create an encrypted backup file which is decrypted using a key printed on the card.
+If you are asked to write down seed words, do so carefully on paper only (or even better, on a metal plate).</p>
+
+<p>These words (or the backup you have created) are the key to your wallet - anyone who has them can steal your Bitcoin!
+Store them in the most secure place you can think of, and consider making another copy for a second location in case of fire etc.</p>
+
+<p>Congratulations! Your Keycard is now ready.</p>
+
+<h3 id="importing-your-keycard-into-sparrow"><a href="#importing-your-keycard-into-sparrow">Importing your Keycard into Sparrow</a></h3>
+
+<p>Although your Keycard is great at keeping your seed secure, it can’t create a transaction or display your balance.
+For that, you need Sparrow. 
+Importing your Keycard into Sparrow means importing the public key details into Sparrow so it can display your balance and addresses, and send and receive transactions to your wallet.</p>
+
+<p>The difference between public and private keys is beyond the scope of this guide, but know that someone who has your public key can see your wallet transactions, but can’t steal your funds.
+The Keycard will never export your private key.</p>
+
+<p>Once the card is initialized, Sparrow will read the public key details from the card - you may be asked to enter your PIN.
+Sparrow will import the details for the default derivation path and display them on the Settings screen:</p>
+
+<p><img srcset="/assets/images/docs/keycard-imported-2x.png 2x" src="/assets/images/docs/keycard-imported.png" alt="Keycard Imported" itemprop="image" /></p>
+
+<p>You can now click ‘Apply’ at the bottom. 
+You should choose a good password to protect the wallet file - even though the Keycard is protecting your funds from being stolen, a password on the Sparrow wallet protects your privacy.
+If Sparrow is connected it will look for any transactions, but since this is a new wallet there won’t be any.</p>
+
+<p>Congratulations! Setup is complete and your wallet is ready to receive bitcoin.</p>
+
+<h3 id="receiving-bitcoin"><a href="#receiving-bitcoin">Receiving Bitcoin</a></h3>
+
+<p>In Sparrow, using the blue menu on the left select ‘Receive’. 
+The address field will display the first receive address in your wallet:</p>
+
+<p><img srcset="/assets/images/docs/keycard-receive-2x.png 2x" src="/assets/images/docs/keycard-receive.png" alt="Keycard Receive First Address" itemprop="image" /></p>
+
+<p>Note that because the card has no screen, you cannot verify the address on the device as you can with other hardware wallets.
+Keeping your computer secure and up to date is therefore particularly important when using a smartcard wallet.</p>
+
+<p>You can now receive to this address, for example from an exchange. 
+Once the exchange has sent the funds, you will see a new transaction in the Transactions screen (top button on blue menu) in Sparrow.
+Generally you should wait for at least one confirmation of this transaction (about 10-30 minutes) before you can send bitcoin from this wallet.
+However, if you are sending to yourself, you can send a transaction immediately.</p>
+
+<h3 id="sending-bitcoin"><a href="#sending-bitcoin">Sending Bitcoin</a></h3>
+
+<p>Once your wallet has funds, you can send from it. To do this, go to the Send screen and enter the destination address, the label and the amount.
+Note that you can use an address from this wallet (send to yourself) using the drop-down arrow on the right in the address field.
+You can then click ‘Create Transaction’. This will open up the transaction editor with your new transaction, where you can inspect the inputs and outputs.
+For now though, we are going to practice signing with the Keycard.</p>
+
+<p>Click the large blue ‘Finalize Transaction for Signing’ button.
+You will now see the Signatures area, which shows the progress of signing the transaction.
+Because the card communicates through the connected card reader, simply click the ‘Sign’ button with the NFC icon.
+Make sure the card is on the reader - Sparrow will open a dialog and ask for your PIN before sending the transaction to the card:</p>
+
+<p><img srcset="/assets/images/docs/keycard-sign-dialog-2x.png 2x" src="/assets/images/docs/keycard-sign-dialog.png" alt="Keycard Sign Dialog" itemprop="image" /></p>
+
+<p>Since the card cannot display the transaction, it’s important to verify the details carefully in Sparrow before signing.
+Check that the address and amount matches.
+You can select from the Outputs tree on the left in the Sparrow transaction editor to view these details.</p>
+
+<p>Once you’re satisfied, enter your PIN. 
+The Keycard will sign the transaction and return the signature to Sparrow.
+The signatures progress bar will fill to indicate the transaction is now signed!
+To send the transaction, click ‘Broadcast Transaction’.
+Your transaction will be broadcast to the Bitcoin network, and hopefully be confirmed into the blockchain shortly.</p>
+
+<p>Congratulations! You now have a secure Bitcoin storage solution, and can send and receive from it.
+Keep your card and your seed backup in a safe place - they will make sure you don’t need to worry about loss of funds!</p>
+
+<h3 id="bonus-adding-an-account"><a href="#bonus-adding-an-account">Bonus: Adding an account</a></h3>
+
+<p>You can now add an account to your wallet, which is in effect creating a second Bitcoin wallet based on the same seed but a different derivation path.
+A second account allows you to segregate funds (for example KYC and non-KYC funds) which ensures that differently sourced UTXOs are not linked when spending.
+You can also use accounts to segregate funds intended for different purposes.</p>
+
+<p>To add an Account, go to the Settings tab in Sparrow and click <strong>Add Account…</strong> at the bottom.
+You will be able to select from multiple different accounts - for now, select <strong>Account #1</strong>.</p>
+
+<p><img srcset="/assets/images/docs/coldcard-add-account-2x.png 2x" src="/assets/images/docs/coldcard-add-account.png" alt="Adding an Account" itemprop="image" /></p>
+
+<p>Sparrow will then add a row of tabs on the left.
+The wallet account you have recently configured will be labelled <strong>Deposit</strong>, and the new wallet account is <strong>Account #1</strong>.</p>
+
+<p>With a smartcard wallet there are no files to export - make sure the card is on the reader, then click ‘Airgapped Hardware Wallet’ from the four buttons in Sparrow and read the card again.
+Sparrow will retrieve the public key details for the new account directly from the card.
+You can then click <strong>Apply</strong>, and your second account is ready for use!</p>
+
+        
+      </section>
+
+      <footer class="page__meta">
+        
+        
+
+
+        
+
+      </footer>
+
+      
+
+      
+    </div>
+
+    
+  </article>
+
+  
+  
+</div>
+
+    </div>
+
+    
+
+    <div id="footer" class="page__footer">
+      <footer>
+        <!-- start custom footer snippets -->
+
+<!-- end custom footer snippets -->
+        <div class="page__footer-follow">
+  <ul class="social-icons">
+    
+
+    
+   
+  </ul>
+</div>
+
+<div class="page__footer-copyright">&copy; 2026 Sparrow Wallet. Sparrow is licensed under the Apache 2 software licence.</div>
+<script type="text/javascript" src="/assets/js/lightbox.js"></script>
+<link rel="stylesheet" href="/assets/css/lightbox.css">
+      </footer>
+    </div>
+
+    
+  <script src="/assets/js/main.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+
+
+
+
+
+
+
+
+
+  </body>
+</html>

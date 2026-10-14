@@ -1,0 +1,434 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" />
+  <meta name="readthedocs-addons-api-version" content="1"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta property="og:title" content="Cold Storage" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://docs.electrum.org/en/latest/coldstorage.html" />
+<meta property="og:site_name" content="Electrum Documentation" />
+<meta property="og:description" content="This document shows how to create an offline wallet that holds your Bitcoins and a watching-only online wallet that is used to view its history and to create transactions that have to be signed wit..." />
+<meta property="og:image" content="https://docs.electrum.org/en/latest/_static/og-image.png" />
+<meta property="og:image:alt" content="Electrum Documentation" />
+<meta name="description" content="This document shows how to create an offline wallet that holds your Bitcoins and a watching-only online wallet that is used to view its history and to create transactions that have to be signed wit..." />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cold Storage &mdash; Electrum 4 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/electrum.css?v=c7ab9e5e" />
+      <link rel="stylesheet" type="text/css" href="_static/dark_mode_css/general.css?v=c0a7eb24" />
+      <link rel="stylesheet" type="text/css" href="_static/dark_mode_css/dark.css?v=70edf1c7" />
+
+  
+    <link rel="canonical" href="https://docs.electrum.org/en/latest/coldstorage.html" />
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=71af5d5d"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="_static/dark_mode_js/default_light.js?v=c2e647ce"></script>
+      <script src="_static/dark_mode_js/theme_switcher.js?v=358d3910"></script>
+    <script src="_static/js/theme.js"></script>
+    <script src="_static/js/versions.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Hardware wallets on Linux" href="hardware-linux.html" />
+    <link rel="prev" title="Multisig Wallets" href="multisig.html" /> 
+<script async type="text/javascript" src="/_/static/javascript/readthedocs-addons.js"></script><meta name="readthedocs-project-slug" content="electrum" /><meta name="readthedocs-version-slug" content="latest" /><meta name="readthedocs-resolver-filename" content="/coldstorage.html" /><meta name="readthedocs-http-status" content="200" /></head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html">
+            
+              <img src="_static/electrum.png" class="logo" alt="Logo"/>
+          </a>
+              <div class="switch-menus">
+                <div class="version-switch"></div>
+                <div class="language-switch"></div>
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">GUI and beginners</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently Asked Questions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#how-does-electrum-work">How does Electrum work?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#does-electrum-trust-servers">Does Electrum trust servers?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#what-is-the-seed">What is the seed?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#how-secure-is-the-seed">How secure is the seed?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#i-have-forgotten-my-password-what-can-i-do">I have forgotten my password. What can I do?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#how-does-electrum-get-the-bitcoin-price-it-uses">How does Electrum get the Bitcoin price it uses?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#my-transaction-has-been-unconfirmed-for-a-long-time-what-can-i-do">My transaction has been unconfirmed for a long time. What can I do?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#what-does-it-mean-to-freeze-an-address-in-electrum">What does it mean to “freeze” an address in Electrum?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#how-is-the-wallet-encrypted">How is the wallet encrypted?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#does-electrum-support-cold-wallets">Does Electrum support cold wallets?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#can-i-import-private-keys-from-other-bitcoin-clients">Can I import private keys from other Bitcoin clients?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#can-i-sweep-private-keys-from-other-bitcoin-clients">Can I sweep private keys from other Bitcoin clients?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#where-is-the-electrum-datadir-located">Where is the Electrum datadir located?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#where-is-my-wallet-file-located">Where is my wallet file located?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#how-to-enable-debug-logging">How to enable debug logging?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#can-i-do-bulk-payments-with-electrum-batching">Can I do bulk payments with Electrum? (batching)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#can-electrum-create-and-sign-raw-transactions">Can Electrum create and sign raw transactions?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#electrum-freezes-when-i-try-to-send-bitcoins">Electrum freezes when I try to send bitcoins.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#what-is-the-gap-limit">What is the gap limit?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#how-can-i-pre-generate-new-addresses">How can I pre-generate new addresses?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#how-do-i-upgrade-electrum">How do I upgrade Electrum?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#my-anti-virus-has-flagged-electrum-as-malware-what-now">My anti-virus has flagged Electrum as malware! What now?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#electrum-requires-recent-python-my-linux-distribution-does-not-yet-have-it-what-now">Electrum requires recent Python. My Linux distribution does not yet have it. What now?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#i-might-run-my-own-server-are-client-server-connections-authenticated">I might run my own server. Are client-server connections authenticated?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#does-electrum-support-altcoins-cryptocurrencies">Does Electrum support altcoins (“cryptocurrencies”)?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#my-electrum-window-is-black-why-can-t-i-see-anything">My Electrum window is black. Why can’t I see anything?</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="invoices.html">Invoices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="2fa.html">Two Factor Authentication</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="2fa.html#creating-a-wallet">Creating a Wallet</a></li>
+<li class="toctree-l2"><a class="reference internal" href="2fa.html#restoring-from-seed">Restoring from seed</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="multisig.html">Multisig Wallets</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="multisig.html#create-a-pair-of-2-of-2-wallets">Create a pair of 2-of-2 wallets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="multisig.html#receiving">Receiving</a></li>
+<li class="toctree-l2"><a class="reference internal" href="multisig.html#spending">Spending</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="multisig.html#transfer-a-file">Transfer a file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="multisig.html#use-qr-code">Use QR-Code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="multisig.html#use-the-cosigner-pool-plugin">Use the Cosigner Pool Plugin</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Cold Storage</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#create-an-offline-wallet">Create an offline wallet</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#create-a-watching-only-version-of-your-wallet">Create a watching-only version of your wallet</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#create-an-unsigned-transaction">Create an unsigned transaction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#get-your-transaction-signed">Get your transaction signed</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#broadcast-your-transaction">Broadcast your transaction</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="hardware-linux.html">Hardware wallets on Linux</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="hardware-linux.html#dependencies">1. Dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hardware-linux.html#python-libraries">2. Python libraries</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="hardware-linux.html#trezor">Trezor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hardware-linux.html#ledger">Ledger</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hardware-linux.html#keepkey">KeepKey</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hardware-linux.html#digital-bitbox">Digital Bitbox</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hardware-linux.html#bitbox02">BitBox02</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hardware-linux.html#archos-safe-t">Archos Safe-T</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hardware-linux.html#coldcard">Coldcard</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hardware-linux.html#jade">Jade</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="hardware-linux.html#udev-rules">3. udev rules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hardware-linux.html#done">4. Done</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tails.html">Using the most current Electrum on Tails</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tails.html#steps-to-use-appimage">Steps to use AppImage</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="plugins.html">Plugins</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="plugins.html#internal-plugins">Internal Plugins</a></li>
+<li class="toctree-l2"><a class="reference internal" href="plugins.html#external-plugins">External Plugins</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="plugins.html#setting-up-the-plugin-password">Setting up the plugin password</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="plugins.html#on-linux">On Linux</a></li>
+<li class="toctree-l4"><a class="reference internal" href="plugins.html#on-windows">On Windows</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="plugins.html#plugin-development">Plugin Development</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="malware.html">Malware (and other avenues of losing money)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="malware.html#attack-scenarios">Attack scenarios</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="malware.html#malicious-clone">Malicious clone</a></li>
+<li class="toctree-l3"><a class="reference internal" href="malware.html#clipboard-hijacker">Clipboard hijacker</a></li>
+<li class="toctree-l3"><a class="reference internal" href="malware.html#compromised-pc">Compromised PC</a></li>
+<li class="toctree-l3"><a class="reference internal" href="malware.html#posing-as-support">Posing as support</a></li>
+<li class="toctree-l3"><a class="reference internal" href="malware.html#backup-accessed-by-flatmate-etc">Backup accessed by flatmate/etc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="malware.html#planted-wallet-file">Planted wallet file</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="malware.html#defense-best-practices">Defense, best practices</a></li>
+<li class="toctree-l2"><a class="reference internal" href="malware.html#help-my-coins-have-been-stolen">Help! My coins have been stolen!</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="malware.html#can-i-keep-using-the-wallet">Can I keep using the wallet?</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="malware.html#my-anti-virus-has-flagged-electrum-as-malware">My anti-virus has flagged Electrum as malware!</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Advanced users</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="coldstorage_cmdline.html">Using cold storage with the command line</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="coldstorage_cmdline.html#create-an-unsigned-transaction">Create an unsigned transaction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="coldstorage_cmdline.html#sign-the-transaction">Sign the transaction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="coldstorage_cmdline.html#broadcast-the-transaction">Broadcast the transaction</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="hardfork.html">How to split your coins using Electrum in case of a fork</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="hardfork.html#note">Note:</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hardfork.html#what-is-a-fork">What is a fork?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hardfork.html#what-does-it-mean-to-split-your-coins">What does it mean to ‘split your coins’?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hardfork.html#fork-detection">Fork detection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hardfork.html#procedure">Procedure</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tor.html">Using Electrum Through Tor</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tor.html#list-of-active-onion-servers">List of Active .onion servers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tor.html#linux">LINUX</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tor.html#option-1-single-server">Option 1: Single Server</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tor.html#option-2-multiple-servers-but-tor-main">Option 2: Multiple servers but Tor Main</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tor.html#windows">WINDOWS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tor.html#option-1-connecting-to-a-single-server">Option 1: Connecting to a single Server</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tor.html#option-2">Option 2</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="gpg-check.html">Verifying GPG signature of Electrum using Linux command line</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="gpg-check.html#obtain-public-gpg-key-for-thomasv">Obtain public GPG key for ThomasV</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gpg-check.html#download-electrum-and-signature-file-asc">Download Electrum and signature file (asc)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gpg-check.html#verify-gpg-signature">Verify GPG signature</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Daemon and Command Line</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="cmdline.html">Command Line</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="cmdline.html#using-the-inline-help">Using the inline help</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cmdline.html#how-to-use-the-daemon">How to use the daemon</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cmdline.html#magic-words">Magic words</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cmdline.html#aliases">Aliases</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cmdline.html#formatting-outputs-using-jq">Formatting outputs using jq</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cmdline.html#examples">Examples</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="cmdline.html#sign-and-verify-message">Sign and verify message</a></li>
+<li class="toctree-l3"><a class="reference internal" href="cmdline.html#show-the-values-of-your-unspents">Show the values of your unspents</a></li>
+<li class="toctree-l3"><a class="reference internal" href="cmdline.html#select-only-incoming-transactions-from-history">Select only incoming transactions from history</a></li>
+<li class="toctree-l3"><a class="reference internal" href="cmdline.html#filter-transactions-by-date">Filter transactions by date</a></li>
+<li class="toctree-l3"><a class="reference internal" href="cmdline.html#encrypt-and-decrypt-messages">Encrypt and decrypt messages</a></li>
+<li class="toctree-l3"><a class="reference internal" href="cmdline.html#export-private-keys-and-sweep-coins">Export private keys and sweep coins</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ssl.html">How to configure SSL with Electrum</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ssl.html#add-your-ssl-private-key">Add your SSL private key</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ssl.html#add-your-ssl-certificate-bundle">Add your SSL certificate bundle</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ssl.html#check-that-your-certificate-was-accepted-by-electrum">Check that your certificate was accepted by Electrum</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="merchant.html">How to accept Bitcoin on a website using Electrum</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="merchant.html#add-your-ssl-certificate-to-electrum">Add your SSL certificate to Electrum</a></li>
+<li class="toctree-l2"><a class="reference internal" href="merchant.html#create-and-use-your-merchant-wallet">Create and use your merchant wallet</a></li>
+<li class="toctree-l2"><a class="reference internal" href="merchant.html#start-the-electrum-daemon">Start the Electrum daemon</a></li>
+<li class="toctree-l2"><a class="reference internal" href="merchant.html#create-a-signed-payment-request">Create a signed payment request</a></li>
+<li class="toctree-l2"><a class="reference internal" href="merchant.html#open-the-payment-request-page-in-your-browser">Open the payment request page in your browser</a></li>
+<li class="toctree-l2"><a class="reference internal" href="merchant.html#lightning-payments">Lightning payments</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="watchtower.html">How to setup a watchtower</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="watchtower.html#how-to-configure-a-watchtower">How to configure a watchtower</a></li>
+<li class="toctree-l2"><a class="reference internal" href="watchtower.html#configure-the-watchtower-in-your-client">Configure the watchtower in your client</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="swapserver.html">How to offer Submarine Swaps</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="swapserver.html#swap-server-setup">Swap server setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="swapserver.html#operation">Operation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="swapserver.html#shutting-down">Shutting down</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="jsonrpc.html">JSONRPC interface</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="console.html">The Python Console</a></li>
+<li class="toctree-l1"><a class="reference internal" href="spv.html">Simple Payment Verification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="seedphrase.html">Electrum Seed Version System</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="seedphrase.html#description">Description</a></li>
+<li class="toctree-l2"><a class="reference internal" href="seedphrase.html#motivation">Motivation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="seedphrase.html#version-number">Version number</a></li>
+<li class="toctree-l2"><a class="reference internal" href="seedphrase.html#list-of-reserved-numbers">List of reserved numbers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="seedphrase.html#seed-generation">Seed generation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="seedphrase.html#security-implications">Security implications</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="protocol.html">Electrum protocol specification</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="protocol.html#format">Format</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="protocol.html#request">Request</a></li>
+<li class="toctree-l3"><a class="reference internal" href="protocol.html#response">Response</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="protocol.html#methods">Methods</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="protocol.html#server-version">server.version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="protocol.html#server-banner">server.banner</a></li>
+<li class="toctree-l3"><a class="reference internal" href="protocol.html#server-donation-address">server.donation_address</a></li>
+<li class="toctree-l3"><a class="reference internal" href="protocol.html#server-peers-subscribe">server.peers.subscribe</a></li>
+<li class="toctree-l3"><a class="reference internal" href="protocol.html#blockchain-numblocks-subscribe">blockchain.numblocks.subscribe</a></li>
+<li class="toctree-l3"><a class="reference internal" href="protocol.html#blockchain-headers-subscribe">blockchain.headers.subscribe</a></li>
+<li class="toctree-l3"><a class="reference internal" href="protocol.html#blockchain-address-subscribe">blockchain.address.subscribe</a></li>
+<li class="toctree-l3"><a class="reference internal" href="protocol.html#blockchain-address-get-history">blockchain.address.get_history</a></li>
+<li class="toctree-l3"><a class="reference internal" href="protocol.html#blockchain-address-get-mempool">blockchain.address.get_mempool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="protocol.html#blockchain-address-get-balance">blockchain.address.get_balance</a></li>
+<li class="toctree-l3"><a class="reference internal" href="protocol.html#blockchain-address-get-proof">blockchain.address.get_proof</a></li>
+<li class="toctree-l3"><a class="reference internal" href="protocol.html#blockchain-address-listunspent">blockchain.address.listunspent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="protocol.html#blockchain-utxo-get-address">blockchain.utxo.get_address</a></li>
+<li class="toctree-l3"><a class="reference internal" href="protocol.html#blockchain-block-get-header">blockchain.block.get_header</a></li>
+<li class="toctree-l3"><a class="reference internal" href="protocol.html#blockchain-block-get-chunk">blockchain.block.get_chunk</a></li>
+<li class="toctree-l3"><a class="reference internal" href="protocol.html#blockchain-transaction-broadcast">blockchain.transaction.broadcast</a></li>
+<li class="toctree-l3"><a class="reference internal" href="protocol.html#blockchain-transaction-get-merkle">blockchain.transaction.get_merkle</a></li>
+<li class="toctree-l3"><a class="reference internal" href="protocol.html#blockchain-transaction-get">blockchain.transaction.get</a></li>
+<li class="toctree-l3"><a class="reference internal" href="protocol.html#blockchain-estimatefee">blockchain.estimatefee</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="protocol.html#external-links">External links</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="transactions.html">Serialization of unsigned or partially signed transactions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="transactions.html#extended-public-keys">Extended public keys</a></li>
+<li class="toctree-l2"><a class="reference internal" href="transactions.html#public-key">Public key</a></li>
+<li class="toctree-l2"><a class="reference internal" href="transactions.html#bip32-derivation">BIP32 derivation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="transactions.html#legacy-electrum-derivation">Legacy Electrum Derivation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="transactions.html#bitcoin-address">Bitcoin address</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="plugin_dev.html">Electrum Plugin development</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="plugin_dev.html#plugin-hooks">Plugin Hooks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="plugin_dev.html#directory-structure">Directory structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="plugin_dev.html#the-manifest-json-file">The manifest.json file</a></li>
+<li class="toctree-l2"><a class="reference internal" href="plugin_dev.html#the-plugin-module">The plugin module:</a></li>
+<li class="toctree-l2"><a class="reference internal" href="plugin_dev.html#creating-a-zip-file">Creating a zip file</a></li>
+<li class="toctree-l2"><a class="reference internal" href="plugin_dev.html#hardware-wallet-plugins">Hardware wallet plugins</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="plugin_rules.html">Plugin rules</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Electrum</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Cold Storage</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/coldstorage.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="cold-storage">
+<span id="coldstorage"></span><h1>Cold Storage<a class="headerlink" href="#cold-storage" title="Link to this heading"></a></h1>
+<p>This document shows how to create an offline wallet that
+holds your Bitcoins and a watching-only online wallet that
+is used to view its history and to create transactions that
+have to be signed with the offline wallet before being
+broadcast on the online one.</p>
+<section id="create-an-offline-wallet">
+<h2>Create an offline wallet<a class="headerlink" href="#create-an-offline-wallet" title="Link to this heading"></a></h2>
+<p>Create a wallet on an offline machine, as per the usual process (file
+-&gt; new) etc.</p>
+<p>After creating the wallet, go to Wallet -&gt; Information.</p>
+<img alt="_images/wallet_info.png" src="_images/wallet_info.png" />
+<p>The Master Public Key of your wallet is the string shown in this popup
+window.  Transfer that key to your online machine somehow.</p>
+</section>
+<section id="create-a-watching-only-version-of-your-wallet">
+<h2>Create a watching-only version of your wallet<a class="headerlink" href="#create-a-watching-only-version-of-your-wallet" title="Link to this heading"></a></h2>
+<p>On your online machine, open up Electrum and select File -&gt;
+New/Restore. Enter a name for the wallet and select “Standard wallet”.</p>
+<img alt="_images/standard_wallet.png" src="_images/standard_wallet.png" />
+<p>Select “Use public or private keys”</p>
+<img alt="_images/public_or_private.png" src="_images/public_or_private.png" />
+<p>Paste your master public key in the box.</p>
+<img alt="_images/restore_key.png" src="_images/restore_key.png" />
+<p>Click Next to complete the creation of your wallet.
+When you’re done, you should see a popup informing you that you are opening a watching-only wallet.</p>
+<img alt="_images/watchingonly.png" src="_images/watchingonly.png" />
+<p>Then you should see the transaction history of your cold wallet.</p>
+</section>
+<section id="create-an-unsigned-transaction">
+<h2>Create an unsigned transaction<a class="headerlink" href="#create-an-unsigned-transaction" title="Link to this heading"></a></h2>
+<p>Go to the “send” tab on your online watching-only wallet,
+input the transaction data and press “Preview”. A window pops up:</p>
+<img alt="_images/unsigned.png" src="_images/unsigned.png" />
+<p>Press “save” and save the transaction file somewhere on your computer. Close the
+window and transfer the transaction file to your offline
+machine (e.g. with a usb stick).</p>
+</section>
+<section id="get-your-transaction-signed">
+<h2>Get your transaction signed<a class="headerlink" href="#get-your-transaction-signed" title="Link to this heading"></a></h2>
+<p>On your offline wallet, select Tools -&gt; Load transaction -&gt; From file
+in the menu and select the transaction file created in the previous
+step.</p>
+<img alt="_images/sign.png" src="_images/sign.png" />
+<p>Press “sign”. Once the transaction is signed, the Transaction ID
+appears in its designated field.</p>
+<img alt="_images/signed.png" src="_images/signed.png" />
+<p>Press save, store the file somewhere on your
+computer, and transfer it back to your online machine.</p>
+</section>
+<section id="broadcast-your-transaction">
+<h2>Broadcast your transaction<a class="headerlink" href="#broadcast-your-transaction" title="Link to this heading"></a></h2>
+<p>On your online machine, select Tools -&gt; Load transaction -&gt; From File
+from the menu. Select the signed transaction file. In the window that
+opens up, press “broadcast”. The transaction will be broadcasted over
+the Bitcoin network.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="multisig.html" class="btn btn-neutral float-left" title="Multisig Wallets" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="hardware-linux.html" class="btn btn-neutral float-right" title="Hardware wallets on Linux" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2011-2023+, Thomas Voegtlin.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

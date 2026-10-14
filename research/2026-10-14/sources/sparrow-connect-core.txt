@@ -1,0 +1,660 @@
+<!doctype html>
+<!--
+  Minimal Mistakes Jekyll Theme 4.19.3 by Michael Rose
+  Copyright 2013-2019 Michael Rose - mademistakes.com | @mmistakes
+  Free for personal and commercial use under the MIT license
+  https://github.com/mmistakes/minimal-mistakes/blob/master/LICENSE
+-->
+<html lang="en" class="no-js">
+  <head>
+    <meta charset="utf-8">
+
+<!-- begin _includes/seo.html --><title>Connect to Bitcoin Core - Sparrow Wallet</title>
+<meta name="description" content="Sparrow is a modern desktop Bitcoin wallet application supporting most hardware wallets and built on common standards such as PSBT, with an emphasis on transparency and usability.">
+
+
+  <meta name="author" content="Sparrow Wallet">
+
+
+<meta property="og:type" content="website">
+<meta property="og:locale" content="en_US">
+<meta property="og:site_name" content="Sparrow Wallet">
+<meta property="og:title" content="Connect to Bitcoin Core">
+<meta property="og:url" content="https://sparrowwallet.com/docs/connect-node.html">
+
+
+  <meta property="og:description" content="Sparrow is a modern desktop Bitcoin wallet application supporting most hardware wallets and built on common standards such as PSBT, with an emphasis on transparency and usability.">
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="canonical" href="https://sparrowwallet.com/docs/connect-node.html">
+
+
+
+
+<script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    
+      "@type": "Person",
+      "name": "Sparrow Wallet",
+      "url": "https://sparrowwallet.com/"
+    
+  }
+</script>
+
+
+
+
+
+
+<!-- end _includes/seo.html -->
+
+
+<link href="/feed.xml" type="application/atom+xml" rel="alternate" title="Sparrow Wallet Feed">
+
+<!-- https://t.co/dKP3o1e -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script>
+  document.documentElement.className = document.documentElement.className.replace(/\bno-js\b/g, '') + ' js ';
+</script>
+
+<!-- For all browsers -->
+<link rel="stylesheet" href="/assets/css/main.css">
+
+<!--[if IE]>
+  <style>
+    /* old IE unsupported flexbox fixes */
+    .greedy-nav .site-title {
+      padding-right: 3em;
+    }
+    .greedy-nav button {
+      position: absolute;
+      top: 0;
+      right: 0;
+      height: 100%;
+    }
+  </style>
+<![endif]-->
+
+
+
+    <!-- start custom head snippets -->
+
+
+<!-- end custom head snippets -->
+  </head>
+
+  <body class="layout--single">
+    <nav class="skip-links">
+  <h2 class="screen-reader-text">Skip links</h2>
+  <ul>
+    <li><a href="#site-nav" class="screen-reader-shortcut">Skip to primary navigation</a></li>
+    <li><a href="#main" class="screen-reader-shortcut">Skip to content</a></li>
+    <li><a href="#footer" class="screen-reader-shortcut">Skip to footer</a></li>
+  </ul>
+</nav>
+
+    <!--[if lt IE 9]>
+<div class="notice--danger align-center" style="margin: 0;">You are using an <strong>outdated</strong> browser. Please <a href="https://browsehappy.com/">upgrade your browser</a> to improve your experience.</div>
+<![endif]-->
+
+    
+
+<div class="masthead">
+  <div class="masthead__inner-wrap">
+    <div class="masthead__menu">
+      <nav id="site-nav" class="greedy-nav">
+        
+        <a class="site-title" href="/">
+          Sparrow Wallet
+          <span class="site-subtitle">Financial self sovereignty</span>
+        </a>
+        <ul class="visible-links"><li class="masthead__menu-item">
+              <a href="/">Home</a>
+            </li><li class="masthead__menu-item">
+              <a href="/features/">Features</a>
+            </li><li class="masthead__menu-item">
+              <a href="/docs/">Docs</a>
+            </li><li class="masthead__menu-item">
+              <a href="/about/">About</a>
+            </li><li class="masthead__menu-item">
+              <a href="/donate/">Donate</a>
+            </li><li class="masthead__menu-item">
+              <a href="/download/">Download</a>
+            </li></ul>
+        
+        <button class="greedy-nav__toggle hidden" type="button">
+          <span class="visually-hidden">Toggle menu</span>
+          <div class="navicon"></div>
+        </button>
+        <ul class="hidden-links hidden"></ul>
+      </nav>
+    </div>
+  </div>
+</div>
+
+
+    <div class="initial-content">
+      
+
+
+
+<div id="main" role="main">
+  
+  <div class="sidebar sticky">
+  
+  
+    
+      
+      
+      
+      
+
+<nav class="nav__list">
+  
+  <input id="ac-toc" name="accordion-toc" type="checkbox" />
+  <label for="ac-toc">Toggle Menu</label>
+  <ul class="nav__items">
+    
+      <li>
+        
+          <a href="/docs/quick-start.html"><span class="nav__sub-title">Quick Start Guide</span></a>
+        
+
+        
+        <ul>
+          
+            <li><a href="/docs/quick-start.html#installation">Installation</a></li>
+          
+            <li><a href="/docs/quick-start.html#welcome-to-sparrow">Welcome to Sparrow</a></li>
+          
+            <li><a href="/docs/quick-start.html#sparrow-server-setup">Sparrow Server Setup</a></li>
+          
+            <li><a href="/docs/quick-start.html#creating-your-first-wallet">Creating Your First Wallet</a></li>
+          
+        </ul>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/docs/connect-node.html"><span class="nav__sub-title">Connect to Bitcoin Core</span></a>
+        
+
+        
+        <ul>
+          
+            <li><a href="/docs/connect-node.html#prerequistes">Prerequistes</a></li>
+          
+            <li><a href="/docs/connect-node.html#bitcoin-core-setup">Bitcoin Core setup</a></li>
+          
+            <li><a href="/docs/connect-node.html#sparrow-wallet-setup">Sparrow Wallet setup</a></li>
+          
+            <li><a href="/docs/connect-node.html#creating-your-wallet">Creating your Wallet</a></li>
+          
+        </ul>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/docs/connected-wallet.html"><span class="nav__sub-title">Setup a connected hardware wallet</span></a>
+        
+
+        
+        <ul>
+          
+            <li><a href="/docs/connected-wallet.html#prerequistes">Prerequistes</a></li>
+          
+            <li><a href="/docs/connected-wallet.html#why-use-a-hardware-wallet">Why use a hardware wallet?</a></li>
+          
+            <li><a href="/docs/connected-wallet.html#connected-or-airgapped">Connected or airgapped?</a></li>
+          
+            <li><a href="/docs/connected-wallet.html#why-trezor">Why Trezor?</a></li>
+          
+            <li><a href="/docs/connected-wallet.html#ordering-and-receiving">Ordering and receiving</a></li>
+          
+            <li><a href="/docs/connected-wallet.html#setting-up-your-trezor">Setting up your Trezor</a></li>
+          
+            <li><a href="/docs/connected-wallet.html#importing-your-trezor-into-sparrow">Importing your Trezor into Sparrow</a></li>
+          
+            <li><a href="/docs/connected-wallet.html#receiving-bitcoin">Receiving Bitcoin</a></li>
+          
+            <li><a href="/docs/connected-wallet.html#sending-bitcoin">Sending Bitcoin</a></li>
+          
+        </ul>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/docs/airgapped-wallet-qr.html"><span class="nav__sub-title">Setup an airgapped hardware wallet with QR codes</span></a>
+        
+
+        
+        <ul>
+          
+            <li><a href="/docs/airgapped-wallet-qr.html#prerequistes">Prerequistes</a></li>
+          
+            <li><a href="/docs/airgapped-wallet-qr.html#why-use-a-hardware-wallet">Why use a hardware wallet?</a></li>
+          
+            <li><a href="/docs/airgapped-wallet-qr.html#why-qr-codes">Why QR codes?</a></li>
+          
+            <li><a href="/docs/airgapped-wallet-qr.html#why-passport">Why Passport?</a></li>
+          
+            <li><a href="/docs/airgapped-wallet-qr.html#ordering-and-receiving">Ordering and receiving</a></li>
+          
+            <li><a href="/docs/airgapped-wallet-qr.html#setting-up-your-passport">Setting up your Passport</a></li>
+          
+            <li><a href="/docs/airgapped-wallet-qr.html#importing-your-passport-into-sparrow">Importing your Passport into Sparrow</a></li>
+          
+            <li><a href="/docs/airgapped-wallet-qr.html#receiving-bitcoin">Receiving Bitcoin</a></li>
+          
+            <li><a href="/docs/airgapped-wallet-qr.html#sending-bitcoin">Sending Bitcoin</a></li>
+          
+        </ul>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/docs/airgapped-wallet-sdcard.html"><span class="nav__sub-title">Setup an airgapped hardware wallet with SD cards</span></a>
+        
+
+        
+        <ul>
+          
+            <li><a href="/docs/airgapped-wallet-sdcard.html#prerequistes">Prerequistes</a></li>
+          
+            <li><a href="/docs/airgapped-wallet-sdcard.html#why-use-a-hardware-wallet">Why use a hardware wallet?</a></li>
+          
+            <li><a href="/docs/airgapped-wallet-sdcard.html#why-coldcard">Why Coldcard?</a></li>
+          
+            <li><a href="/docs/airgapped-wallet-sdcard.html#ordering-and-receiving">Ordering and receiving</a></li>
+          
+            <li><a href="/docs/airgapped-wallet-sdcard.html#setting-up-your-coldcard">Setting up your Coldcard</a></li>
+          
+            <li><a href="/docs/airgapped-wallet-sdcard.html#important-check-your-firmware-version">Important: Check your firmware version</a></li>
+          
+            <li><a href="/docs/airgapped-wallet-sdcard.html#creating-the-wallet-on-the-coldcard">Creating the wallet on the Coldcard</a></li>
+          
+            <li><a href="/docs/airgapped-wallet-sdcard.html#importing-the-coldcard-into-sparrow">Importing the Coldcard into Sparrow</a></li>
+          
+            <li><a href="/docs/airgapped-wallet-sdcard.html#receiving-bitcoin">Receiving Bitcoin</a></li>
+          
+            <li><a href="/docs/airgapped-wallet-sdcard.html#sending-bitcoin">Sending Bitcoin</a></li>
+          
+        </ul>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/docs/airgapped-wallet-smartcard.html"><span class="nav__sub-title">Setup an airgapped smartcard wallet</span></a>
+        
+
+        
+        <ul>
+          
+            <li><a href="/docs/airgapped-wallet-smartcard.html#prerequistes">Prerequistes</a></li>
+          
+            <li><a href="/docs/airgapped-wallet-smartcard.html#why-use-a-hardware-wallet">Why use a hardware wallet?</a></li>
+          
+            <li><a href="/docs/airgapped-wallet-smartcard.html#why-smartcards">Why smartcards?</a></li>
+          
+            <li><a href="/docs/airgapped-wallet-smartcard.html#why-keycard">Why Keycard?</a></li>
+          
+            <li><a href="/docs/airgapped-wallet-smartcard.html#ordering-and-receiving">Ordering and receiving</a></li>
+          
+            <li><a href="/docs/airgapped-wallet-smartcard.html#setting-up-your-keycard">Setting up your Keycard</a></li>
+          
+            <li><a href="/docs/airgapped-wallet-smartcard.html#importing-your-keycard-into-sparrow">Importing your Keycard into Sparrow</a></li>
+          
+            <li><a href="/docs/airgapped-wallet-smartcard.html#receiving-bitcoin">Receiving Bitcoin</a></li>
+          
+            <li><a href="/docs/airgapped-wallet-smartcard.html#sending-bitcoin">Sending Bitcoin</a></li>
+          
+        </ul>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/docs/spending-privately.html"><span class="nav__sub-title">Spending Privately</span></a>
+        
+
+        
+        <ul>
+          
+            <li><a href="/docs/spending-privately.html#prerequistes">Prerequistes</a></li>
+          
+            <li><a href="/docs/spending-privately.html#why-is-this-necessary">Why is this necessary?</a></li>
+          
+            <li><a href="/docs/spending-privately.html#fake-two-person-coinjoin">Fake two person coinjoin</a></li>
+          
+            <li><a href="/docs/spending-privately.html#paynym-payment-code">PayNym? Payment code?</a></li>
+          
+            <li><a href="/docs/spending-privately.html#paying-to-paynym">Paying to a PayNym</a></li>
+          
+            <li><a href="/docs/spending-privately.html#conclusion">Conclusion</a></li>
+          
+        </ul>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/docs/best-practices.html"><span class="nav__sub-title">Best Practices</span></a>
+        
+
+        
+        <ul>
+          
+            <li><a href="/docs/best-practices.html#how-to-store-bitcoin">How to Store Bitcoin</a></li>
+          
+            <li><a href="/docs/best-practices.html#how-much-are-you-storing">How Much Are You Storing?</a></li>
+          
+            <li><a href="/docs/best-practices.html#summary">Summary</a></li>
+          
+            <li><a href="/docs/best-practices.html#the-beginner-stage">The Beginner Stage</a></li>
+          
+            <li><a href="/docs/best-practices.html#the-intermediate-stage">The Intermediate Stage</a></li>
+          
+            <li><a href="/docs/best-practices.html#the-expert-stage">The Expert Stage</a></li>
+          
+        </ul>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/docs/faq.html"><span class="nav__sub-title">FAQ</span></a>
+        
+
+        
+      </li>
+    
+      <li>
+        
+          <a href="/docs/server-performance.html"><span class="nav__sub-title">Server Performance</span></a>
+        
+
+        
+      </li>
+    
+  </ul>
+</nav>
+
+    
+    
+  
+  </div>
+
+
+
+  <article class="page" itemscope itemtype="https://schema.org/CreativeWork">
+    <meta itemprop="headline" content="Connect to Bitcoin Core">
+    
+    
+    
+
+    <div class="page__inner-wrap">
+      
+        <header>
+          <h1 id="page-title" class="page__title" itemprop="headline">Connect to Bitcoin Core
+</h1>
+          
+        </header>
+      
+
+      <section class="page__content" itemprop="text">
+        
+        <h3 id="prerequistes"><a href="#prerequistes">Prerequistes</a></h3>
+
+<p>This guide explains how to connect Sparrow Wallet to your Bitcoin Core node. 
+If you haven’t read the <a href="/docs/quick-start.html">Quick Start</a> guide yet, that’s a good place to learn how to install and get introduced to Sparrow.</p>
+
+<h3 id="bitcoin-core-setup"><a href="#bitcoin-core-setup">Bitcoin Core setup</a></h3>
+
+<h4 id="local-setup">Local setup</h4>
+
+<p>Before you can connect to Bitcoin Core, you will need to make sure that it is configured correctly.
+If you are connecting to Bitcoin Core running on the same machine as Sparrow, this is relatively simple.
+There is only one gotcha - if you are running the <strong>Bitcoin-Qt</strong> graphical user interface (as opposed to the command line), you will need to add a setting to the Bitcoin Core config file.
+This file is usually located in a standard location:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>OS</th>
+      <th>Location</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>macOS</td>
+      <td>~/Library/Application Support/Bitcoin</td>
+    </tr>
+    <tr>
+      <td>Windows</td>
+      <td>%AppData%/Bitcoin (<a href="https://www.freecodecamp.org/news/appdata-where-to-find-the-appdata-folder-in-windows-10/" target="_blank">Locate AppData</a>)</td>
+    </tr>
+    <tr>
+      <td>Linux</td>
+      <td>~/.bitcoin</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The config file is called <code class="language-plaintext highlighter-rouge">bitcoin.conf</code>. If it’s not there, you can create it in a text editor.
+Make sure the following line is present near the top:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>server=1
+</code></pre></div></div>
+
+<p>This should be all that is necessary for Bitcoin Core running on the same machine (localhost). Make sure you do not have <code class="language-plaintext highlighter-rouge">disablewallet=1</code>.</p>
+
+<p>If you are using Bitcoin Core v25 or later, you can also add the block filter index for faster rescans:</p>
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>blockfilterindex=1
+</code></pre></div></div>
+
+<h4 id="remote-setup">Remote setup</h4>
+
+<p>If Bitcoin Core is running on a different machine, you will need to make sure that it binds to the IP address you will connect to it on.
+For example, if it is running on <code class="language-plaintext highlighter-rouge">192.168.0.10</code>, add the following lines to <code class="language-plaintext highlighter-rouge">bitcoin.conf</code> below the other settings:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>rpcuser=bitcoin
+rpcpassword=yourpassword
+
+[main]
+rpcbind=127.0.0.1
+rpcbind=192.168.0.10
+rpcallowip=127.0.0.1
+rpcallowip=192.168.0.0/16
+</code></pre></div></div>
+
+<p>This will allow you to connect to Bitcoin Core from anywhere on your local network using the provided username and password.</p>
+
+<p>If you are using testnet, be sure to replace <code class="language-plaintext highlighter-rouge">[main]</code> with <code class="language-plaintext highlighter-rouge">[test]</code> in the configuration above.</p>
+
+<h4 id="pruned-nodes">Pruned nodes</h4>
+
+<p>Running a pruned node is fine - this is a way of reducing the disk space required by your Bitcoin Core node.
+If you are running out of space, you can add this setting to your configuration and Bitcoin Core will prune (delete) old blocks to keep under the limit you specify.
+For example, you can add the following at the top of <code class="language-plaintext highlighter-rouge">bitcoin.conf</code> to reduce Bitcoin Core’s disk usage to 1000MB (1GB):</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>prune=1000
+</code></pre></div></div>
+
+<p>However there are two caveats:</p>
+<ol>
+  <li>Firstly, you won’t be able to scan for transactions earlier than whatever the earliest retained (unpruned) block is. Already scanned transactions are fine, so if your wallet reflects them (or is new) you are good going forward.</li>
+  <li>Secondly, if you want to reverse this, you will need to start your full blockchain sync from the beginning again.</li>
+</ol>
+
+<h4 id="transaction-index">Transaction Index</h4>
+
+<p>If you are not using a pruned node, and you have a little extra disk space, you can add the transaction index in Bitcoin Core. 
+This enables certain features in Sparrow that are normally only available with an Electrum server, like looking up the inputs on transactions.
+To add the transaction index, add the following to the top of <code class="language-plaintext highlighter-rouge">bitcoin.conf</code>:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>txindex=1
+</code></pre></div></div>
+
+<h4 id="restart-and-sync">Restart and Sync</h4>
+
+<p>You can now restart Bitcoin Core to take advantage of the new configuration. 
+If you are still busy syncing your node, it’s best to wait until this is done, as you won’t have a complete ledger yet so Sparrow won’t be able to find your transactions.</p>
+
+<h3 id="sparrow-wallet-setup"><a href="#sparrow-wallet-setup">Sparrow Wallet setup</a></h3>
+
+<p>Once your node has synced, you are ready to connect Sparrow Wallet. Open the application Settings dialog and select the Server tab.
+You should see a screen similar to this:</p>
+
+<p><img srcset="/assets/images/docs/bitcoin-core-local-2x.png 2x" src="/assets/images/docs/bitcoin-core-local.png" alt="Sparrow Server Configuration" itemprop="image" /></p>
+
+<h4 id="local-setup-1">Local setup</h4>
+
+<p>The good news is that with a local setup and the default configuration, you should be ready to go!
+Sparrow will connect on localhost (127.0.0.1) using the default port, and authenticate by retrieving the cookie file that Bitcoin Core writes to the data folder every time it starts up.
+If you have changed the data folder for Bitcoin Core, be sure to select that folder now.</p>
+
+<p>You can also configure a Tor proxy.
+Sparrow won’t use the proxy to connect to Bitcoin Core unless you specify a <code class="language-plaintext highlighter-rouge">.onion</code> address in the URL.
+But, it will use the proxy for all other external addresses, such as fetching exchange or fee rates.
+Although connecting to Bitcoin Core over Tor is possible, it is fairly slow.
+Consider using a private Electrum server instead if you need to connect over Tor.</p>
+
+<h4 id="remote-setup-1">Remote setup</h4>
+
+<p>If you are connecting to Bitcoin Core on another machine, make sure you have configured Bitcoin Core correctly as described above.
+You will then need to configure the URL in Sparrow to match the IP address of the Bitcoin Core machine (the same IP you used in <code class="language-plaintext highlighter-rouge">bitcoin.conf</code>).
+The default port should be fine.
+Instead of authenticating via a cookie, you will need to select the User/Pass button and enter the username and password you configured in <code class="language-plaintext highlighter-rouge">bitcoin.conf</code> earlier.</p>
+
+<h4 id="testing-the-connection">Testing the Connection</h4>
+
+<p>Once you have configured Sparrow to match your Bitcoin Core setup, you’re ready to test the connection.
+Click <strong>Test Connection</strong>. Sparrow will attempt to connect to Bitcoin Core.
+If successful, you should see the following:</p>
+
+<p><img srcset="/assets/images/docs/bitcoin-core-test-2x.png 2x" src="/assets/images/docs/bitcoin-core-test.png" alt="Sparrow Server Configuration Test" itemprop="image" /></p>
+
+<p>The details you see are provided by Cormorant, a library Sparrow uses to connect to Bitcoin Core.
+If you see <code class="language-plaintext highlighter-rouge">Connected to bwt</code> instead, you are using an earlier version of Bitcoin Core (pre v24) which Sparrow connects to using the <a href="https://github.com/bwt-dev/bwt" target="_blank">bwt library</a>.</p>
+
+<p>If Sparrow did not successfully connect, check your configuration settings. Make sure that you are running a recent version of Bitcoin Core, and that there are no firewalls preventing the connection.</p>
+
+<p>Once you have successfully tested your server setup, you can close the Settings dialog.
+Sparrow will automatically connect to your node, and is now ready to import your wallet.</p>
+
+<h3 id="creating-your-wallet"><a href="#creating-your-wallet">Creating your Wallet</a></h3>
+
+<p>You can now create a wallet in Sparrow. Select <strong>File &gt; New Wallet</strong> in the menu.</p>
+
+<p><img srcset="/assets/images/docs/bitcoin-core-new-wallet-2x.png 2x" src="/assets/images/docs/bitcoin-core-new-wallet.png" alt="Creating a New Wallet using Bitcoin Core" itemprop="image" /></p>
+
+<p>Choose a name for the wallet (it must be unique). If you are creating a wallet with existing transactions, select the checkbox and choose an approximate date to start scanning from.
+Note you don’t need to be exact, so choose an earlier date if you are unsure. You can also change the date and rescan later if necessary.</p>
+
+<p>Click <strong>Create Wallet</strong>.</p>
+
+<p>You can now configure your wallet. Refer to the other guides for help in configuring different types of wallet.
+For example, you can create a wallet using seed words using the <a href="/docs/quick-start.html#creating-your-first-wallet">Quick Start guide</a>.</p>
+
+<p>Once you have configured your wallet, click <strong>Apply</strong> and choose a password to secure it.
+You can now click on the <strong>Transactions</strong> tab at the top. If this wallet has existing transactions, you should see a screen similar to the following:</p>
+
+<p><img srcset="/assets/images/docs/bitcoin-core-scanning-2x.png 2x" src="/assets/images/docs/bitcoin-core-scanning.png" alt="Scanning Bitcoin Core node for transactions" itemprop="image" /></p>
+
+<p>This indicates that Sparrow is requesting Bitcoin Core to scan for the existing transactions. 
+Depending on the date specified earlier, and the hardware the node is running on, this process might take awhile to complete.
+The estimated time remaining is provided in the status bar.</p>
+
+<p>Once completed, the existing transactions should appear in the table.
+If you don’t see any but expect to, you may have misconfigured your wallet, or set a scan start date that is not early enough.</p>
+
+<p>You can change the start date and trigger a rescan using the <strong>Settings</strong> tab.
+Click on <strong>Settings</strong>, then <strong>Advanced</strong> and edit the date in the dialog that appears. Close the dialog and click <strong>Apply</strong>.
+Sparrow will clear the wallet history and rescan from Bitcoin Core from the date provided.</p>
+
+<h4 id="congratulations">Congratulations!</h4>
+
+<p>You have successfully connected Sparrow to your Bitcoin Core node, and setup your wallet. 
+You can now be confident that your wallet is private and you’re ready to send and receive bitcoin.</p>
+
+
+        
+      </section>
+
+      <footer class="page__meta">
+        
+        
+
+
+        
+
+      </footer>
+
+      
+
+      
+    </div>
+
+    
+  </article>
+
+  
+  
+</div>
+
+    </div>
+
+    
+
+    <div id="footer" class="page__footer">
+      <footer>
+        <!-- start custom footer snippets -->
+
+<!-- end custom footer snippets -->
+        <div class="page__footer-follow">
+  <ul class="social-icons">
+    
+
+    
+   
+  </ul>
+</div>
+
+<div class="page__footer-copyright">&copy; 2026 Sparrow Wallet. Sparrow is licensed under the Apache 2 software licence.</div>
+<script type="text/javascript" src="/assets/js/lightbox.js"></script>
+<link rel="stylesheet" href="/assets/css/lightbox.css">
+      </footer>
+    </div>
+
+    
+  <script src="/assets/js/main.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+
+
+
+
+
+
+
+
+
+  </body>
+</html>

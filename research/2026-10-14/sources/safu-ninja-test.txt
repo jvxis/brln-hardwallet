@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+  <!-- Beautiful Jekyll | MIT license | Copyright Dean Attali 2016 -->
+  <head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+
+  <title>SAFU Ninja Review</title>
+
+  <meta name="author" content="Jameson Lopp" />
+
+  
+
+  <link rel="alternate" type="application/rss+xml" title="Metal Bitcoin Seed Storage Reviews - Stress tests and reviews of seed storage devices" href="https://jlopp.github.io/metal-bitcoin-storage-reviews/feed.xml" />
+
+  
+
+  
+
+  
+
+
+  
+    
+      
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.6.0/css/font-awesome.min.css" />
+
+
+    
+  
+
+  
+    
+      <link rel="stylesheet" href="/metal-bitcoin-storage-reviews/css/bootstrap.min.css" />
+    
+      <link rel="stylesheet" href="/metal-bitcoin-storage-reviews/css/bootstrap-social.css" />
+    
+      <link rel="stylesheet" href="/metal-bitcoin-storage-reviews/css/main.css" />
+    
+  
+
+  
+    
+      <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic" />
+    
+      <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" />
+    
+  
+
+  
+
+  
+
+  
+
+    <!-- Facebook OpenGraph tags -->
+  
+
+  
+  <meta property="og:title" content="SAFU Ninja Review" />
+  
+
+   
+  <meta property="og:description" content="This is another unique device because it&apos;s not a commercial product. SAFU Ninja is a &quot;recipe&quot; for building an affordable DIY backup with materials from any hardware store. Why would you want to do this? Privacy, for one - if you have commercial products shipped to your house in your...">
+  
+
+
+  <meta property="og:type" content="website" />
+
+  
+  <meta property="og:url" content="https://jlopp.github.io/metal-bitcoin-storage-reviews/reviews/safu-ninja/" />
+  <link rel="canonical" href="https://jlopp.github.io/metal-bitcoin-storage-reviews/reviews/safu-ninja/" />
+  
+
+  
+
+
+  <!-- Twitter summary cards -->
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:site" content="@" />
+  <meta name="twitter:creator" content="@" />
+
+  
+  <meta name="twitter:title" content="SAFU Ninja Review" />
+  
+
+  
+  <meta name="twitter:description" content="This is another unique device because it&apos;s not a commercial product. SAFU Ninja is a &quot;recipe&quot; for building an affordable DIY backup with materials from any hardware store. Why would you want to do this? Privacy, for one - if you have commercial products shipped to your house in your...">
+  
+
+  
+
+  
+
+  
+
+</head>
+
+
+  <body>
+
+    
+
+  
+    <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button><a class="navbar-brand" href="https://jlopp.github.io/metal-bitcoin-storage-reviews">Metal Bitcoin Seed Storage Reviews</a></div>
+
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right"></ul>
+    </div>
+
+	
+	<div class="avatar-container">
+	  <div class="avatar-img-border">
+	    <a href="https://jlopp.github.io/metal-bitcoin-storage-reviews">
+	      <img class="avatar-img" src="/metal-bitcoin-storage-reviews/img/heat_test.jpeg" />
+		</a>
+	  </div>
+	</div>
+	
+
+  </div>
+</nav>
+
+
+    <!-- TODO this file has become a mess, refactor it -->
+
+
+
+
+
+<header class="header-section ">
+
+<div class="intro-header no-img">
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <div class="page-heading">
+          <h1>SAFU Ninja Review</h1>
+		  
+		  
+		  
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</header>
+
+
+
+
+
+<div class="container" role="main">
+  <div class="row">
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+      <p>This is another unique device because it’s not a commercial product. SAFU Ninja is a “recipe” for building an affordable DIY backup with materials from any hardware store. Why would you want to do this? Privacy, for one - if you have commercial products shipped to your house in your name, that information might be leaked in the future…</p>
+
+<p>SAFU Ninja doesn’t appear to make any claims about its durability. It’s comprised of just 3 simple parts:</p>
+
+<ul>
+	<li>M6 or 1/4" hex Stainless Steel bolt 1-2 inches long</li>
+	<li>M6 or 1/4" Stainless Steel Acorn Cap Nut</li>
+	<li>1/4" x 1" or M6 Stainless Steel Fender Washers</li>
+</ul>
+
+<p><img src="../../img/devices/safu_ninja_new.jpeg" /></p>
+
+<h2 id="setup">Setup</h2>
+
+<p>Due to the shape and size of the washers, it’s a huge pain to stamp letters into them. Also, as is the case with any device composed of loose tiles that could potentially fall out of order, there’s the issue of numbering the tiles. If I were to do this for real, I’d stamp one word per washer side, along with the number of the word.</p>
+
+<p><img src="../../img/devices/safu_ninja_setup.jpeg" /></p>
+
+<h2 id="heat-stress-test">Heat Stress Test</h2>
+
+<p>No data loss.</p>
+
+<p><img src="../../img/devices/safu_ninja_heat.jpeg" /></p>
+
+<h2 id="corrosion-stress-test">Corrosion Stress Test</h2>
+
+<p>No effects.</p>
+
+<p><img src="../../img/devices/safu_ninja_acid.jpeg" /></p>
+
+<h2 id="crush-stress-test">Crush Stress Test</h2>
+
+<p>Performed better than I expected; I thought the bolt would shear off and the tiles would go flying. Clearly that will happen at some point, but it will take more than 20 tons of force to do so. Perhaps it would have performed a bit better if I had a few more washers in there to prevent there being any wiggle room.</p>
+
+<p><img src="../../img/devices/safu_ninja_crush1.jpeg" />
+<br />
+<img src="../../img/devices/safu_ninja_crush2.jpeg" /></p>
+
+<p>While there was no data loss in this test, I’m less confident in devices with tiles that could become loose and thus lost.</p>
+
+	    
+    </div>
+  </div>
+</div>
+
+
+    <footer>
+  <div class="container beautiful-jekyll-footer">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links"><li><a href="/metal-bitcoin-storage-reviews/feed.xml" title="RSS"><span class="fa-stack fa-lg" aria-hidden="true">
+                  <i class="fa fa-circle fa-stack-2x"></i>
+                  <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+                </span>
+                <span class="sr-only">RSS</span>
+              </a>
+            </li><li><a href="https://github.com/jlopp" title="GitHub"><span class="fa-stack fa-lg" aria-hidden="true">
+                  <i class="fa fa-circle fa-stack-2x"></i>
+                  <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                </span>
+                <span class="sr-only">GitHub</span>
+              </a>
+            </li><li><a href="https://twitter.com/lopp" title="Twitter"><span class="fa-stack fa-lg" aria-hidden="true">
+                  <i class="fa fa-circle fa-stack-2x"></i>
+                  <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+                </span>
+                <span class="sr-only">Twitter</span>
+              </a>
+            </li></ul>
+      <p class="copyright text-muted">
+      Jameson Lopp
+      &nbsp;&bull;&nbsp;
+      2025
+
+      
+      &nbsp;&bull;&nbsp;
+      <a href="https://jlopp.github.io/metal-bitcoin-storage-reviews">jlopp.github.io/metal-bitcoin-storage-reviews</a>
+      
+
+      
+      </p>
+          <!-- Please don't remove this, keep my open source work credited :) -->
+    <p class="theme-by text-muted">
+      Theme by
+      <a href="https://deanattali.com/beautiful-jekyll/">beautiful-jekyll</a>
+    </p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+  
+    
+
+
+  
+    <!-- doing something a bit funky here because I want to be careful not to include JQuery twice! -->
+    
+      <script>
+      	if (typeof jQuery == 'undefined') {
+          document.write('<script src="/metal-bitcoin-storage-reviews/js/jquery-1.11.2.min.js"></scr' + 'ipt>');
+      	}
+      </script>
+    
+  
+    <!-- doing something a bit funky here because I want to be careful not to include JQuery twice! -->
+    
+      <script src="/metal-bitcoin-storage-reviews/js/bootstrap.min.js"></script>
+    
+  
+    <!-- doing something a bit funky here because I want to be careful not to include JQuery twice! -->
+    
+      <script src="/metal-bitcoin-storage-reviews/js/main.js"></script>
+    
+  
+
+
+
+
+
+
+  
+  </body>
+</html>

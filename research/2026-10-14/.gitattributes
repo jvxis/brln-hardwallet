@@ -1,0 +1,2 @@
+# Preserve source snapshots byte-for-byte so manifest SHA-256 hashes survive checkout.
+sources/** -text

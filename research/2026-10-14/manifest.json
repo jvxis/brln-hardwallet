@@ -1,0 +1,198 @@
+﻿[
+    {
+        "name":  "bowser-readme",
+        "url":  "https://raw.githubusercontent.com/lnbits/hardware-wallet/1a260517ea3b99f9c52c98b7cde4f7498e7ec789/README.md",
+        "retrieved_at_utc":  "2026-10-14T10:14:02.9728560Z",
+        "sha256":  "63e01ebf6d92ce2b490c5fedfc8f04d548334a868db52db84362ef3b75e5158d",
+        "file":  "sources/bowser-readme.txt"
+    },
+    {
+        "name":  "bowser-restore",
+        "url":  "https://raw.githubusercontent.com/lnbits/hardware-wallet/1a260517ea3b99f9c52c98b7cde4f7498e7ec789/wallet/717_cmd_restore.ino",
+        "retrieved_at_utc":  "2026-10-14T10:14:03.2790509Z",
+        "sha256":  "d69cca0f0a3e69156a6068912f263cb956bb8975a600e74091598abae1412191",
+        "file":  "sources/bowser-restore.txt"
+    },
+    {
+        "name":  "bowser-sd-commands",
+        "url":  "https://raw.githubusercontent.com/lnbits/hardware-wallet/v0.8.3/examples/sd-card/commands.in.txt",
+        "retrieved_at_utc":  "2026-10-14T10:14:03.3292020Z",
+        "sha256":  "69b692e665d5b396c503c17fa10c5ee4a9fc89baa2abea32167a3fb095fa6932",
+        "file":  "sources/bowser-sd-commands.txt"
+    },
+    {
+        "name":  "seedsigner-readme",
+        "url":  "https://raw.githubusercontent.com/SeedSigner/seedsigner/b2199c68b475eab0035b863b156f149757a1b4a6/README.md",
+        "retrieved_at_utc":  "2026-10-14T10:14:03.6685292Z",
+        "sha256":  "4943f676edccb64950a248f12745a08a69f04f44456829dc1cd4b56f43c27e94",
+        "file":  "sources/seedsigner-readme.txt"
+    },
+    {
+        "name":  "seedsigner-issue-973",
+        "url":  "https://api.github.com/repos/SeedSigner/seedsigner/issues/973",
+        "retrieved_at_utc":  "2026-10-14T10:14:05.0038070Z",
+        "sha256":  "b3a63d84f88876c4d32ffb7ccf0060aafb577f870b89cfe1eeadcb0921ef3dda",
+        "file":  "sources/seedsigner-issue-973.txt"
+    },
+    {
+        "name":  "seedsigner-issue-973-comments",
+        "url":  "https://api.github.com/repos/SeedSigner/seedsigner/issues/973/comments",
+        "retrieved_at_utc":  "2026-10-14T10:14:05.3333633Z",
+        "sha256":  "9e34d1e77e1e94e355ab80ec907557bb5115cb3afabf4ee8e2e0753579c25bf6",
+        "file":  "sources/seedsigner-issue-973-comments.txt"
+    },
+    {
+        "name":  "seedsigner-release-087",
+        "url":  "https://api.github.com/repos/SeedSigner/seedsigner/releases/tags/0.8.7",
+        "retrieved_at_utc":  "2026-10-14T10:14:05.7947289Z",
+        "sha256":  "c36910c90d3a4432a761d9e03ad6928fa1ac8f246f326285bc3a3d91fb7f6d48",
+        "file":  "sources/seedsigner-release-087.txt"
+    },
+    {
+        "name":  "seedsigner-dependencies-087",
+        "url":  "https://raw.githubusercontent.com/SeedSigner/seedsigner/0.8.7/requirements.txt",
+        "retrieved_at_utc":  "2026-10-14T10:14:05.8358905Z",
+        "sha256":  "57e4b9481660b70730b2f12a4725dbb2bc82eb79f447faa411d3659d889de693",
+        "file":  "sources/seedsigner-dependencies-087.txt"
+    },
+    {
+        "name":  "krux-readme",
+        "url":  "https://raw.githubusercontent.com/selfcustody/krux/9b3a4314a205767606b1ad9fbd1da06ad908f38e/README.md",
+        "retrieved_at_utc":  "2026-10-14T10:14:06.0763833Z",
+        "sha256":  "85545ad5e161d6c23687ca74c9b5219278d8f22920033f1ea25891bff114df6e",
+        "file":  "sources/krux-readme.txt"
+    },
+    {
+        "name":  "krux-release-2609",
+        "url":  "https://api.github.com/repos/selfcustody/krux/releases/tags/v26.09.0",
+        "retrieved_at_utc":  "2026-10-14T10:14:06.4481123Z",
+        "sha256":  "1ce4a60bd5d32a587026386ada603532b34ed329af4746a2826a55b261f8c3ba",
+        "file":  "sources/krux-release-2609.txt"
+    },
+    {
+        "name":  "krux-issue-843-comments",
+        "url":  "https://api.github.com/repos/selfcustody/krux/issues/843/comments",
+        "retrieved_at_utc":  "2026-10-14T10:14:06.9375693Z",
+        "sha256":  "daa9f5aa736741fa11981a4aa704277895a73de8e19c009cad54474044f4ddfb",
+        "file":  "sources/krux-issue-843-comments.txt"
+    },
+    {
+        "name":  "krux-parts",
+        "url":  "https://selfcustody.github.io/krux/parts/",
+        "retrieved_at_utc":  "2026-10-14T10:14:07.4785390Z",
+        "sha256":  "5dd6bdc37d7e13e3dbf8e82732888f634b282e98e23bd06e0e3f2bd55b7f1625",
+        "file":  "sources/krux-parts.txt"
+    },
+    {
+        "name":  "jade-diy",
+        "url":  "https://raw.githubusercontent.com/Blockstream/Jade/master/diy/README.md",
+        "retrieved_at_utc":  "2026-10-14T10:14:07.5461921Z",
+        "sha256":  "5b659494d65edcb842296d8bfd9b70a4030a452583d3028517d8ab45de930824",
+        "file":  "sources/jade-diy.txt"
+    },
+    {
+        "name":  "specter-readme",
+        "url":  "https://raw.githubusercontent.com/cryptoadvance/specter-diy/master/README.md",
+        "retrieved_at_utc":  "2026-10-14T10:14:07.5765654Z",
+        "sha256":  "af403d0fff5f4b2a102784a490938c61c425e08a732539fd114b5385f808597d",
+        "file":  "sources/specter-readme.txt"
+    },
+    {
+        "name":  "bip39",
+        "url":  "https://raw.githubusercontent.com/bitcoin/bips/master/bip-0039.mediawiki",
+        "retrieved_at_utc":  "2026-10-14T10:14:08.4287530Z",
+        "sha256":  "afcbcbed36fe9eb734bd607398a8c124683ded2a75c3830e1b16c47b043a9134",
+        "file":  "sources/bip39.txt"
+    },
+    {
+        "name":  "safu-ninja-test",
+        "url":  "https://jlopp.github.io/metal-bitcoin-storage-reviews/reviews/safu-ninja/",
+        "retrieved_at_utc":  "2026-10-14T10:14:08.6965321Z",
+        "sha256":  "d675120a21fb84240bc2475635f81dce3efab8b4a71154571661bc8aefa2c1ea",
+        "file":  "sources/safu-ninja-test.txt"
+    },
+    {
+        "name":  "sparrow-connect-core",
+        "url":  "https://sparrowwallet.com/docs/connect-node.html",
+        "retrieved_at_utc":  "2026-10-14T10:24:17.8571180Z",
+        "sha256":  "9ccefa1216037c7740c717aecc3894e641c7305234900b74d20407dbfd2af263",
+        "file":  "sources/sparrow-connect-core.txt"
+    },
+    {
+        "name":  "lnd-psbt",
+        "url":  "https://docs.lightning.engineering/lightning-network-tools/lnd/psbt.md",
+        "retrieved_at_utc":  "2026-10-14T10:24:18.2077653Z",
+        "sha256":  "cbbbbcdd73aa34863a23802bb647149a464a11c7b6f72164d4ec8b45ef099119",
+        "file":  "sources/lnd-psbt.txt"
+    },
+    {
+        "name":  "lnd-recovery",
+        "url":  "https://raw.githubusercontent.com/lightningnetwork/lnd/master/docs/recovery.md",
+        "retrieved_at_utc":  "2026-10-14T10:24:18.3447406Z",
+        "sha256":  "4345d0ff66112b7cfdd78427dd8a17bd17b3144e1fd3974f889d9bde68103749",
+        "file":  "sources/lnd-recovery.txt"
+    },
+    {
+        "name":  "krux-signing",
+        "url":  "https://selfcustody.github.io/krux/getting-started/usage/setting-a-coordinator-and-signing/",
+        "retrieved_at_utc":  "2026-10-14T10:24:18.9994904Z",
+        "sha256":  "c54ca20cb039a9ecaf8f1a4cc2b415cdb133cef6b83a2971dadf4feeecd331a9",
+        "file":  "sources/krux-signing.txt"
+    },
+    {
+        "name":  "sparrow-smartcards",
+        "url":  "https://sparrowwallet.com/docs/airgapped-wallet-smartcard.html",
+        "retrieved_at_utc":  "2026-10-14T10:29:50.7162861Z",
+        "sha256":  "6a43be2c5aeb62f3dcea452b86dd70f10d7f246b36d12abb12612a771e9e4373",
+        "file":  "sources/sparrow-smartcards.txt"
+    },
+    {
+        "name":  "satochip-applet-readme",
+        "url":  "https://raw.githubusercontent.com/Toporin/SatochipApplet/master/README.md",
+        "retrieved_at_utc":  "2026-10-14T10:29:50.8831850Z",
+        "sha256":  "35888b024004fad9033c2a7a98e812ebff66d7fa5645c93c9c037a1e63ee4560",
+        "file":  "sources/satochip-applet-readme.txt"
+    },
+    {
+        "name":  "satochip-blank-card",
+        "url":  "https://satochip.io/product/card-for-diy-project/",
+        "retrieved_at_utc":  "2026-10-14T10:29:53.5538763Z",
+        "sha256":  "4d04ff5618f4393a798384a848812ae4ac9119b676b43645adf9db17a9f0ef6b",
+        "file":  "sources/satochip-blank-card.txt"
+    },
+    {
+        "name":  "keycard-build",
+        "url":  "https://docs.keycard.tech/en/developers/build",
+        "retrieved_at_utc":  "2026-10-14T10:29:55.3629820Z",
+        "sha256":  "163dd2eb4a4336657ccbd4270f57a06c3cf1be52f787db41e726696c90a67cfa",
+        "file":  "sources/keycard-build.txt"
+    },
+    {
+        "name":  "keycard-getting-started",
+        "url":  "https://docs.keycard.tech/en/developers/getting-started",
+        "retrieved_at_utc":  "2026-10-14T10:29:56.6806149Z",
+        "sha256":  "d4a7e7f3844c1ba7a588fc9309c2e37df5bc5d6cf86eeb920ea3116f50b383f8",
+        "file":  "sources/keycard-getting-started.txt"
+    },
+    {
+        "name":  "specter-shopping",
+        "url":  "https://raw.githubusercontent.com/cryptoadvance/specter-diy/master/docs/shopping.md",
+        "retrieved_at_utc":  "2026-10-14T11:06:15.5819766Z",
+        "sha256":  "a6615e3f92f549e0efcf43ea0289bf49775b63bca0dd4168f85c0152cb17f2e8",
+        "file":  "sources/specter-shopping.txt"
+    },
+    {
+        "name":  "electrum-coldstorage",
+        "url":  "https://electrum.readthedocs.io/en/latest/coldstorage.html",
+        "retrieved_at_utc":  "2026-10-14T11:06:15.8929387Z",
+        "sha256":  "f2cbfc12c3786bf15734a1822ac509c5c3e3ae1763a84aac7a851e3892a65ff1",
+        "file":  "sources/electrum-coldstorage.txt"
+    },
+    {
+        "name":  "espressif-esp32",
+        "url":  "https://www.espressif.com/en/products/socs/esp32",
+        "retrieved_at_utc":  "2026-10-14T11:06:16.4462575Z",
+        "sha256":  "813598c5ac48e064d3a44e26f52b2a0e3b6c2382cf20d4b21359fd0ff02bb18a",
+        "file":  "sources/espressif-esp32.txt"
+    }
+]

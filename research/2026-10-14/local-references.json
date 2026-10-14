@@ -1,0 +1,66 @@
+﻿{
+    "consulted_at_utc":  "2026-10-14T11:54:26.5527009Z",
+    "scope":  "Local source review only; no production verification. File contents are not copied here.",
+    "references":  [
+                       {
+                           "project":  "brln-os-light",
+                           "commit":  "dfd8f3be4019ff86a4f847cc596c0b13a64629a0",
+                           "file":  "README.md",
+                           "sha256":  "25b1c1abffeb8bfc506f90f1fe6e9c38a0a853fbb018cef5b862bd4d2e65f563"
+                       },
+                       {
+                           "project":  "brln-os-light",
+                           "commit":  "dfd8f3be4019ff86a4f847cc596c0b13a64629a0",
+                           "file":  "AGENTS.md",
+                           "sha256":  "51951176feb69bc12442560cefc8c5de8af258758c2360ddf757b623f34d6c46"
+                       },
+                       {
+                           "project":  "brln-os-light",
+                           "commit":  "dfd8f3be4019ff86a4f847cc596c0b13a64629a0",
+                           "file":  "lightningos-light/internal/server/apps_electrs.go",
+                           "sha256":  "54866ddcaa0a6ff5946c4b93c0c40d99f12e6d5afd161c93ed9cb65181a8f761"
+                       },
+                       {
+                           "project":  "brln-os-light",
+                           "commit":  "dfd8f3be4019ff86a4f847cc596c0b13a64629a0",
+                           "file":  "lightningos-light/internal/server/apps_full_index.go",
+                           "sha256":  "11a57676a1f94602c0d3282558466a8215e6308cb51effa2a0dce214f99ce001"
+                       },
+                       {
+                           "project":  "brln-os-light",
+                           "commit":  "dfd8f3be4019ff86a4f847cc596c0b13a64629a0",
+                           "file":  "lightningos-light/internal/appmanifest/electrs.go",
+                           "sha256":  "84f4ad96657e671dc7ac6721ea0411d1c3d01ef53e86c010fa5d1dfd1f35b5af"
+                       },
+                       {
+                           "project":  "brln-os-light",
+                           "commit":  "dfd8f3be4019ff86a4f847cc596c0b13a64629a0",
+                           "file":  "lightningos-light/internal/server/provenance_sources.go",
+                           "sha256":  "3efe2c9c090cf0fed7d35eb95bf5a5ad3791011ccfb418daaf670372f13f4635"
+                       },
+                       {
+                           "project":  "brln-os-light",
+                           "commit":  "dfd8f3be4019ff86a4f847cc596c0b13a64629a0",
+                           "file":  "lightningos-light/ui/src/pages/AppStore.tsx",
+                           "sha256":  "e994fa9f9ca534032f3ea25f6badf0993b6042434a1cfe5f7359c00af54009ec"
+                       },
+                       {
+                           "project":  "brln-community",
+                           "commit":  "c550109dfdf7c2336c4d12e2478c95b328bb813b",
+                           "file":  "README.md",
+                           "sha256":  "806d5be7461781a635c50d887b882c73f4247806c3d3f6f591a3ea3157ede2a0"
+                       },
+                       {
+                           "project":  "brln-community",
+                           "commit":  "c550109dfdf7c2336c4d12e2478c95b328bb813b",
+                           "file":  "web/signer/README.md",
+                           "sha256":  "5638a1021fad0f6028ebbf6c4c72c57e35d4538ef303204240f2e73ceb262873"
+                       },
+                       {
+                           "project":  "brln-community",
+                           "commit":  "c550109dfdf7c2336c4d12e2478c95b328bb813b",
+                           "file":  "docs/LOS_APP_INTEGRATION.md",
+                           "sha256":  "6b0c5ef8b6148269ab2e352ee1445218eeb76ad620224e449617e631f2090f1f"
+                       }
+                   ]
+}

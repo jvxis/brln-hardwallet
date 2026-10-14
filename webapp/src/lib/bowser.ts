@@ -59,6 +59,8 @@ export class BowserDevice implements DeviceAdapter {
   private pending = new Map<string, Pending>()
   private signingTransaction: UnsignedTransaction | null = null
   private closing = false
+  private firstCommandSent = false
+  private startupReady: { resolve: () => void; reject: (error: Error) => void } | null = null
   private events: BowserEvents
   private options: SerialOptions & {
     buttonOnePin?: number
@@ -90,6 +92,7 @@ export class BowserDevice implements DeviceAdapter {
         'WebSerial is unavailable. Use Chrome, Chromium, Brave, or Edge over HTTPS.',
       )
     this.walletConfigured = true
+    this.firstCommandSent = false
     this.port = await navigator.serial.requestPort()
     try {
       this.port.addEventListener('disconnect', () => void this.reset())
@@ -101,7 +104,7 @@ export class BowserDevice implements DeviceAdapter {
       this.reader = this.port.readable.getReader()
       this.writer = this.port.writable.getWriter()
       this.readTask = this.readLoop()
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      await this.prepareSession()
 
       const ping = await this.request('/ping', [location.host], false)
       const [status, deviceId] = ping.split(' ')
@@ -158,11 +161,38 @@ export class BowserDevice implements DeviceAdapter {
     }
   }
 
+  protected async prepareSession() {
+    await new Promise(resolve => setTimeout(resolve, 1000))
+  }
+
+  // The BRLN T-Display has a known DTR/RTS reset circuit. Wait for the real
+  // startup notice instead of guessing how long RNG/storage initialization takes.
+  protected async restartForPairing() {
+    if (!this.port) throw new Error('Serial port unavailable')
+    let timer: ReturnType<typeof setTimeout>
+    const ready = new Promise<void>((resolve, reject) => {
+      this.startupReady = { resolve, reject }
+      timer = setTimeout(() => reject(new Error('A placa não concluiu a inicialização. Confira a tela e os botões.')), 20000)
+    })
+    void ready.catch(() => undefined)
+    try {
+      await this.port.setSignals({ dataTerminalReady: false, requestToSend: true })
+      await new Promise(resolve => setTimeout(resolve, 100))
+      await this.port.setSignals({ dataTerminalReady: false, requestToSend: false })
+      await ready
+    } finally {
+      clearTimeout(timer!)
+      this.startupReady = null
+    }
+  }
+
   async disconnect() {
+    if (this.closing) return
     this.closing = true
     this.rejectPending(new Error('Serial connection closed'))
     try {
-      await this.reader?.cancel()
+      // An errored UART stream rejects cancel(); still release its lock and port.
+      try { await this.reader?.cancel() } catch { /* reader already failed */ }
       this.reader?.releaseLock()
       this.reader = null
       this.writer?.releaseLock()
@@ -176,6 +206,8 @@ export class BowserDevice implements DeviceAdapter {
   }
 
   private reset() {
+    this.startupReady?.reject(new Error('Serial device disconnected during startup'))
+    this.startupReady = null
     this.connected = false
     this.authenticated = false
     this.walletConfigured = true
@@ -205,9 +237,27 @@ export class BowserDevice implements DeviceAdapter {
   private async readLoop() {
     const decoder = new TextDecoder()
     let buffered = ''
+    let startupRecoveries = 0
     try {
       while (this.reader) {
-        const { value, done } = await this.reader.read()
+        let packet: ReadableStreamReadResult<Uint8Array>
+        try {
+          packet = await this.reader.read()
+        } catch (error) {
+          // ESP32 ROM boot output uses a different baud rate. Chromium may
+          // replace the readable stream after a nonfatal framing error.
+          // Recover ONLY before any protocol command, never during wallet work.
+          if (!this.closing && !this.firstCommandSent && !this.connected &&
+              error instanceof DOMException && error.name === 'FramingError' &&
+              startupRecoveries++ < 3 && this.port?.readable) {
+            this.reader.releaseLock()
+            this.reader = this.port.readable.getReader()
+            buffered = ''
+            continue
+          }
+          throw error
+        }
+        const { value, done } = packet
         if (done) break
         buffered += decoder.decode(value, { stream: true })
         const lines = buffered.split('\n')
@@ -218,10 +268,12 @@ export class BowserDevice implements DeviceAdapter {
       if (!this.closing) {
         const message = error instanceof Error ? error.message : String(error)
         this.events.log(`Serial error: ${message}`)
-        this.reset()
+        this.rejectPending(new Error('Serial connection failed'))
       }
     } finally {
-      if (!this.closing && this.reader) this.reset()
+      // Keep ownership until disconnect closes the actual port; resetting first
+      // would discard the handle and make a retry fail with "port already open".
+      if (!this.closing && this.port) void this.disconnect().catch(() => undefined)
     }
   }
 
@@ -245,15 +297,17 @@ export class BowserDevice implements DeviceAdapter {
         return
       }
       if (command === '/password-clear') {
+        this.startupReady?.resolve()
         this.authenticated = false
         this.events.state()
         // Firmware emits this command in plaintext after every reboot. If it
         // was not requested by logout, fail an in-flight operation immediately
         // instead of leaving (for example) /psbt-commit pending for 15 minutes.
-        if (!this.pending.has('/password-clear') && this.pending.size)
-          this.rejectPending(
-            new Error('Bowser Wallet restarted during the operation'),
-          )
+        if (!this.pending.has('/password-clear')) {
+          if (this.pending.size) this.rejectPending(new Error('Bowser Wallet restarted during the operation'))
+          // A reboot also invalidates the ECDH session, even while idle.
+          if (this.connected || this.sharedSecret) void this.disconnect().catch(() => undefined)
+        }
       }
       if (command === '/psbt-review') {
         this.handlePsbtReview(data)
@@ -338,6 +392,7 @@ export class BowserDevice implements DeviceAdapter {
     secure = true,
   ) {
     if (!this.writer) throw new Error('Bowser Wallet is not connected')
+    this.firstCommandSent = true
     const message = [command, ...args].join(' ')
     const line = secure ? this.encrypt(message) : message
     this.events.log(`→ ${command}`)

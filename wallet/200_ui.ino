@@ -74,6 +74,16 @@ void stopThinkingAnimation() {
 }
 
 void logo(int counter) {
+#ifdef BOWSER_BRLN
+  showBootLogo();
+  if (counter > 0) {
+    String status = "Conectar USB: " + String(counter) + "s";
+    tft.fillRect(0, 86, tft.width(), 22, TFT_BLACK);
+    tft.setTextSize(2); tft.setTextColor(TFT_WHITE, TFT_BLACK);
+    tft.setCursor((tft.width() - uiTextPixelWidth(status, 2)) / 2, 91);
+    tft.print(status);
+  }
+#else
   static uint32_t pairingLayoutRevision = UINT32_MAX;
   bool pairing = counter > 0;
   int16_t contentHeight = tft.height();
@@ -132,20 +142,28 @@ void logo(int counter) {
     tft.setCursor(counterX, titleY);
     tft.print(counter);
   }
+#endif
 }
 
 void showBootLogo() {
   beginUiScreen();
 #ifdef BOWSER_BRLN
   // BR⚡LN: the bolt is drawn as geometry; the TFT font has no emoji glyphs.
-  const int size = 4;
-  const int x = (tft.width() - 36 * size) / 2;
-  const int y = 34;
-  tft.setTextSize(size); tft.setTextColor(TFT_WHITE, TFT_BLACK);
-  tft.setCursor(x, y); tft.print("BR  LN");
-  drawBrlnBolt(x + 12 * size, y - 3, 8 * size + 6);
-  tft.setTextSize(1); tft.setCursor(49, 94);
-  tft.print("BITCOIN  |  SOBERANIA");
+  tft.setTextFont(4); tft.setTextSize(2);
+  const int brWidth = tft.textWidth("BR");
+  const int lnWidth = tft.textWidth("LN");
+  const int boltHeight = 48, boltWidth = boltHeight * 2 / 3, gap = 8;
+  const int x = (tft.width() - brWidth - lnWidth - boltWidth - 2 * gap) / 2;
+  const int y = 21;
+  tft.drawRoundRect(14, 13, tft.width() - 28, 67, 9, tft.color565(28, 115, 123));
+  tft.setTextColor(TFT_WHITE, TFT_BLACK);
+  tft.setCursor(x, y); tft.print("BR");
+  drawBrlnBolt(x + brWidth + gap, y + 2, boltHeight);
+  tft.setCursor(x + brWidth + gap + boltWidth + gap, y); tft.print("LN");
+  tft.setTextFont(1); tft.setTextSize(2);
+  const String subtitle = "ASSINADOR BITCOIN";
+  tft.setCursor((tft.width() - uiTextPixelWidth(subtitle, 2)) / 2, 91);
+  tft.print(subtitle);
 #else
   drawBowserLogo((uiContentHeight() - BOWSER_LOGO_HEIGHT) / 2);
 #endif

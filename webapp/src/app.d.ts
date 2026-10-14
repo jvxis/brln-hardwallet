@@ -13,6 +13,7 @@ declare global {
     readable: ReadableStream<Uint8Array> | null
     writable: WritableStream<Uint8Array> | null
     open(options: SerialOptions): Promise<void>
+    setSignals(signals: { dataTerminalReady?: boolean; requestToSend?: boolean; break?: boolean }): Promise<void>
     close(): Promise<void>
   }
 

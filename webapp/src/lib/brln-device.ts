@@ -1,6 +1,9 @@
 import { BowserDevice } from './bowser'
 
 export class BRLNDevice extends BowserDevice {
+  protected override async prepareSession() {
+    await this.restartForPairing()
+  }
   override async connect() {
     await super.connect()
     try {

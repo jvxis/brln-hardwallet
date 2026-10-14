@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -10,7 +11,7 @@ import (
 
 func main() {
 	if len(os.Args) > 1 && os.Args[1] == "-version" {
-		println("brln-hardwallet 0.1.0-dev")
+		fmt.Println("brln-hardwallet 0.1.0-dev")
 		return
 	}
 	if len(os.Args) > 1 && os.Args[1] == "healthcheck" {

@@ -112,8 +112,8 @@
   <h1>Seu node. Sua placa.<br /><span>Suas chaves.</span></h1>
   <p class="intro">O LightningOS consulta a blockchain. A T-Display confere e assina. Seed, senha e passphrase são digitadas somente pelos botões da placa.</p>
   <aside>Protótipo sem auditoria independente e sem validação física concluída. Use uma carteira de laboratório, sem fundos reais. USB não é air gap. Esta aplicação não controla o saldo nem os canais do LND.</aside>
-  <div class="status"><span>Node · {height === null ? 'indisponível' : 'bloco ' + height}</span><span>Electrum · {source==='club' ? 'clube via Tailscale' : source==='local' ? 'meu node' : 'não consultado'}</span><span>Placa · {connected ? unlocked ? 'desbloqueada' : 'bloqueada' : 'desconectada'}</span><span>Bitcoin mainnet · BIP84</span></div>
-  {#if source==='club'}<p>O servidor do clube pode observar e correlacionar suas consultas. As chaves continuam na placa. A escolha do servidor é feita na loja do LOS, sem fallback automático.</p>{/if}
+  <div class="status"><span>Node · {height === null ? 'indisponível' : 'bloco ' + height}</span><span>Electrum · {source==='club' ? 'clube · servidor público' : source==='local' ? 'meu node' : 'não consultado'}</span><span>Placa · {connected ? unlocked ? 'desbloqueada' : 'bloqueada' : 'desconectada'}</span><span>Bitcoin mainnet · BIP84</span></div>
+  {#if source==='club'}<p>O LOS consulta electrum.br-ln.com:50001 pela internet, sem acesso à Tailscale do clube. Essa conexão usa TCP sem TLS: o servidor e intermediários de rede podem observar suas consultas. As chaves continuam na placa. A escolha do servidor é feita na loja do LOS, sem fallback automático.</p>{/if}
   {#if message}<p class:failure role="status" aria-live="polite">{busy ? 'Em andamento · ' : ''}{message}</p>{/if}
   <FirmwareInstaller bind:busy {connected} hasProposal={!!proposal} />
   <section><h2>01 <span>Conectar o assinador</span></h2><p>Com o firmware já instalado, conecte a placa por USB a este computador. Use Chromium, Chrome ou Edge com HTTPS confiável e confira o código de pareamento na tela da placa.</p>

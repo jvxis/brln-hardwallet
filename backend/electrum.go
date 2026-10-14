@@ -46,7 +46,7 @@ func (e Electrum) Call(ctx context.Context, method string, params []any, result 
 		_, block, _ := net.ParseCIDR("100.64.0.0/10")
 		for _, ip := range ips {
 			if !block.Contains(ip.IP) {
-				return errors.New("club endpoint is outside Tailscale")
+				return errors.New("endpoint is outside configured Tailscale transport")
 			}
 		}
 		address = net.JoinHostPort(ips[0].IP.String(), port)
@@ -55,7 +55,7 @@ func (e Electrum) Call(ctx context.Context, method string, params []any, result 
 	var err error
 	if e.Transport == "tls" {
 		conn, err = (&tls.Dialer{Config: &tls.Config{MinVersion: tls.VersionTLS12}}).DialContext(ctx, "tcp", address)
-	} else if e.Transport == "" || e.Transport == "local" || e.Transport == "tailscale" {
+	} else if e.Transport == "" || e.Transport == "local" || e.Transport == "tcp" || e.Transport == "tailscale" {
 		conn, err = (&net.Dialer{}).DialContext(ctx, "tcp", address)
 	} else {
 		return errors.New("unknown Electrum transport")

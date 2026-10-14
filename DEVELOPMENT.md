@@ -55,8 +55,11 @@ usado pela opção Electrs do clube no LOS.
 
 O HTTPS da interface usa a CA local do LOS e uma chave própria do app. Todas
 as rotas passam pela autenticação da sessão LOS. O usuário abre o LOS e o app
-pelo mesmo hostname/IP da tailnet, confia na CA e conecta a placa ao computador
+pelo mesmo hostname/IP da LAN ou VPN, confia na CA e conecta a placa ao computador
 do navegador. A imagem não recebe a chave da CA, credenciais LND ou USB do node.
+Tailscale é opcional. O broker publica a porta 4449 nos IPv4 privados ativos
+do host (LAN/VPN), excluindo loopback e interfaces Docker; não usa bind público
+ou wildcard. O botão Abrir preserva o endereço e a sessão usados no LOS.
 O ciclo completo de instalação, troca de fonte, certificados e autenticação
 ainda precisa de validação em runtime; a PR permanece em rascunho.
 
@@ -144,7 +147,7 @@ https://github.com/espressif/esptool-js/tree/v0.7.0
    primeiros endereços e conta em coordenador independente.
 4. PSBT conhecida: destino completo, todos os outputs, troco, valores e taxa;
    rejeição física e host que altera a proposta; sem fundos reais.
-5. Browser real com HTTPS confiável via Tailscale, sessão expirada e CSRF.
+5. Browser real com HTTPS confiável pela LAN e VPN opcional, sessão expirada e CSRF.
 6. Instalar/parar/iniciar/remover/reinstalar app e Electrs em Linux descartável;
    conferir permissões, ausência de portas públicas, broker e regressões LOS.
 

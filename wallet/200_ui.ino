@@ -68,7 +68,11 @@ void logo(int counter) {
   bool pairing = counter > 0;
   int16_t contentHeight = tft.height();
   int16_t titleY = max(4, contentHeight / 5);
+#ifdef BOWSER_BRLN
+  String title = "BR  LN";
+#else
   String title = "Bowser Wallet";
+#endif
   String fittedTitle = pairing ? title + " 9" : title;
   uint8_t titleSize = uiFittedTextSize(fittedTitle, 3, tft.width() - 8);
 
@@ -79,6 +83,9 @@ void logo(int counter) {
     tft.setTextSize(titleSize);
     tft.setCursor(4, titleY);
     tft.print(title);
+#ifdef BOWSER_BRLN
+    drawBrlnBolt(4 + 12 * titleSize, titleY, 8 * titleSize);
+#endif
 
     String subTitle = pairing ? "Open for pairing" : "libwally powered signer";
     tft.setTextSize(uiFittedTextSize(
@@ -115,8 +122,30 @@ void logo(int counter) {
 
 void showBootLogo() {
   beginUiScreen();
+#ifdef BOWSER_BRLN
+  // BR⚡LN: the bolt is drawn as geometry; the TFT font has no emoji glyphs.
+  const int size = 4;
+  const int x = (tft.width() - 36 * size) / 2;
+  const int y = 34;
+  tft.setTextSize(size); tft.setTextColor(TFT_WHITE, TFT_BLACK);
+  tft.setCursor(x, y); tft.print("BR  LN");
+  drawBrlnBolt(x + 12 * size, y - 3, 8 * size + 6);
+  tft.setTextSize(1); tft.setCursor(49, 94);
+  tft.print("BITCOIN  |  SOBERANIA");
+#else
   drawBowserLogo((uiContentHeight() - BOWSER_LOGO_HEIGHT) / 2);
+#endif
 }
+
+#ifdef BOWSER_BRLN
+void drawBrlnBolt(int x, int y, int height) {
+  const int width = height * 2 / 3;
+  tft.fillTriangle(x + width * 3 / 4, y, x, y + height * 3 / 5,
+                   x + width * 2 / 3, y + height * 3 / 5, TFT_YELLOW);
+  tft.fillTriangle(x + width / 3, y + height * 2 / 5, x + width, y + height * 2 / 5,
+                   x + width / 4, y + height, TFT_YELLOW);
+}
+#endif
 
 void showFirmwareHash(String firmwareHash) {
   beginUiScreen(UiControls::ContinueOnly);

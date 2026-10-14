@@ -20,6 +20,7 @@ type RPC interface {
 type App struct {
 	RPC    RPC
 	Token  string
+	Source string
 	Static http.Handler
 	slots  chan struct{}
 }
@@ -103,7 +104,7 @@ func (a *App) api(ctx context.Context, w http.ResponseWriter, r *http.Request) e
 			if err := a.RPC.Call(ctx, "blockchain.headers.subscribe", []any{}, &tip); err != nil {
 				return err
 			}
-			writeJSON(w, 200, map[string]any{"version": "0.1.0-dev", "protocol": "brln-1", "network": "mainnet", "height": tip.Height, "experimental": true})
+			writeJSON(w, 200, map[string]any{"version": "0.1.0-dev", "protocol": "brln-1", "network": "mainnet", "height": tip.Height, "experimental": true, "electrum_source": a.Source})
 			return nil
 		case "fees":
 			var relay float64

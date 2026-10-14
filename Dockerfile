@@ -1,11 +1,11 @@
-FROM node:24-alpine AS web
+FROM --platform=$BUILDPLATFORM node:24-alpine AS web
 WORKDIR /src/webapp
 COPY webapp/package*.json ./
 RUN npm ci
 COPY webapp/ ./
 RUN npm run check && npm test && npm run build
 
-FROM golang:1.26-alpine AS backend
+FROM --platform=$BUILDPLATFORM golang:1.26-alpine AS backend
 WORKDIR /src/backend
 COPY backend/ ./
 RUN go test ./... && go vet ./...
@@ -16,6 +16,7 @@ RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -ldflags=
 FROM scratch
 COPY --from=backend /out/brln-hardwallet /brln-hardwallet
 COPY --from=web /src/webapp/build /app/web
+COPY --from=backend /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY LICENSE /licenses/Bowser-MIT
 USER 65527:65527
 EXPOSE 8080

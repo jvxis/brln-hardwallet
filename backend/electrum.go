@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -14,8 +15,9 @@ const mainnetGenesis = "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b6
 
 // The destination comes only from operator configuration, never an HTTP request.
 type Electrum struct {
-	Address string
-	Genesis string
+	Address   string
+	Genesis   string
+	Transport string
 }
 type rpcReply struct {
 	ID     int             `json:"id"`
@@ -31,7 +33,33 @@ func (e Electrum) Call(ctx context.Context, method string, params []any, result 
 	}
 	ctx, cancel := context.WithTimeout(ctx, 12*time.Second)
 	defer cancel()
-	conn, err := (&net.Dialer{}).DialContext(ctx, "tcp", e.Address)
+	address := e.Address
+	if e.Transport == "tailscale" {
+		host, port, err := net.SplitHostPort(address)
+		if err != nil {
+			return errors.New("invalid tailnet endpoint")
+		}
+		ips, err := net.DefaultResolver.LookupIPAddr(ctx, host)
+		if err != nil || len(ips) == 0 {
+			return errors.New("tailnet endpoint unavailable")
+		}
+		_, block, _ := net.ParseCIDR("100.64.0.0/10")
+		for _, ip := range ips {
+			if !block.Contains(ip.IP) {
+				return errors.New("club endpoint is outside Tailscale")
+			}
+		}
+		address = net.JoinHostPort(ips[0].IP.String(), port)
+	}
+	var conn net.Conn
+	var err error
+	if e.Transport == "tls" {
+		conn, err = (&tls.Dialer{Config: &tls.Config{MinVersion: tls.VersionTLS12}}).DialContext(ctx, "tcp", address)
+	} else if e.Transport == "" || e.Transport == "local" || e.Transport == "tailscale" {
+		conn, err = (&net.Dialer{}).DialContext(ctx, "tcp", address)
+	} else {
+		return errors.New("unknown Electrum transport")
+	}
 	if err != nil {
 		return errors.New("electrum unavailable")
 	}

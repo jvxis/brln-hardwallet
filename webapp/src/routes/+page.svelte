@@ -11,6 +11,7 @@
   let account: WalletAccount | null = null
   let coins: UtxoRecord[] = [], history: Array<{txid:string;height:number}> = []
   let height: number | null = null, scanned = false, address = '', amount = 0, rate = 1
+  let source = ''
   let receive = '', proposal: UnsignedTransaction | null = null
   let signed: ReturnType<typeof finalizePsbt> | null = null
   let broadcastState: 'new' | 'unknown' | 'done' = 'new'
@@ -30,7 +31,8 @@
   }
   function persist(next: WalletAccount) { next = publicAccount(next); saveAccounts([next]); account = next }
   async function refresh() {
-    height = (await api<{height:number}>('status')).height
+    const status = await api<{height:number;electrum_source:string}>('status')
+    height=status.height; source=status.electrum_source
     if (account) {
       const snapshot = await scanAccount(account)
       persist({...account, receiveIndex:snapshot.receiveIndex, changeIndex:snapshot.changeIndex})
@@ -98,18 +100,19 @@
   }
   onMount(() => {
     try { const saved = loadAccounts()[0]; if (saved) account=publicAccount(saved) } catch { message='Configuração local inválida. Importe novamente a conta pública.'; failure=true }
-    void run(async () => { height=(await api<{height:number}>('status')).height })
+    void run(async () => { const status=await api<{height:number;electrum_source:string}>('status');height=status.height;source=status.electrum_source })
     return () => { void device.disconnect() }
   })
 </script>
 
 <svelte:head><title>BRLN · Carteira soberana</title><meta name="description" content="Coordenador Bitcoin local com assinador ESP32 e LightningOS" /></svelte:head>
 <main>
-  <header><div class="brand">BR<span>LN</span> <small>BITCOIN · LIGHTNINGOS</small></div><span class="badge">PILOTO EXPERIMENTAL</span></header>
+  <header><div class="brand">BR<span>⚡</span>LN <small>BITCOIN · LIGHTNINGOS</small></div><span class="badge">PILOTO EXPERIMENTAL</span></header>
   <h1>Seu node. Sua placa.<br /><span>Suas chaves.</span></h1>
   <p class="intro">O LightningOS consulta a blockchain. A T-Display confere e assina. Seed, senha e passphrase são digitadas somente pelos botões da placa.</p>
   <aside>Protótipo sem auditoria independente e sem validação física concluída. Use uma carteira de laboratório, sem fundos reais. USB não é air gap. Esta aplicação não controla o saldo nem os canais do LND.</aside>
-  <div class="status"><span>Node · {height === null ? 'indisponível' : 'bloco ' + height}</span><span>Placa · {connected ? unlocked ? 'desbloqueada' : 'bloqueada' : 'desconectada'}</span><span>Bitcoin mainnet · BIP84</span></div>
+  <div class="status"><span>Node · {height === null ? 'indisponível' : 'bloco ' + height}</span><span>Electrum · {source==='club' ? 'clube via Tailscale' : source==='local' ? 'meu node' : 'não consultado'}</span><span>Placa · {connected ? unlocked ? 'desbloqueada' : 'bloqueada' : 'desconectada'}</span><span>Bitcoin mainnet · BIP84</span></div>
+  {#if source==='club'}<p>O servidor do clube pode observar e correlacionar suas consultas. As chaves continuam na placa. A escolha do servidor é feita na loja do LOS, sem fallback automático.</p>{/if}
   {#if message}<p class:failure role="status" aria-live="polite">{busy ? 'Em andamento · ' : ''}{message}</p>{/if}
   <section><h2>01 <span>Conectar o assinador</span></h2><p>Conecte a placa por USB a este computador. Use Chromium, Chrome ou Edge com HTTPS confiável e confira o código de pareamento na tela da placa.</p>
     <div class="buttons"><button disabled={busy || connected} on:click={() => run(() => device.connect())}>Conectar por USB</button><button class="secondary" disabled={busy || !connected} on:click={() => run(() => device.disconnect())}>Desconectar</button></div>

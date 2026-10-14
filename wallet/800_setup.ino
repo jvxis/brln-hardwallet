@@ -32,7 +32,15 @@ void setup() {
     while (true) delay(1000);
   }
   clearSensitiveBytes(secpRandomizer, sizeof(secpRandomizer));
+#ifdef BOWSER_BRLN
+  // Never erase a member's encrypted wallet as a response to a mount error.
+  if (!FlashFS.begin(false)) {
+    showMessage("Storage unavailable", "Do not erase backup");
+    while (true) delay(1000);
+  }
+#else
   FlashFS.begin(FORMAT_ON_FAIL);
+#endif
   setupInputHardware();
 
   logInfo("HWW: waiting for commands");

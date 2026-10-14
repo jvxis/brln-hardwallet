@@ -37,7 +37,14 @@ func main() {
 	if static == "" {
 		static = "/app/web"
 	}
-	app := NewApp(Electrum{Address: address}, strings.TrimSpace(string(token)), http.FileServer(http.Dir(static)))
+	app := NewApp(Electrum{Address: address, Transport: os.Getenv("BRLN_ELECTRUM_TRANSPORT")}, strings.TrimSpace(string(token)), http.FileServer(http.Dir(static)))
+	app.Source = os.Getenv("BRLN_ELECTRUM_SOURCE")
+	if app.Source == "" {
+		app.Source = "local"
+	}
+	if app.Source != "local" && app.Source != "club" {
+		log.Fatal("invalid Electrum source")
+	}
 	server := &http.Server{Addr: ":8080", Handler: app, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second, WriteTimeout: 40 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 16 << 10}
 	log.Print("BRLN Hardwallet experimental backend listening on :8080")
 	log.Fatal(server.ListenAndServe())

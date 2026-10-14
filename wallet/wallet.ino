@@ -24,8 +24,12 @@
 #include <ArduinoJson.h>
 #include <libwally.h>
 #include "qrcoded.h"
+#ifndef BOWSER_BRLN
 #include "bowser_logo.h"
 #include "thinking_animation.h"
+#else
+const uint8_t THINKING_FRAME_COUNT = 3;
+#endif
 extern "C" {
 #include <secp256k1.h>
 #include <secp256k1_ecdh.h>

@@ -8,6 +8,15 @@ uint8_t thinkingFrameIndex = 0;
 uint32_t thinkingFrameChangedAt = 0;
 
 void drawThinkingFrame(uint8_t frameIndex) {
+#ifdef BOWSER_BRLN
+  // The BRLN profile never renders the upstream mascot, including idle frames.
+  if (frameIndex == 0) showBootLogo();
+  const int16_t y = uiContentHeight() - 12;
+  for (uint8_t i = 0; i < THINKING_FRAME_COUNT; i++) {
+    tft.fillCircle(tft.width() / 2 + (int16_t(i) - 1) * 12, y, 2,
+                   i == frameIndex ? TFT_YELLOW : TFT_DARKGREY);
+  }
+#else
   int16_t frameSize = min(
     int16_t(THINKING_FRAME_WIDTH),
     min(tft.width(), uiContentHeight())
@@ -39,6 +48,7 @@ void drawThinkingFrame(uint8_t frameIndex) {
     }
   }
   tft.setSwapBytes(previousSwapBytes);
+#endif
 }
 
 void startThinkingAnimation() {
@@ -79,7 +89,11 @@ void logo(int counter) {
   bool redrawLayout = !pairing || pairingLayoutRevision != uiScreenRevision();
   if (redrawLayout) {
     beginUiScreen();
+#ifdef BOWSER_BRLN
+    tft.setTextColor(TFT_WHITE, TFT_BLACK);
+#else
     tft.setTextColor(TFT_GREEN, TFT_BLACK);
+#endif
     tft.setTextSize(titleSize);
     tft.setCursor(4, titleY);
     tft.print(title);
@@ -191,6 +205,7 @@ void showFirmwareHash(String firmwareHash) {
   }
 }
 
+#ifndef BOWSER_BRLN
 void drawBowserLogo(int y) {
   int x = (tft.width() - BOWSER_LOGO_WIDTH) / 2;
   bool previousSwapBytes = tft.getSwapBytes();
@@ -204,6 +219,7 @@ void drawBowserLogo(int y) {
   );
   tft.setSwapBytes(previousSwapBytes);
 }
+#endif
 
 void drawMessageContent(String message, String additional) {
   int16_t contentHeight = uiContentHeight();

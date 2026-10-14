@@ -1,4 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="14" fill="#0dbb2b"/>
-  <path fill="#fff" d="M17 20h8v-5h14v5h8v8h5v19h-8v5H20v-5h-8V28h5zm8 3h14v5h5v11h-5v5H25v-5h-5V28h5zm2 7v7h4v-7zm10 0v7h4v-7z"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="BRLN">
+  <rect width="64" height="64" rx="12" fill="#071821"/>
+  <rect x="3" y="3" width="58" height="58" rx="10" fill="none" stroke="#1c737b" stroke-width="2"/>
+  <path fill="#f5b942" d="M36 10 25 34h8l-5 20 14-28h-9z"/>
+  <g fill="#eef6f8" font-family="Arial,sans-serif" font-size="15" font-weight="700">
+    <text x="5" y="38">BR</text><text x="40" y="38">LN</text>
+  </g>
 </svg>

@@ -42,8 +42,7 @@ A integração está na [PR LOS #260](https://github.com/jvxis/brln-os-light/pul
 com destino a `agent/0.5.45-release`. A loja oferece duas escolhas explícitas:
 Electrs local (`BRLN_ELECTRUM_SOURCE=local`, transporte `tcp` na rede Docker)
 ou Electrs do clube (`BRLN_ELECTRUM_SOURCE=club`, transporte `tcp`) em
-`electrum.br-ln.com:50001`, acessível pela internet. Os membros não precisam
-participar de uma tailnet do clube. O destino é fixado no catálogo do LOS,
+`electrum.br-ln.com:50001`, acessível pela internet. O destino é fixado no catálogo do LOS,
 nunca recebido em uma requisição HTTP, e não existe fallback entre servidores.
 Esse endpoint público usa TCP sem TLS; o clube e intermediários de rede podem
 observar as consultas. O HTTPS da interface não criptografa essa outra conexão.

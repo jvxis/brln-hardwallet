@@ -39,6 +39,24 @@ describe('browser firmware boundary', () => {
     expect(loader.detectChip).toHaveBeenCalledWith('default_reset', 3)
     expect(loader.writeFlash).not.toHaveBeenCalled()
   })
+  it('supports the original 16 MB T-Display without expanding or rewriting the 4 MB image', async () => {
+    const bundle = fixture(), loader = fakeLoader(bundle)
+    loader.detectFlashSize.mockResolvedValue('16MB')
+    await expect(identifyBoard(loader)).resolves.toBe('16MB')
+    expect(loader.writeFlash).not.toHaveBeenCalled()
+    await writeFirmware(loader, bundle, vi.fn())
+    expect(loader.writeFlash).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({
+      flashSize: 'keep', eraseAll: false,
+      fileArray: bundle.manifest.parts.map((part, i) => ({ address: part.offset, data: bundle.binaries[i] })),
+    }))
+    expect(loader.flashMd5sum).toHaveBeenCalledTimes(4)
+  })
+  it.each(['2MB', '8MB', '32MB', undefined])('rejects unsupported capacity %s before writing', async size => {
+    const loader = fakeLoader(); loader.detectFlashSize.mockResolvedValue(size)
+    await expect(identifyBoard(loader)).rejects.toThrow()
+    await expect(writeFirmware(loader, fixture(), vi.fn())).rejects.toThrow()
+    expect(loader.writeFlash).not.toHaveBeenCalled()
+  })
   it('rejects remote paths, writable wallet addresses, overlaps and oversized parts', () => {
     for (const patch of [{path: 'https://attacker.invalid/firmware.bin'}, {path: '../firmware.bin'},
       {offset: 0x290000}, {offset: 0x8000}, {size: 0x140004}, {size: 3}]) {

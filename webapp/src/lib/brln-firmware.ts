@@ -82,18 +82,26 @@ export interface FirmwareLoader {
   after(mode: 'hard_reset'): Promise<void>
 }
 
-export async function identifyBoard(loader: FirmwareLoader): Promise<void> {
+// Both original T-Display capacities use the SAME pinned 4 MB image/layout.
+// Never enlarge partitions or rewrite image headers based on detected capacity.
+function supportedFlash(size: string | undefined): size is '4MB' | '16MB' {
+  return size === '4MB' || size === '16MB'
+}
+
+export async function identifyBoard(loader: FirmwareLoader): Promise<'4MB' | '16MB'> {
   await loader.detectChip('default_reset', 3)
   if (loader.chip.CHIP_NAME !== 'ESP32' || loader.secureDownloadMode)
     throw new Error('Chip incompatível. Use somente a T-Display original ESP32, não S3 ou C3.')
   await loader.runStub() // RAM only: no erase or flash write during identification.
-  if (await loader.detectFlashSize() !== '4MB') throw new Error('Esta versão exige a T-Display original com flash de 4 MB.')
+  const size = await loader.detectFlashSize()
+  if (!supportedFlash(size)) throw new Error('Esta versão exige a T-Display original com flash de 4 MB ou 16 MB.')
+  return size
 }
 
 export async function writeFirmware(loader: FirmwareLoader, bundle: FirmwareBundle, progress: (percent: number) => void): Promise<void> {
   if (loader.chip.CHIP_NAME !== 'ESP32' || loader.secureDownloadMode) throw new Error('Chip incompatível.')
   await verifyBundle(bundle) // All bytes checked again before the first destructive operation.
-  if (await loader.detectFlashSize() !== '4MB') throw new Error('Flash incompatível.')
+  if (!supportedFlash(await loader.detectFlashSize())) throw new Error('Flash incompatível.')
   await loader.writeFlash({
     fileArray: bundle.manifest.parts.map((part, index) => ({ address: part.offset, data: bundle.binaries[index] })),
     flashMode: 'keep', flashFreq: 'keep', flashSize: 'keep', eraseAll: false, compress: true,

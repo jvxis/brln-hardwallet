@@ -15,7 +15,7 @@ A seed, a senha e a passphrase são inseridas somente na placa. O navegador mant
 
 O app inclui **Preparar meu LilyGO**: instalação inicial pelo USB do computador,
 com firmware e instalador servidos pelo próprio LOS. Use Chrome/Edge com HTTPS
-confiável, selecione a T-Display original ESP32 de 4 MB sem carteira, confira a
+confiável, selecione a T-Display original ESP32 de 4 MB ou 16 MB sem carteira, confira a
 versão e autorize a gravação. Depois, use **Conectar por USB** para parear o
 assinador e criar ou recuperar a carteira nos botões. Atualizar uma placa com
 carteira ainda não é suportado. A gravação física está pendente de validação.

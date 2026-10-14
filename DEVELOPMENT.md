@@ -102,7 +102,9 @@ python3 tools/package_brln_firmware.py --build build/brln_tdisplay \
 
 O empacotador verifica o digest embutido da aplicação, layout de partições,
 tamanhos e commit; o navegador verifica SHA-256 de todos os arquivos antes da
-gravação. O chip deve ser ESP32 original com flash 4 MB. A identificação carrega
+gravação. O chip deve ser ESP32 original com flash 4 MB ou 16 MB. Ambas as
+variantes usam a mesma imagem e partições nos primeiros 4 MB; a capacidade extra
+não altera os binários nem os endereços de gravação. A identificação carrega
 somente o stub em RAM. Uma segunda ação explícita autoriza gravar bootloader
 `0x1000`, partições `0x8000`, boot_app0 `0xe000` e aplicação `0x10000`.
 Não há `eraseAll`, escrita em NVS/SPIFFS, alteração de eFuses ou tentativa
@@ -121,8 +123,17 @@ leitura de seed ou backup de flash. Uma falha de gravação nunca libera uma
 mensagem de sucesso ou repetição automática. O browser tenta liberar a porta
 também em cancelamento/erro; uma falha pode exigir reconectar o cabo.
 
-Faltam testes físicos: auto-reset/BOOT, gravação, readback, boot BR⚡LN, queda de
-USB, nova tentativa e posterior pareamento/criação/recuperação. Use somente
+Em 2026-10-14, uma T-Display original de laboratório com ESP32-D0WDQ6 e flash
+16 MB recebeu o pacote do commit `01f579604bdf0c93ceaefa3fddcde445548ef522`
+por esptool 4.5.1: auto-reset, gravação e verificação por digest das quatro
+regiões passaram. O ensaio CLI incluiu apagamento total explicitamente
+autorizado pelo proprietário; esse procedimento não faz parte do instalador.
+Capacidades 4 MB e 16 MB são oferecidas pela [LilyGO](https://lilygo.cc/en-us/products/t-display).
+O teste de regressão reproduziu a recusa de 16 MB antes da correção; tamanhos
+não suportados e outros chips continuam bloqueados.
+
+Ainda faltam gravação física pelo navegador, confirmação visual/boot pelos
+botões, queda de USB, nova tentativa e posterior pareamento/criação/recuperação. Use somente
 placas de laboratório sem carteira ou fundos reais. Referência da biblioteca:
 https://github.com/espressif/esptool-js/tree/v0.7.0
 

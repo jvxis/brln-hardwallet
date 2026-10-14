@@ -37,8 +37,8 @@
       transport = serial
       loader = new ESPLoader({ transport: serial, baudrate: 115200, romBaudrate: 115200,
         debugLogging: false, enableTracing: false, terminal: { clean() {}, write() {}, writeLine() {} } })
-      await identifyBoard(loader)
-      phase = 'ready'; message = 'ESP32 com 4 MB identificado. Confira o modelo da placa antes de confirmar a gravação.'
+      const flash = await identifyBoard(loader)
+      phase = 'ready'; message = `ESP32 com ${flash === '16MB' ? '16 MB' : '4 MB'} identificado. Confira o modelo da placa antes de confirmar a gravação.`
     } catch (error) {
       const cancelled = error instanceof DOMException && error.name === 'NotFoundError'
       message = cancelled ? 'Seleção cancelada. Nenhum firmware foi gravado.' : 'Não foi possível preparar esta placa. Confira modelo, cabo e porta; feche outros programas que usam o USB. Veja as orientações abaixo.'
@@ -73,7 +73,7 @@
 <section class="installer" aria-labelledby="firmware-title">
   <h2 id="firmware-title">Preparar meu LilyGO <span>INSTALAÇÃO USB</span></h2>
   <p>Instale o firmware pelo navegador, com a placa conectada a este computador. O próprio LOS fornece todos os arquivos.</p>
-  <p><strong>Placa compatível:</strong> LilyGO T-Display original · ESP32 · tela 1,14″ · dois botões · flash 4 MB. A T-Display S3 não é compatível.</p>
+  <p><strong>Placa compatível:</strong> LilyGO T-Display original · ESP32 · tela 1,14″ · dois botões · flash 4 MB ou 16 MB. A T-Display S3 não é compatível.</p>
   <label>O que você deseja fazer?
     <select bind:value={mode} disabled={busy}>
       <option value="new">Preparar uma placa sem carteira</option>

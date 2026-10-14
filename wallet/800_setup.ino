@@ -33,15 +33,21 @@ void setup() {
   }
   clearSensitiveBytes(secpRandomizer, sizeof(secpRandomizer));
 #ifdef BOWSER_BRLN
-  // Never erase a member's encrypted wallet as a response to a mount error.
+  setupInputHardware();
+  // A blank board needs provisioning. A mount error is indistinguishable from
+  // damage: formatting therefore requires two explicit physical approvals.
   if (!FlashFS.begin(false)) {
-    showMessage("Storage unavailable", "Do not erase backup");
-    while (true) delay(1000);
+    if (!brlnConfirm("Storage unavailable", "Format ERASES wallet") ||
+        !brlnConfirm("Have your backup?", "Confirm ERASE") ||
+        !FlashFS.format() || !FlashFS.begin(false)) {
+      showMessage("Storage unavailable", "Preserve your backup");
+      while (true) delay(1000);
+    }
   }
 #else
   FlashFS.begin(FORMAT_ON_FAIL);
-#endif
   setupInputHardware();
+#endif
 
   logInfo("HWW: waiting for commands");
   // In case of forced reboot, tell the client to logout.

@@ -34,9 +34,12 @@ passed and published the new firmware and multi-architecture app image.
 
 New ESP display hash:
 `60db227bb4d2bcdf1653bae3bf8f77329faa972893867bc8d08ba30390df1064`.
-The attempted lab write stopped before programming because COM5 was unavailable;
-the owner was asked to disconnect the browser while keeping the USB cable.
-Physical inspection and approval of this new build are still pending. Earlier
+After the owner released COM5, the guarded CLI identified the authorized CH9102
+board and original ESP32 with 16 MB flash, then programmed all four c1222a8
+package regions while preserving wallet storage and the fixed 4 MB layout.
+Independent flash readback verified all four binaries. A bounded webcam capture
+confirmed the expected image hash on the physical approval screen. Physical
+button approval and inspection of the updated operational screens remain pending. Earlier
 sections below are historical evidence for the previous firmware.
 
 ## Tested version

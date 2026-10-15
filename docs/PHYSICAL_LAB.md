@@ -2,6 +2,13 @@
 
 ## Explicit wallet modes and LOS menu (2026-10-15)
 
+After the owner released the serial port, the identity-guarded COM5 board was
+updated to `5275570`. ESP32-D0WDQ6/16 MB identity and the unchanged partition
+table were checked before writing. All four package regions passed independent
+flash verification; wallet storage was not erased. Embedded firmware hash:
+`c96e1772d1d228fd989a4c18794df194d74455aeae8633d3826ff0694705476a`.
+Owner approval of this hash and testing both unlock modes remain pending.
+
 Source `5275570` uses protocol `brln-2`. Normal unlock opens the empty BIP39
 passphrase wallet directly after checking the storage password. The separate
 advanced action `/brln-unlock-passphrase` requires a physical warning confirmation

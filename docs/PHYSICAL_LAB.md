@@ -2,6 +2,20 @@
 
 ## Owner-assisted creation and sync follow-up (2026-10-15)
 
+Later owner-assisted checks confirmed successful unlock after the 7f5ed21 update:
+camera observation showed the optional passphrase selection, then `Desbloqueada`.
+The app and signer subsequently displayed the receiving address and the owner
+compared it. The duplicate UI observation was clarified by the owner as a
+capture artifact. No wallet recreation was required.
+
+An additional usability gap remained: password verification during unlock did
+not show progress. The follow-up source now draws `Desbloqueando / Aguarde`
+before verification and labels the subsequent BIP39 passphrase choice as optional.
+The current create flow has no passphrase selection and starts with an empty
+BIP39 passphrase; the password entered/repeated there is the storage password.
+App completion text and signer terminology were clarified. These latest changes
+are not yet flashed/deployed; preserve the owner's currently unlocked session.
+
 The owner approved the 0fa2151 firmware hash, paired the signer, entered and
 repeated a test password, and recorded all 24 words. Camera inspection confirmed
 the final backup acknowledgment followed by completion. Public account export

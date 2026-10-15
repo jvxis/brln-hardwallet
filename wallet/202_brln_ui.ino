@@ -53,7 +53,8 @@ void brlnLines(const String &text, unsigned start, int y, unsigned lines) {
 String brlnLabel(const String &text) {
   if(text=="Wallet password") return "Senha da carteira";
   if(text=="Repeat password") return "Repita a senha";
-  if(text=="Local operation") return "Na sua placa";
+  if(text=="Local operation") return "No assinador";
+  if(text=="BIP39 passphrase") return "Passphrase BIP39";
   if(text=="create") return "Criar carteira?";
   if(text=="restore") return "Recuperar carteira?";
   if(text=="unlock") return "Desbloquear?";
@@ -91,7 +92,7 @@ String brlnLabel(const String &text) {
   if(text=="Please wait") return "Aguarde";
   if(text=="Parsing PSBT...") return "Lendo transacao";
   if(text=="Wallet exists") return "Carteira existente";
-  if(text=="Use another device") return "Use outra placa";
+  if(text=="Use another device") return "Use outro assinador";
   if(text=="12+ chars, no spaces") return "Senha: 12 ou mais caracteres, sem espacos";
   if(text.startsWith("Write word ")) return "Anote " + text.substring(11);
   if(text.startsWith("Word ")) return "Palavra " + text.substring(5);
@@ -128,6 +129,11 @@ void brlnLocalScreen(const String &title,const String &value,const String &hint)
     brlnCentered(brlnLabel(value),57,3);
     tft.setTextColor(TFT_WHITE,BRLN_BACKGROUND);
     brlnCentered(value=="Hardware RNG"?"No dispositivo":"100 lances",87,2);
+  } else if(title=="BIP39 passphrase" && !input && !confirm) {
+    tft.setTextColor(tft.color565(255,204,72),BRLN_BACKGROUND);
+    brlnCentered(brlnLabel(value),59,2);
+    tft.setTextColor(TFT_WHITE,BRLN_BACKGROUND);
+    brlnCentered("Opcional",85,2);
   } else if(input) {
     String shown=value;
     if(shown.endsWith(" chars")) shown="Tamanho: "+shown.substring(0,shown.length()-6);

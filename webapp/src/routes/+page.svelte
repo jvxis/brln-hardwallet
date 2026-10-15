@@ -21,8 +21,8 @@
   let broadcastState: 'new' | 'unknown' | 'done' = 'new'
   const operations = [{id:'unlock',label:'Desbloquear carteira'},{id:'create',label:'Criar carteira'},{id:'restore',label:'Recuperar carteira'},{id:'backup',label:'Conferir backup'}] as const
   const device = new BRLNDevice({
-    confirmPair: async code => window.confirm('Confira o código ' + code + ' na tela da placa. Os códigos são iguais?'),
-    psbtReview: step => { if (step) message = 'Confira o endereço completo, valor, troco e taxa na placa. Aprove pelos botões.' },
+    confirmPair: async code => window.confirm('Confira o código ' + code + ' na tela do dispositivo. Os códigos são iguais?'),
+    psbtReview: step => { if (step) message = 'Confira o endereço completo, valor, troco e taxa no dispositivo. Aprove pelos botões.' },
     log: () => {}, state: () => { connected = device.connected; unlocked = device.authenticated },
   })
   $: balance = coins.reduce((sum, coin) => sum + coin.value, 0)
@@ -57,7 +57,7 @@
   async function sameDevice() {
     if (!account) throw new Error('Importe a conta pública primeiro.')
     const key = await device.getXpub('Mainnet', ACCOUNT_PATH)
-    if (key.xpub !== account.xpub || key.fingerprint.toLowerCase() !== account.fingerprint) throw new Error('A conta não corresponde à carteira ou à passphrase desbloqueada na placa.')
+    if (key.xpub !== account.xpub || key.fingerprint.toLowerCase() !== account.fingerprint) throw new Error('A conta não corresponde à carteira ou à passphrase desbloqueada no dispositivo.')
   }
   async function importDevice() {
     const key = await device.getXpub('Mainnet', ACCOUNT_PATH)
@@ -84,7 +84,7 @@
     const next = deriveAddress(account!, 0, account!.receiveIndex)
     await device.verifyAddress('Mainnet', next.path, next.address)
     persist({...account!, receiveIndex:account!.receiveIndex+1}); receive=next.address
-    message = 'Endereço confirmado na placa. Confira todos os caracteres.'
+    message = 'Endereço exibido no dispositivo. Compare todos os caracteres com o endereço abaixo.'
   }
   async function prepare() {
     if (!account || !scanned) throw new Error('Sincronize a conta primeiro.')
@@ -125,28 +125,29 @@
 <svelte:head><link rel="stylesheet" href="/los-theme/theme.css" /><title>BRLN · Carteira soberana</title><meta name="description" content="Coordenador Bitcoin local com assinador ESP32 e LightningOS" /></svelte:head>
 <main>
   <header><div class="brand"><img src="/brln-logo.png" alt="BRLN" /><div><h1>Hardwallet</h1><small>BITCOIN · LIGHTNINGOS</small></div></div><span class="badge">PILOTO EXPERIMENTAL</span></header>
-  <p class="intro">O LightningOS consulta a blockchain. A T-Display confere e assina. Seed, senha e passphrase são digitadas somente pelos botões da placa.</p>
+  <p class="intro">O LightningOS consulta a blockchain. A T-Display confere e assina. Seed, senha e passphrase são digitadas somente pelos botões do dispositivo.</p>
   <aside>Protótipo sem auditoria independente e sem validação física concluída. Use uma carteira de laboratório, sem fundos reais. USB não é air gap. Esta aplicação não controla o saldo nem os canais do LND.</aside>
-  <div class="status"><span>Node · {height === null ? 'indisponível' : 'bloco ' + height}</span><span>Electrum · {source==='club' ? 'clube · servidor público' : source==='local' ? 'meu node' : 'não consultado'}</span><span>Placa · {connected ? unlocked ? 'desbloqueada' : 'bloqueada' : 'desconectada'}</span><span>Bitcoin mainnet · BIP84</span></div>
-  {#if source==='club'}<p>O LOS consulta o servidor público electrum.br-ln.com:50001 pela internet. Essa conexão usa TCP sem TLS: o servidor e intermediários de rede podem observar suas consultas. As chaves continuam na placa. A escolha do servidor é feita na loja do LOS, sem fallback automático.</p>{/if}
+  <div class="status"><span>Node · {height === null ? 'indisponível' : 'bloco ' + height}</span><span>Electrum · {source==='club' ? 'clube · servidor público' : source==='local' ? 'meu node' : 'não consultado'}</span><span>Dispositivo · {connected ? unlocked ? 'desbloqueada' : 'bloqueada' : 'desconectada'}</span><span>Bitcoin mainnet · BIP84</span></div>
+  {#if source==='club'}<p>O LOS consulta o servidor público electrum.br-ln.com:50001 pela internet. Essa conexão usa TCP sem TLS: o servidor e intermediários de rede podem observar suas consultas. As chaves continuam no dispositivo. A escolha do servidor é feita na loja do LOS, sem fallback automático.</p>{/if}
   <p class:failure role="status" aria-live="polite" hidden={!message}>{busy ? 'Em andamento · ' : ''}{message}</p>
   {#if syncController}<button class="secondary" on:click={() => syncController?.abort()}>Cancelar sincronização</button>{/if}
   <FirmwareInstaller bind:busy {connected} hasProposal={!!proposal} />
-  <section class="section-card"><h2>01 <span>Conectar o assinador</span></h2><p>Com o firmware já instalado, conecte a placa por USB a este computador. Use Chromium, Chrome ou Edge com HTTPS confiável e confira o código de pareamento na tela da placa.</p>
+  <section class="section-card"><h2>01 <span>Conectar o assinador</span></h2><p>Com o firmware já instalado, conecte o dispositivo por USB a este computador. Use Chromium, Chrome ou Edge com HTTPS confiável e confira o código de pareamento na tela do dispositivo.</p>
     <div class="buttons"><button disabled={busy || connected} on:click={() => run(() => device.connect())}>Conectar por USB</button><button class="secondary" disabled={busy || !connected} on:click={() => run(() => device.disconnect())}>Desconectar</button></div>
-    {#if connected}<div class="buttons">{#each operations as operation}<button class="secondary" disabled={busy || (operation.id==='backup' && !unlocked)} on:click={() => run(async () => {message='Continue pelos dois botões da placa.'; await device.local(operation.id)})}>{operation.label}</button>{/each}<button class="secondary" disabled={busy || !unlocked} on:click={() => run(() => device.logout())}>Bloquear</button></div>{/if}
+    {#if connected}<div class="buttons">{#each operations as operation}<button class="secondary" disabled={busy || (operation.id==='backup' && !unlocked)} on:click={() => run(async () => {message='Continue pelos dois botões do dispositivo.'; await device.local(operation.id); message=operation.id==='backup'?'Conferência do backup encerrada no dispositivo.':operation.id==='unlock'?'Carteira desbloqueada. Continue na etapa Conta pública e backup.':'Carteira pronta. Importe a conta pública do assinador.'})}>{operation.label}</button>{/each}<button class="secondary" disabled={busy || !unlocked} on:click={() => run(() => device.logout())}>Bloquear</button></div>{/if}
   </section>
+  <p class="unlock-help">Para desbloquear, digite a senha da carteira no dispositivo e aguarde. Depois escolha se deseja usar uma passphrase BIP39: ela é opcional e diferente da senha. Na criação atual, a carteira inicia sem passphrase.</p>
   <section class="section-card"><h2>02 <span>Conta pública e backup</span></h2><p>A configuração pública permite acompanhar o saldo e recuperar endereços em outro coordenador. Ela revela sua atividade financeira; guarde-a com privacidade. O backup das palavras fica offline, preferencialmente em metal.</p>
-    <div class="buttons"><button disabled={busy || !unlocked || !!proposal} on:click={() => run(importDevice)}>Importar da placa</button><label class="file">Importar configuração pública<input type="file" accept="application/json,.json" disabled={busy || !!proposal} on:change={event => run(() => importConfig(event))} /></label><button class="secondary" disabled={busy || !account} on:click={() => account && download('brln-conta-publica.json',JSON.stringify(publicAccount(account),null,2))}>Exportar configuração</button></div>
+    <div class="buttons"><button disabled={busy || !unlocked || !!proposal} on:click={() => run(importDevice)}>Importar do assinador</button><label class="file">Importar configuração pública<input type="file" accept="application/json,.json" disabled={busy || !!proposal} on:change={event => run(() => importConfig(event))} /></label><button class="secondary" disabled={busy || !account} on:click={() => account && download('brln-conta-publica.json',JSON.stringify(publicAccount(account),null,2))}>Exportar configuração</button></div>
     {#if account}<p class="mono">Fingerprint {account.fingerprint} · {account.accountPath}<br />{account.xpub}</p><p>{balanceLabel}</p><div class="buttons"><button disabled={busy || !!proposal} on:click={() => run(refresh)}>Sincronizar com Electrum selecionado</button><button class="secondary" disabled={busy || !scanned || !unlocked || !!proposal} on:click={() => run(showReceive)}>Conferir endereço para receber</button></div>{#if receive}<p class="mono receive">{receive}</p>{/if}{/if}
   </section>
   <section class="section-card"><h2>03 <span>Preparar, conferir e assinar</span></h2>
     {#if coins.length}<fieldset disabled={busy || !!proposal}><legend>UTXOs · somente confirmados podem ser gastos</legend>{#each coins as coin}<label class="coin"><input type="checkbox" bind:checked={coin.selected} disabled={!coin.status.confirmed} /><span>{coin.value.toLocaleString('pt-BR')} sats <small class="mono">{coin.txid}:{coin.vout}</small></span></label>{/each}</fieldset>{/if}
     <fieldset disabled={busy || !!proposal || !scanned}><label>Endereço de destino<input bind:value={address} autocomplete="off" spellcheck="false" placeholder="bc1…" /></label><div class="fields"><label>Valor em sats<input type="number" bind:value={amount} min="1" step="1" /></label><label>Taxa em sat/vB<input type="number" bind:value={rate} min="1" max="1000" step="0.1" /></label></div><div class="buttons"><button class="secondary" on:click={() => run(async () => {rate=(await api<{sat_per_vbyte:number}>('fees')).sat_per_vbyte})}>Consultar taxa no node</button><button disabled={!selected.length} on:click={() => run(prepare)}>Preparar transação</button></div></fieldset>
-    {#if proposal}<div class="review"><h3>Proposta congelada</h3>{#each proposal.outputs as output}<p><strong>{output.change ? 'Troco' : 'Destino'} · {output.amount.toLocaleString('pt-BR')} sats</strong><br /><span class="mono">{output.address}</span></p>{/each}<p>Taxa: <strong>{proposal.fee} sats</strong> · estimativa {proposal.feeRate.toFixed(2)} sat/vB</p><div class="buttons"><button disabled={busy || !unlocked || !!signed} on:click={() => run(sign)}>Conferir e assinar na placa</button><button class="secondary" disabled={busy || broadcastState==='unknown'} on:click={() => {proposal=null; signed=null; coins=[]; scanned=false; message='Proposta encerrada. Sincronize a conta antes de preparar outra.'}}>Encerrar proposta</button></div></div>{/if}
+    {#if proposal}<div class="review"><h3>Proposta congelada</h3>{#each proposal.outputs as output}<p><strong>{output.change ? 'Troco' : 'Destino'} · {output.amount.toLocaleString('pt-BR')} sats</strong><br /><span class="mono">{output.address}</span></p>{/each}<p>Taxa: <strong>{proposal.fee} sats</strong> · estimativa {proposal.feeRate.toFixed(2)} sat/vB</p><div class="buttons"><button disabled={busy || !unlocked || !!signed} on:click={() => run(sign)}>Conferir e assinar no dispositivo</button><button class="secondary" disabled={busy || broadcastState==='unknown'} on:click={() => {proposal=null; signed=null; coins=[]; scanned=false; message='Proposta encerrada. Sincronize a conta antes de preparar outra.'}}>Encerrar proposta</button></div></div>{/if}
     {#if signed}<div class="review"><h3>Assinatura verificada</h3><p class="mono">{signed.txid}</p><p>Taxa final: {signed.fee} sats · {signed.feeRate.toFixed(2)} sat/vB</p><div class="buttons"><button disabled={busy || broadcastState==='done'} on:click={() => run(broadcast)}>{broadcastState==='unknown' ? 'Consultar resultado no node' : broadcastState==='done' ? 'Transmitida' : 'Transmitir pelo Electrum selecionado'}</button><button class="secondary" on:click={() => signed && download('brln-' + signed.txid + '.hex',signed.hex,'text/plain')}>Exportar transação assinada</button></div></div>{/if}
   </section>
-  <footer>BRLN · Código aberto · Sem custódia do clube<br />O protótipo usa ESP32 da Espressif. A portabilidade do backup é independente desta placa e do LightningOS.</footer>
+  <footer>BRLN · Código aberto · Sem custódia do clube<br />O protótipo usa ESP32 da Espressif. A portabilidade do backup é independente deste dispositivo e do LightningOS.</footer>
 </main>
 
 <style>

@@ -64,6 +64,8 @@ int main(){
   for(unsigned n=0;n<40;n++) assert(brlnPasswordCanFinish(n)==(n>=12 && n<=32));
   assert(!brlnPasswordCharacterAllowed(' '));assert(brlnPasswordCharacterAllowed('a'));
   brlnWorkingScreen("Criando carteira");tft.save("creating");
+  brlnWorkingScreen("Desbloqueando");tft.save("unlocking");
+  brlnLocalScreen("BIP39 passphrase","No passphrase","Choose on device");tft.save("passphrase-choice");
   brlnInfoScreen("Wallet ready","Continue in app");tft.save("ready");
   brlnLocalScreen("Backup recorded?","Keep it offline","A: confirm");tft.save("backup");
   bool help=false;

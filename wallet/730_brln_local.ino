@@ -134,6 +134,7 @@ CommandResponse executeBrlnLocal(String command) {
     if(!brlnText("Wallet password",password,true,32))break;
     if(password.length()<12 || password.indexOf(' ')!=-1) {showMessage("12+ chars, no spaces","");break;}
     if(command=="/brln-unlock") {
+      brlnWorkingScreen("Desbloqueando");
       if(!unlockProtectedWallet(password))break;
       const char *choices[]={"No passphrase","Enter passphrase","Cancel"};
       int choice=brlnChoice("BIP39 passphrase",choices,3);

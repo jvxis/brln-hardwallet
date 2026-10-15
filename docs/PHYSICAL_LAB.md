@@ -4,6 +4,42 @@ Validation date: 2026-10-14. Disposable original ESP32 T-Display, 1.14-inch scre
 two buttons, CH9102 USB bridge and 16 MB physical flash. No wallet, seed or funds.
 The owner explicitly authorized erase/reflash and bounded camera observations.
 
+## Complete device layout follow-up (2026-10-15)
+
+The owner compared the e7cc3bc hash but explicitly did **not** approve it on the
+board: hash digits were readable, while headings and button hints were too small.
+He requested action indicators beside the physical buttons and left the device
+for continued lab work. No physical approvals were simulated.
+
+Source `0fa215122199960ddd771d33ce825a6ac57ea541` uses a shared BRLN layout with
+16-pixel minimum text, 24-pixel selected characters/words, 32-pixel pairing codes,
+Portuguese operation labels, and upper/lower action arrows matching GPIO35/GPIO0
+with USB to the right. Arrows are inset from the bezel after camera inspection.
+Hash digits retain four rows of sixteen; help navigation cannot approve a build,
+and an unavailable hash now fails closed. Transaction addresses are complete,
+physically paginated, with separate amount/fee approval. Public address/xpub and
+long status text are paginated instead of shrinking. See [device UI](DEVICE_UI.md)
+for the fixture preview, control mapping and validation commands.
+
+The native renderer executes production layout code with the same font/logo,
+asserts text bounds/minimum size, exercises printable input characters and maximum
+amounts, and tests cancellation on each address page and hash-help behavior.
+Native Windows compilation, packaging tests and CI firmware tests passed.
+[CI 38722348931](https://github.com/jvxis/brln-hardwallet/actions/runs/38722348931)
+passed firmware and multi-architecture image gates. The exact authorized COM5
+identity was checked before programming. All four final CI binaries were written
+and independently verified against flash without erasing wallet storage. The
+final probe/write/verify reported 40 MHz with no crystal-frequency warning.
+Camera inspection confirmed the full hash, readable action labels and visible
+inset arrows beside the upper/lower buttons. The board remains at this gate.
+
+Latest expected embedded hash:
+`b937c7528759777ef3718b42b21466f0bc1ad23075b8bd258f9a91477dd02c74`.
+
+Physical approval, new-build pairing, password entry, backup/recovery and signing
+still require owner interaction. Native fixture previews do not validate these
+hardware flows. No seed/wallet was created and no funds were used.
+
 ## Pairing layout correction (2026-10-15)
 
 The owner reported the pairing screen still showed the generic left-aligned

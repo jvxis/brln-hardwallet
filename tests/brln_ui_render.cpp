@@ -21,6 +21,7 @@ struct String : std::string {
 #define TFT_WHITE 0xffff
 #include "../wallet/brln_brand.h"
 #include "../wallet/brln_hash_gate.h"
+#include "../wallet/brln_password_entry.h"
 #include "../libraries/TFT_eSPI/Fonts/glcdfont.c"
 struct Display {
   uint16_t pixels[240*135]={}; int x=0,y=0,size=2; uint16_t fg=0xffff,bg=0; bool swap=false;
@@ -60,6 +61,11 @@ int acceptCount=0,rejectAt=-1;
 bool awaitPhysicalReviewApproval(){return acceptCount++!=rejectAt;}
 #include "../wallet/202_brln_ui.ino"
 int main(){
+  for(unsigned n=0;n<40;n++) assert(brlnPasswordCanFinish(n)==(n>=12 && n<=32));
+  assert(!brlnPasswordCharacterAllowed(' '));assert(brlnPasswordCharacterAllowed('a'));
+  brlnWorkingScreen("Criando carteira");tft.save("creating");
+  brlnInfoScreen("Wallet ready","Continue in app");tft.save("ready");
+  brlnLocalScreen("Backup recorded?","Keep it offline","A: confirm");tft.save("backup");
   bool help=false;
   assert(brlnHashKey('#',false,help)==BrlnHashAction::Wait);
   assert(brlnHashKey('*',true,help)==BrlnHashAction::Redraw && help);

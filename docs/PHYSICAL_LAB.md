@@ -1,5 +1,26 @@
 # BRLN T-Display: physical lab validation
 
+## Owner-assisted creation and sync follow-up (2026-10-15)
+
+The owner approved the 0fa2151 firmware hash, paired the signer, entered and
+repeated a test password, and recorded all 24 words. Camera inspection confirmed
+the final backup acknowledgment followed by completion. Public account export
+worked over USB; no seed/password was exported. Creation had no processing
+feedback and the initial password option was misleading. The follow-up adds an
+immediate waiting screen, a clear completion screen, and safe short-password
+handling. These new screens still require validation on the physical device.
+
+The browser's disconnected state does not prevent public account discovery.
+On LOS-TEST2 each address query took approximately 4–6 seconds; the previous
+UI disabled controls silently for the entire 40-address empty-account scan.
+The follow-up shows progress and supports cancellation without committing a
+partial snapshot. Zero is no longer presented as a discovered balance before a
+successful scan. The owner's duplicated screenshot is not yet reproduced in
+the isolated browser; it must not be described as a confirmed fixed defect.
+
+This board now contains a test wallet. Preserve its storage during firmware
+updates; recovery and transaction signing remain unvalidated.
+
 Validation date: 2026-10-14. Disposable original ESP32 T-Display, 1.14-inch screen,
 two buttons, CH9102 USB bridge and 16 MB physical flash. No wallet, seed or funds.
 The owner explicitly authorized erase/reflash and bounded camera observations.

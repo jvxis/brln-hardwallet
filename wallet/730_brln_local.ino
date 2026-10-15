@@ -1,4 +1,5 @@
 #ifdef BOWSER_BRLN
+#include "brln_password_entry.h"
 // Local-only entry uses physical button events. Serial packets cannot select,
 // confirm or cancel these screens. No input or mnemonic is returned to the host.
 void brlnClear(String &value) {
@@ -41,17 +42,23 @@ bool brlnText(const String &title,String &output,bool hide,size_t maximum) {
   brlnClear(output);
   const char alphabet[]="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 !@#$%^&*()-_=+[]{}:;,.?/";
   const int count=sizeof(alphabet)-1;
-  int selected=0;
+  int selected=3; // Start on the actual character 'a', never on DONE.
   armInputForPrompt();unsigned long started=millis();
   while (uint32_t(millis()-started)<15UL*60*1000) {
     String shown=hide?String(output.length())+" chars":output.substring(output.length()>16?output.length()-16:0);
-    String item=selected==0?"DONE":selected==1?"BACK":selected==2?"CANCEL":String(alphabet[selected-3]);
+    String item=selected==0?(hide && !brlnPasswordCanFinish(output.length())?"MINIMO 12":"DONE"):selected==1?"BACK":selected==2?"CANCEL":String(alphabet[selected-3]);
     brlnScreen(title,shown,"Selected: "+item);
     char key=brlnWaitKey();
     if(!key){brlnClear(output);return false;}
-    if (key=='*') selected=(selected+1)%(count+3);
+    if (key=='*') {
+      do { selected=(selected+1)%(count+3); }
+      while(hide && selected>=3 && !brlnPasswordCharacterAllowed(alphabet[selected-3]));
+    }
     if (key=='#') {
-      if (selected==0) return true;
+      if (selected==0) {
+        if(!hide || brlnPasswordCanFinish(output.length())) return true;
+        continue; // Preserve entry and remain on the same prompt.
+      }
       if (selected==1 && output.length()) output.remove(output.length()-1);
       if (selected==2) {brlnClear(output);return false;}
       if (selected>=3 && output.length()<maximum) output+=alphabet[selected-3];
@@ -158,13 +165,15 @@ CommandResponse executeBrlnLocal(String command) {
       if(mnemonic=="" || !mnemonicIsValid(mnemonic))break;
     }
     if(!brlnReview(mnemonic))break;
+    brlnWorkingScreen(command=="/brln-restore"?"Recuperando":"Criando carteira");
     HwwInitData data=initHww(password,mnemonic,"",true);
+    armInputForPrompt(); // Discard held/extra presses during persistence.
     ok=data.success;if(ok){global.passwordVerifier=data.passwordVerifier;global.mnemonic=data.mnemonic;global.authenticated=true;}
     brlnClear(data.mnemonic);
   }while(false);
   brlnClear(password);brlnClear(repeat);brlnClear(mnemonic);brlnClear(passphrase);
   if(!ok){global.authenticated=false;brlnClear(global.mnemonic);brlnClear(global.passphrase);}
   sendCommandOutput(command,ok?"1":"0 cancelled_or_invalid");
-  return {ok?"Operation complete":"Cancelled / invalid","BRLN experimental"};
+  return {ok?(command=="/brln-unlock"?"Wallet unlocked":"Wallet ready"):"Cancelled / invalid",ok?"Continue in app":"BRLN experimental"};
 }
 #endif

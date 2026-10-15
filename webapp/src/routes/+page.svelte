@@ -14,6 +14,8 @@
   let coins: UtxoRecord[] = [], history: Array<{txid:string;height:number}> = []
   let height: number | null = null, scanned = false, address = '', amount = 0, rate = 1
   let source = ''
+  let syncController: AbortController | null = null
+  $: balanceLabel = scanned ? `Saldo descoberto: ${balance.toLocaleString('pt-BR')} sats · ${history.length} transações` : 'Saldo ainda não consultado. Sincronize a conta pública; não é necessário conectar a LilyGO.'
   let receive = '', proposal: UnsignedTransaction | null = null
   let signed: ReturnType<typeof finalizePsbt> | null = null
   let broadcastState: 'new' | 'unknown' | 'done' = 'new'
@@ -33,13 +35,24 @@
   }
   function persist(next: WalletAccount) { next = publicAccount(next); saveAccounts([next]); account = next }
   async function refresh() {
-    const status = await api<{height:number;electrum_source:string}>('status')
+    syncController = new AbortController()
+    try {
+    message = 'Consultando o node. A LilyGO pode permanecer desconectada.'
+    const status = await api<{height:number;electrum_source:string}>('status', undefined, syncController.signal)
     height=status.height; source=status.electrum_source
     if (account) {
-      const snapshot = await scanAccount(account)
+      message = 'Buscando histórico e saldo. Isso pode levar alguns minutos.'
+      const snapshot = await scanAccount(account, (checked, branch) => {
+        message = `Sincronizando: ${checked} endereços consultados · ${branch === 0 ? 'recebimento' : 'troco'}. Aguarde.`
+      }, syncController.signal)
       persist({...account, receiveIndex:snapshot.receiveIndex, changeIndex:snapshot.changeIndex})
       coins = snapshot.utxos; history = snapshot.history; scanned = true; receive = ''
+      message = 'Sincronização concluída. Saldo e histórico atualizados.'
     }
+    } catch (error) {
+      if (syncController.signal.aborted) throw new Error('Sincronização cancelada. Nenhum resultado parcial foi aplicado.')
+      throw error
+    } finally { syncController = null }
   }
   async function sameDevice() {
     if (!account) throw new Error('Importe a conta pública primeiro.')
@@ -116,7 +129,8 @@
   <aside>Protótipo sem auditoria independente e sem validação física concluída. Use uma carteira de laboratório, sem fundos reais. USB não é air gap. Esta aplicação não controla o saldo nem os canais do LND.</aside>
   <div class="status"><span>Node · {height === null ? 'indisponível' : 'bloco ' + height}</span><span>Electrum · {source==='club' ? 'clube · servidor público' : source==='local' ? 'meu node' : 'não consultado'}</span><span>Placa · {connected ? unlocked ? 'desbloqueada' : 'bloqueada' : 'desconectada'}</span><span>Bitcoin mainnet · BIP84</span></div>
   {#if source==='club'}<p>O LOS consulta o servidor público electrum.br-ln.com:50001 pela internet. Essa conexão usa TCP sem TLS: o servidor e intermediários de rede podem observar suas consultas. As chaves continuam na placa. A escolha do servidor é feita na loja do LOS, sem fallback automático.</p>{/if}
-  {#if message}<p class:failure role="status" aria-live="polite">{busy ? 'Em andamento · ' : ''}{message}</p>{/if}
+  <p class:failure role="status" aria-live="polite" hidden={!message}>{busy ? 'Em andamento · ' : ''}{message}</p>
+  {#if syncController}<button class="secondary" on:click={() => syncController?.abort()}>Cancelar sincronização</button>{/if}
   <FirmwareInstaller bind:busy {connected} hasProposal={!!proposal} />
   <section class="section-card"><h2>01 <span>Conectar o assinador</span></h2><p>Com o firmware já instalado, conecte a placa por USB a este computador. Use Chromium, Chrome ou Edge com HTTPS confiável e confira o código de pareamento na tela da placa.</p>
     <div class="buttons"><button disabled={busy || connected} on:click={() => run(() => device.connect())}>Conectar por USB</button><button class="secondary" disabled={busy || !connected} on:click={() => run(() => device.disconnect())}>Desconectar</button></div>
@@ -124,7 +138,7 @@
   </section>
   <section class="section-card"><h2>02 <span>Conta pública e backup</span></h2><p>A configuração pública permite acompanhar o saldo e recuperar endereços em outro coordenador. Ela revela sua atividade financeira; guarde-a com privacidade. O backup das palavras fica offline, preferencialmente em metal.</p>
     <div class="buttons"><button disabled={busy || !unlocked || !!proposal} on:click={() => run(importDevice)}>Importar da placa</button><label class="file">Importar configuração pública<input type="file" accept="application/json,.json" disabled={busy || !!proposal} on:change={event => run(() => importConfig(event))} /></label><button class="secondary" disabled={busy || !account} on:click={() => account && download('brln-conta-publica.json',JSON.stringify(publicAccount(account),null,2))}>Exportar configuração</button></div>
-    {#if account}<p class="mono">Fingerprint {account.fingerprint} · {account.accountPath}<br />{account.xpub}</p><p>Saldo descoberto: <strong>{balance.toLocaleString('pt-BR')} sats</strong> · {history.length} transações</p><div class="buttons"><button disabled={busy || !!proposal} on:click={() => run(refresh)}>Sincronizar com Electrum selecionado</button><button class="secondary" disabled={busy || !scanned || !unlocked || !!proposal} on:click={() => run(showReceive)}>Conferir endereço para receber</button></div>{#if receive}<p class="mono receive">{receive}</p>{/if}{/if}
+    {#if account}<p class="mono">Fingerprint {account.fingerprint} · {account.accountPath}<br />{account.xpub}</p><p>{balanceLabel}</p><div class="buttons"><button disabled={busy || !!proposal} on:click={() => run(refresh)}>Sincronizar com Electrum selecionado</button><button class="secondary" disabled={busy || !scanned || !unlocked || !!proposal} on:click={() => run(showReceive)}>Conferir endereço para receber</button></div>{#if receive}<p class="mono receive">{receive}</p>{/if}{/if}
   </section>
   <section class="section-card"><h2>03 <span>Preparar, conferir e assinar</span></h2>
     {#if coins.length}<fieldset disabled={busy || !!proposal}><legend>UTXOs · somente confirmados podem ser gastos</legend>{#each coins as coin}<label class="coin"><input type="checkbox" bind:checked={coin.selected} disabled={!coin.status.confirmed} /><span>{coin.value.toLocaleString('pt-BR')} sats <small class="mono">{coin.txid}:{coin.vout}</small></span></label>{/each}</fieldset>{/if}

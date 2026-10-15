@@ -63,8 +63,11 @@ String brlnLabel(const String &text) {
   if(text=="CANCEL" || text=="Cancel") return "CANCELAR";
   if(text=="USE WORD") return "USAR";
   if(text==" ") return "ESPACO";
-  if(text=="Backup recorded?") return "Anotou o backup?";
-  if(text=="Keep it offline") return "Guarde fora da rede";
+  if(text=="Backup recorded?") return "Anotou a seed?";
+  if(text=="Keep it offline") return "Mantenha offline";
+  if(text=="Wallet ready") return "Carteira pronta";
+  if(text=="Wallet unlocked") return "Desbloqueada";
+  if(text=="Continue in app") return "Continue no app LOS";
   if(text=="Storage unavailable") return "Preparar memoria";
   if(text=="Format ERASES wallet") return "APAGAR a carteira?";
   if(text=="Have your backup?") return "Tem seu backup?";
@@ -98,7 +101,7 @@ String brlnLabel(const String &text) {
 
 void brlnHashScreen(const String &hash, bool help) {
   bool valid=hash.length()==64;
-  brlnFrame(help?"HASH":"AJUDA",help?"VOLTAR":valid?"CONFIRMAR":"",help?"AJUDA":"SHA256");
+  brlnFrame(help?"":"AJUDA",help?"VOLTAR":valid?"CONFIRMAR":"",help?"AJUDA":"SHA256");
   if(help) {
     brlnLines("Compare os 64",0,32,1);
     brlnLines("digitos com a",0,51,1);
@@ -127,7 +130,7 @@ void brlnLocalScreen(const String &title,const String &value,const String &hint)
     brlnCentered(value=="Hardware RNG"?"No dispositivo":"100 lances",87,2);
   } else if(input) {
     String shown=value;
-    if(shown.endsWith(" chars")) shown=shown.substring(0,shown.length()-6)+" caracteres";
+    if(shown.endsWith(" chars")) shown="Tamanho: "+shown.substring(0,shown.length()-6);
     brlnCentered(shown,54,2);
     String selected=brlnLabel(hint.substring(10));
     tft.setTextColor(tft.color565(255,204,72),BRLN_BACKGROUND);
@@ -138,6 +141,14 @@ void brlnLocalScreen(const String &title,const String &value,const String &hint)
     if(body.length()<=12) brlnCentered(body,65,3);
     else brlnLines(body,0,60,2);
   }
+}
+
+void brlnWorkingScreen(const String &title) {
+  brlnFrame("","","");
+  brlnCentered(title,36,2);
+  tft.setTextColor(tft.color565(255,204,72),BRLN_BACKGROUND);
+  brlnCentered("Aguarde",63,3);
+  brlnCentered("Nao desconecte",91,2);
 }
 
 void brlnPairScreen(const String &code) {
@@ -168,6 +179,15 @@ String brlnWrap(const String &text) {
 }
 
 void brlnInfoScreen(const String &message,const String &additional) {
+  if(message=="Wallet ready" || message=="Wallet unlocked") {
+    brlnInfoPage=0; brlnInfoPages=1;
+    brlnFrame("","","EM TESTE");
+    brlnCentered(brlnLabel(message),38,2);
+    tft.setTextColor(tft.color565(78,224,193),BRLN_BACKGROUND);
+    brlnCentered("Continue no",66,2);
+    brlnCentered("app LOS",87,2);
+    return;
+  }
   String text=brlnLabel(message);
   if(additional.length()) text+=" | "+brlnLabel(additional);
   text=brlnWrap(text);

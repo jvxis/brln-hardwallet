@@ -20,6 +20,12 @@ They describe the action on that screen rather than internal A/B/#/* names.
 - Character/option entry: upper PROXIMO cycles options; lower ESCOLHER selects.
   PRONTO finishes, APAGAR removes a character and CANCELAR abandons entry. The
   password remains hidden; the screen shows its length and MIN 12 requirement.
+  Entry starts on `a`, skips spaces for wallet passwords, and stays in the entry
+  screen if completion is attempted before 12 characters. The size is labeled
+  `Tamanho` to distinguish it from the selected character.
+- After backup acknowledgment, `Criando carteira / Aguarde / Nao desconecte`
+  appears before encryption/storage. Completion explicitly directs the owner
+  back to the LOS app. No additional physical confirmation is required.
 - Pairing: compare the code with the browser. No physical approval is implied.
 - Transaction review: upper cancels on every page. Lower advances every full
   address page, then confirms its separate value screen. Fee and final signing

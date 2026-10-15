@@ -6,12 +6,38 @@ void brlnClear(String &value) {
   value.remove(0);
 }
 
+// Original T-Display: 240 x 135. Operational text never falls back to
+// the 6 x 8 font. The selected input is the primary visual element.
+void brlnCentered(const String &text, int y, uint8_t size) {
+  tft.setTextFont(1); tft.setTextSize(size);
+  int width = text.length() * 6 * size;
+  tft.setCursor(max(6, (tft.width() - width) / 2), y);
+  tft.print(text);
+}
+
 void brlnScreen(const String &title,const String &value,const String &hint) {
-  beginUiScreen(); tft.fillScreen(TFT_BLACK); tft.setTextColor(TFT_WHITE,TFT_BLACK);
-  tft.setTextSize(1);tft.setCursor(4,5);tft.print(title);
-  tft.setTextSize(2);tft.setCursor(4,35);tft.print(value);
-  tft.setTextSize(1);tft.setCursor(4,95);tft.print(hint);
-  tft.setCursor(4,115);tft.print("A: select   B: next");
+  beginUiScreen();
+  tft.setTextFont(1); tft.setTextWrap(false);
+  tft.setTextColor(TFT_WHITE,TFT_BLACK);
+  brlnCentered(title, 5, 2);
+  tft.drawFastHLine(6, 26, tft.width()-12, tft.color565(28,115,123));
+  bool input = hint.startsWith("Selected: ");
+  bool confirm = hint.startsWith("A: confirm");
+  if (input) {
+    // Passwords remain hidden: value contains only the character count.
+    brlnCentered(value, 33, 2);
+    String selected = hint.substring(10);
+    if (selected == " ") selected = "SPACE";
+    tft.setTextColor(TFT_YELLOW,TFT_BLACK);
+    brlnCentered(selected, 61, selected.length() <= 9 ? 4 : 2);
+  } else {
+    uint8_t size = value.length() <= 12 ? 3 : 2;
+    brlnCentered(value, 49, size);
+  }
+  tft.drawFastHLine(6, 106, tft.width()-12, tft.color565(28,115,123));
+  tft.setTextColor(TFT_WHITE,TFT_BLACK);
+  brlnCentered(confirm ? "A:OK  B:CANCEL" : "A:OK  B:NEXT", 114, 2);
+  tft.setTextWrap(true);
 }
 
 int brlnChoice(const String &title,const char *const *items,int count) {
@@ -29,7 +55,6 @@ int brlnChoice(const String &title,const char *const *items,int count) {
 
 bool brlnConfirm(const String &title,const String &detail) {
   brlnScreen(title,detail,"A: confirm   B: cancel");
-  tft.fillRect(0,110,tft.width(),25,TFT_BLACK);
   return awaitPhysicalReviewApproval();
 }
 

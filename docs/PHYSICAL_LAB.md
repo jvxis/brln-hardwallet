@@ -39,7 +39,11 @@ board and original ESP32 with 16 MB flash, then programmed all four c1222a8
 package regions while preserving wallet storage and the fixed 4 MB layout.
 Independent flash readback verified all four binaries. A bounded webcam capture
 confirmed the expected image hash on the physical approval screen. Physical
-button approval and inspection of the updated operational screens remain pending. Earlier
+button approval was subsequently confirmed by the owner. A second bounded
+webcam capture showed the official white BR/LN and orange lightning mark,
+centered on the boot screen, with the larger ASSINADOR BITCOIN subtitle and
+no inherited mascot. Updated operational-screen inspection and wallet flows
+remain pending. Earlier
 sections below are historical evidence for the previous firmware.
 
 ## Tested version

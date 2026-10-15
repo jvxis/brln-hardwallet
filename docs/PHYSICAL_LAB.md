@@ -4,6 +4,25 @@ Validation date: 2026-10-14. Disposable original ESP32 T-Display, 1.14-inch scre
 two buttons, CH9102 USB bridge and 16 MB physical flash. No wallet, seed or funds.
 The owner explicitly authorized erase/reflash and bounded camera observations.
 
+## Pairing layout correction (2026-10-15)
+
+The owner reported the pairing screen still showed the generic left-aligned
+Confirm / Code layout. Camera inspection reproduced this on c1222a8.
+Commit `e7cc3bc8f07594a10f9a100a0e25a6d3eae0bf32` adds a dedicated BRLN
+pairing screen with the official mark, centered 32-pixel code and browser
+comparison guidance. Pairing protocol and confirmation behavior are unchanged.
+Native compilation and CI firmware policy/cryptography/build/package gates passed.
+After the owner released COM5, the exact USB identity and 16 MB original ESP32
+were checked; all four CI binaries were programmed and independently read back
+successfully, preserving wallet storage. esptool reported a 41.01 MHz crystal
+estimate during write/verify (normalized to 40 MHz); the initial probe reported
+40 MHz without warning. No write or readback error occurred.
+The camera showed the expected embedded hash:
+`034079e16477fc80e0db13d60e6231435c4c2078207fae35c3b724cf142ee838`.
+Physical hash approval and the new pairing screen inspection remain pending.
+LOS-TEST2 still runs the c1222a8 app/installer image; this lab flash used the
+new CI artifact directly.
+
 ## Readability and identity follow-up (2026-10-15)
 
 The owner physically approved the prior firmware hash, compared pairing code

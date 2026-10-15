@@ -17,7 +17,7 @@
   let receive = '', proposal: UnsignedTransaction | null = null
   let signed: ReturnType<typeof finalizePsbt> | null = null
   let broadcastState: 'new' | 'unknown' | 'done' = 'new'
-  const operations = [{id:'unlock',label:'Desbloquear na placa'},{id:'create',label:'Criar na placa'},{id:'restore',label:'Recuperar na placa'},{id:'backup',label:'Conferir backup'}] as const
+  const operations = [{id:'unlock',label:'Desbloquear carteira'},{id:'create',label:'Criar carteira'},{id:'restore',label:'Recuperar carteira'},{id:'backup',label:'Conferir backup'}] as const
   const device = new BRLNDevice({
     confirmPair: async code => window.confirm('Confira o código ' + code + ' na tela da placa. Os códigos são iguais?'),
     psbtReview: step => { if (step) message = 'Confira o endereço completo, valor, troco e taxa na placa. Aprove pelos botões.' },

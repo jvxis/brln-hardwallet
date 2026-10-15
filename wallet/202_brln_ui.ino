@@ -69,10 +69,10 @@ String brlnLabel(const String &text) {
   if(text=="Format ERASES wallet") return "APAGAR a carteira?";
   if(text=="Have your backup?") return "Tem seu backup?";
   if(text=="Confirm ERASE") return "APAGAR tudo?";
-  if(text=="Create BIP39") return "Gerar as palavras";
+  if(text=="Create BIP39") return "Gerar seed";
   if(text=="Restore BIP39") return "Recuperar backup";
-  if(text=="Hardware RNG") return "Aleatorio da placa";
-  if(text=="100 dice rolls") return "100 lances de dado";
+  if(text=="Hardware RNG") return "Automatica";
+  if(text=="100 dice rolls") return "Com dados";
   if(text=="12 words") return "12 palavras";
   if(text=="24 words") return "24 palavras";
   if(text=="No passphrase") return "Sem passphrase";
@@ -120,7 +120,12 @@ void brlnLocalScreen(const String &title,const String &value,const String &hint)
   brlnFrame(confirm?"CANCELAR":"PROXIMO",input?"ESCOLHER":confirm?"CONFIRMAR":"ESCOLHER",
     input && (title=="Wallet password" || title=="Repeat password")?"MIN 12":"");
   brlnCentered(heading,32,2);
-  if(input) {
+  if(title=="Create BIP39" && (value=="Hardware RNG" || value=="100 dice rolls")) {
+    tft.setTextColor(tft.color565(255,204,72),BRLN_BACKGROUND);
+    brlnCentered(brlnLabel(value),57,3);
+    tft.setTextColor(TFT_WHITE,BRLN_BACKGROUND);
+    brlnCentered(value=="Hardware RNG"?"No dispositivo":"100 lances",87,2);
+  } else if(input) {
     String shown=value;
     if(shown.endsWith(" chars")) shown=shown.substring(0,shown.length()-6)+" caracteres";
     brlnCentered(shown,54,2);

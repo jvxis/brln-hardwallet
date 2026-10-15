@@ -77,6 +77,7 @@ int main(){
   brlnLocalScreen("Word 24/24","aban_","Selected: USE WORD");tft.save("restore");
   brlnLocalScreen("Write word 24/24","abandon","A: confirm");tft.save("word");
   brlnLocalScreen("Storage unavailable","Format ERASES wallet","A: confirm");tft.save("erase");
+  brlnLocalScreen("Create BIP39","Hardware RNG","Choose on device");tft.save("entropy-auto");
   brlnLocalScreen("Create BIP39","100 dice rolls","Choose on device");tft.save("entropy");
   brlnLocalScreen("Confirm signing","Outputs and fee reviewed","A: confirm");tft.save("sign");
   const char *choices[]={"Hardware RNG","100 dice rolls","No passphrase","Enter passphrase","12 words","24 words","Cancel"};

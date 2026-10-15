@@ -1,5 +1,33 @@
 # BRLN T-Display: physical lab validation
 
+## Explicit wallet modes and LOS menu (2026-10-15)
+
+Source `5275570` uses protocol `brln-2`. Normal unlock opens the empty BIP39
+passphrase wallet directly after checking the storage password. The separate
+advanced action `/brln-unlock-passphrase` requires a physical warning confirmation
+and a nonempty passphrase entered on the signer. Neither command accepts host
+arguments. Existing encrypted wallet storage and backup words are unchanged.
+Old firmware is refused explicitly rather than silently retaining the former
+unlock semantics. Physical validation of both new unlock paths is still pending.
+
+The coordinator has Receive, Send and History views. QR/copy are offered only
+after the user acknowledges comparing the full device address. History shows
+only known transaction IDs and confirmation blocks, not inferred amounts. Public
+account management is collapsible; no account is silently replaced on switching
+wallets. Pairing/account confirmations use an in-page dialog for embedded use.
+
+LOS integration preserves the coordinator origin/public-account storage inside
+the authenticated Manager menu. Authenticated content permits framing only by
+the same host on HTTPS port 8443; other ancestors and unauthenticated framing are
+denied. The LOS frame delegates Serial only to the exact coordinator origin.
+This remains a container app managed through the privilege broker.
+
+Validation: 97 web unit tests, Svelte check/build, backend tests/vet, native
+command policy and renderer bounds, browser discovery/cancellation/expiry and
+Receive/Send/History navigation passed. CI run 38773587874 compiled ESP32 and
+published amd64/arm64 images; anonymous OCI digests and four firmware artifacts
+were verified. USB picker/flashing within the menu still needs physical testing.
+
 ## Owner-assisted creation and sync follow-up (2026-10-15)
 
 Later owner-assisted checks confirmed successful unlock after the 7f5ed21 update:

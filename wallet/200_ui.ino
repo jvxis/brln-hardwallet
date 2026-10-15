@@ -247,6 +247,33 @@ void drawMessageContent(String message, String additional) {
 
 void showMessage(String message, String additional) {
   beginUiScreen();
+#ifdef BOWSER_BRLN
+  // Pairing is confirmed in the browser after comparing both displays.
+  // Do not show physical-button controls on this informational screen.
+  if (message == "Confirm" && additional.startsWith("Code: ") &&
+      additional.length() == 11) {
+    tft.fillScreen(BRLN_BACKGROUND);
+    tft.setTextFont(1);
+    tft.setTextWrap(false);
+    bool swap = tft.getSwapBytes();
+    tft.setSwapBytes(true);
+    tft.pushImage(8, 7, BRLN_MARK_WIDTH, BRLN_MARK_HEIGHT, BRLN_MARK_PIXELS);
+    tft.setSwapBytes(swap);
+    tft.setTextColor(TFT_WHITE, BRLN_BACKGROUND);
+    tft.setTextSize(2);
+    tft.setCursor(72, 10);
+    tft.print("PAREAMENTO");
+    tft.drawFastHLine(8, 34, tft.width()-16, tft.color565(78,224,193));
+    tft.setTextColor(tft.color565(255,204,72), BRLN_BACKGROUND);
+    brlnCentered(additional.substring(6), 49, 4);
+    tft.setTextColor(TFT_WHITE, BRLN_BACKGROUND);
+    brlnCentered("Compare no", 94, 2);
+    brlnCentered("navegador", 113, 2);
+    tft.setTextSize(2);
+    tft.setTextWrap(true);
+    return;
+  }
+#endif
   drawMessageContent(message, additional);
 }
 

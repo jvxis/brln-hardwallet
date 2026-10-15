@@ -22,6 +22,11 @@ void listenForCommands() {
   }
   stopThinkingAnimation();
 
+#ifdef BOWSER_BRLN
+  if(event.type==EVENT_BUTTON_ACTION && event.data=="cancel" && brlnInfoPages>1) {
+    brlnInfoPage=(brlnInfoPage+1)%brlnInfoPages;
+  }
+#endif
   if (isNotCommandEvent(event.type)) return;
 
   String data = event.data;
@@ -32,6 +37,9 @@ void listenForCommands() {
   }
   // Do not remove this log line. Flushes stale data from buffer.
   logInfo("received command: " + c.cmd);
+#ifdef BOWSER_BRLN
+  brlnInfoPage=0; brlnInfoPages=1;
+#endif
   cmdRes = executeCommand(c);
 
   delay(DELAY_MS);
@@ -178,6 +186,24 @@ Command decryptAndExtractCommand(const String &ecryptedData) {
 }
 
 EventData toggleDatanAndQR(String data, bool showQR) {
+#ifdef BOWSER_BRLN
+  // Public address/xpub: every character stays available at a readable size.
+  unsigned page=0, pages=brlnPageCount(data,57);
+  armInputForPrompt();
+  while(true) {
+    if(showQR) {
+      // Keep the complete QR area; labels must not obscure its modules.
+      showQRCode(data);
+    } else {
+      brlnFrame("PAGINA","QR",String(page+1)+"/"+String(pages));
+      brlnLines(data,page*57,36,3);
+    }
+    EventData event=awaitEvent();
+    if(event.type!=EVENT_BUTTON_ACTION) return event;
+    if(event.data=="confirm") showQR=!showQR;
+    else {showQR=false; page=(page+1)%pages;}
+  }
+#else
   String dataUpper = data + "";
   dataUpper.toUpperCase();
 
@@ -201,4 +227,5 @@ EventData toggleDatanAndQR(String data, bool showQR) {
     event = awaitEvent();
   }
   return event;
+#endif
 }

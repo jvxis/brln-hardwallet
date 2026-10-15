@@ -28,6 +28,9 @@ jobs:
           /tmp/brln-input
           g++ -std=c++11 -Wall -Wextra -Werror -pedantic tests/rng_health_test.cpp -o /tmp/brln-rng
           /tmp/brln-rng
+          mkdir -p artifacts
+          g++ -std=c++17 -Wall -Wextra -Werror -I tests/host tests/brln_ui_render.cpp -o /tmp/brln-ui
+          /tmp/brln-ui
           bash tools/test_libwally.sh
           python3 -m unittest tests/test_package_firmware.py
           python3 -m unittest tests/test_package_brln_firmware.py

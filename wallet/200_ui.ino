@@ -173,6 +173,10 @@ void drawBrlnBolt(int x, int y, int height) {
 #endif
 
 void showFirmwareHash(String firmwareHash) {
+#ifdef BOWSER_BRLN
+  brlnHashScreen(firmwareHash,false);
+  return;
+#endif
   beginUiScreen(UiControls::ContinueOnly);
   int16_t contentHeight = uiContentHeight();
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
@@ -246,38 +250,20 @@ void drawMessageContent(String message, String additional) {
 }
 
 void showMessage(String message, String additional) {
-  beginUiScreen();
 #ifdef BOWSER_BRLN
-  // Pairing is confirmed in the browser after comparing both displays.
-  // Do not show physical-button controls on this informational screen.
-  if (message == "Confirm" && additional.startsWith("Code: ") &&
-      additional.length() == 11) {
-    tft.fillScreen(BRLN_BACKGROUND);
-    tft.setTextFont(1);
-    tft.setTextWrap(false);
-    bool swap = tft.getSwapBytes();
-    tft.setSwapBytes(true);
-    tft.pushImage(8, 7, BRLN_MARK_WIDTH, BRLN_MARK_HEIGHT, BRLN_MARK_PIXELS);
-    tft.setSwapBytes(swap);
-    tft.setTextColor(TFT_WHITE, BRLN_BACKGROUND);
-    tft.setTextSize(2);
-    tft.setCursor(72, 10);
-    tft.print("PAREAMENTO");
-    tft.drawFastHLine(8, 34, tft.width()-16, tft.color565(78,224,193));
-    tft.setTextColor(tft.color565(255,204,72), BRLN_BACKGROUND);
-    brlnCentered(additional.substring(6), 49, 4);
-    tft.setTextColor(TFT_WHITE, BRLN_BACKGROUND);
-    brlnCentered("Compare no", 94, 2);
-    brlnCentered("navegador", 113, 2);
-    tft.setTextSize(2);
-    tft.setTextWrap(true);
-    return;
-  }
+  if(message=="Confirm" && additional.startsWith("Code: ") && additional.length()==11) {
+    brlnPairScreen(additional.substring(6));
+  } else brlnInfoScreen(message,additional);
+#else
+  beginUiScreen(); drawMessageContent(message,additional);
 #endif
-  drawMessageContent(message, additional);
 }
 
 void showConfirmCancelMessage(String message, String additional) {
+#ifdef BOWSER_BRLN
+  brlnLocalScreen(message,additional,"A: confirm");
+  return;
+#endif
   beginUiScreen(UiControls::ConfirmCancel);
   drawMessageContent(message, additional);
 }
@@ -430,6 +416,12 @@ void showQRCode(String value) {
   int qrPixels = (qrcode.size + quietZone * 2) * pixelsPerModule;
   int originX = (tft.width() - qrPixels) / 2 + quietZone * pixelsPerModule;
   int originY = (uiContentHeight() - qrPixels) / 2 + quietZone * pixelsPerModule;
+#ifdef BOWSER_BRLN
+  // Reserve the right-hand rail for actions; never paint over QR modules.
+  originX = quietZone * pixelsPerModule;
+  brlnAction("PAGINA",true);
+  brlnAction("TEXTO",false);
+#endif
 
   for (uint8_t y = 0; y < qrcode.size; y++) {
     for (uint8_t x = 0; x < qrcode.size; x++) {

@@ -6,43 +6,8 @@ void brlnClear(String &value) {
   value.remove(0);
 }
 
-// Original T-Display: 240 x 135. Operational text never falls back to
-// the 6 x 8 font. The selected input is the primary visual element.
-void brlnCentered(const String &text, int y, uint8_t size) {
-  tft.setTextFont(1); tft.setTextSize(size);
-  int width = text.length() * 6 * size;
-  tft.setCursor(max(6, (tft.width() - width) / 2), y);
-  tft.print(text);
-}
-
 void brlnScreen(const String &title,const String &value,const String &hint) {
-  beginUiScreen(); tft.fillScreen(BRLN_BACKGROUND);
-  tft.setTextFont(1); tft.setTextWrap(false);
-  tft.setTextColor(TFT_WHITE,BRLN_BACKGROUND);
-  brlnCentered(title, 5, 2);
-  tft.drawFastHLine(6, 26, tft.width()-12, tft.color565(78,224,193));
-  bool input = hint.startsWith("Selected: ");
-  bool confirm = hint.startsWith("A: confirm");
-  if (input) {
-    // Passwords remain hidden: value contains only the character count.
-    brlnCentered(value, 33, 2);
-    String selected = hint.substring(10);
-    if (selected == " ") selected = "SPACE";
-    tft.setTextColor(tft.color565(255,204,72),BRLN_BACKGROUND);
-    brlnCentered(selected, 61, selected.length() <= 9 ? 4 : 2);
-  } else {
-    uint8_t size = value.length() <= 12 ? 3 : 2;
-    brlnCentered(value, 49, size);
-  }
-  tft.drawFastHLine(6, 106, tft.width()-12, tft.color565(78,224,193));
-  tft.setTextColor(TFT_WHITE,BRLN_BACKGROUND);
-  bool swap = tft.getSwapBytes(); tft.setSwapBytes(true);
-  tft.pushImage(6, 111, BRLN_MARK_WIDTH, BRLN_MARK_HEIGHT, BRLN_MARK_PIXELS);
-  tft.setSwapBytes(swap);
-  const String controls = confirm ? "A:OK B:CANCEL" : "A:OK B:NEXT";
-  tft.setTextSize(2);
-  tft.setCursor(tft.width()-6-controls.length()*12, 114); tft.print(controls);
-  tft.setTextWrap(true);
+  brlnLocalScreen(title,value,hint);
 }
 
 int brlnChoice(const String &title,const char *const *items,int count) {

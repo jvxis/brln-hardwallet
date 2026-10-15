@@ -245,6 +245,18 @@ CommandResponse reviewAndSignPsbt(struct wally_psbt *psbt, struct ext_key *root,
                                   const String &reviewResponseCommand) {
   for (size_t i = 0; i < psbt->num_outputs; i++) {
     if (global.hasCommandsFile) writeOutputToFile(psbt, i, mainnet);
+#ifdef BOWSER_BRLN
+    sendPsbtReviewState("output " + String(i) + " " + String(psbt->num_outputs));
+    String title=(psbtOutputIsSingleSigChange(psbt,i,root)?"Troco ":"Destino ")+String(i+1);
+    uint64_t amount=0;
+    bool reviewed=readPsbtOutputAmount(psbt,i,&amount) &&
+      brlnReviewText(title,psbtOutputDescription(psbt,i,mainnet)) &&
+      brlnReviewAmount("Valor "+String(i+1),int64ToString(amount));
+    if(!reviewed) {
+      sendCommandOutput(reviewResponseCommand,"review_rejected");
+      return {"Operation canceled","Output rejected"};
+    }
+#else
     printOutputDetails(psbt, root, i, mainnet);
     printPhysicalReviewControls();
     sendPsbtReviewState(
@@ -254,12 +266,18 @@ CommandResponse reviewAndSignPsbt(struct wally_psbt *psbt, struct ext_key *root,
       sendCommandOutput(reviewResponseCommand, "review_rejected");
       return {"Operation canceled", "Output rejected"};
     }
+#endif
   }
   if (global.hasCommandsFile) writeFeeToFile(fee);
+  sendPsbtReviewState("fee");
+#ifdef BOWSER_BRLN
+  bool feeAccepted=brlnReviewAmount("Taxa da rede",int64ToString(fee));
+#else
   printFeeDetails(fee);
   printPhysicalReviewControls();
-  sendPsbtReviewState("fee");
-  if (!awaitPhysicalReviewApproval()) {
+  bool feeAccepted=awaitPhysicalReviewApproval();
+#endif
+  if (!feeAccepted) {
     sendCommandOutput(reviewResponseCommand, "review_rejected");
     return {"Operation canceled", "Fee rejected"};
   }

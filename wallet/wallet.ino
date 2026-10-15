@@ -29,6 +29,7 @@
 #include "thinking_animation.h"
 #else
 #include "brln_brand.h"
+#include "brln_hash_gate.h"
 const uint8_t THINKING_FRAME_COUNT = 3;
 #endif
 extern "C" {

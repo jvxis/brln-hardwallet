@@ -63,8 +63,16 @@ void waitForFirmwareHashConfirmation() {
   showFirmwareHash(firmwareHash);
   armInputForPrompt();
 
+#ifdef BOWSER_BRLN
+  bool help=false;
+#endif
   while (true) {
     char key = pollInputKey();
+#ifdef BOWSER_BRLN
+    BrlnHashAction action=brlnHashKey(key,firmwareHash.length()==64,help);
+    if(action==BrlnHashAction::Redraw) brlnHashScreen(firmwareHash,help);
+    if(action!=BrlnHashAction::Approve) {delay(10);continue;}
+#endif
     if (key == '#') {
       if (firmwareHash.length() == 64) {
         rememberConfirmedFirmwareBuild(buildId);

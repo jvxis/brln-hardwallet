@@ -1,0 +1,206 @@
+#ifdef BOWSER_BRLN
+// Original T-Display, rotation 1, USB to the right:
+// upper button GPIO35 = '*'; lower BOOT/GPIO0 = '#'.
+// All actionable text is at least 12 x 16 pixels. Never shrink to fit.
+unsigned brlnInfoPage = 0;
+unsigned brlnInfoPages = 1;
+
+void brlnCentered(const String &text, int y, uint8_t size) {
+  tft.setTextFont(1); tft.setTextSize(size); tft.setTextWrap(false);
+  tft.setCursor(max(6, (tft.width() - int(text.length()) * 6 * size) / 2), y);
+  tft.print(text);
+}
+
+void brlnAction(const String &label, bool upper) {
+  if (!label.length()) return;
+  tft.setTextFont(1); tft.setTextSize(2); tft.setTextWrap(false);
+  tft.setTextColor(upper ? TFT_WHITE : tft.color565(78,224,193), BRLN_BACKGROUND);
+  // Arrow touches the display's right edge, beside the physical button.
+  int y = upper ? 6 : 113;
+  tft.setCursor(228-int(label.length())*12, y); tft.print(label);
+  tft.fillTriangle(232,y+2,232,y+12,239,y+7,
+                   upper ? TFT_WHITE : tft.color565(78,224,193));
+}
+
+void brlnFrame(const String &upper, const String &lower, const String &footer) {
+  beginUiScreen(); tft.fillScreen(BRLN_BACKGROUND);
+  tft.setTextFont(1); tft.setTextSize(2); tft.setTextWrap(false);
+  bool swap=tft.getSwapBytes(); tft.setSwapBytes(true);
+  tft.pushImage(6,2,BRLN_MARK_WIDTH,BRLN_MARK_HEIGHT,BRLN_MARK_PIXELS);
+  tft.setSwapBytes(swap);
+  tft.drawFastHLine(6,26,228,tft.color565(78,224,193));
+  tft.drawFastHLine(6,108,228,tft.color565(78,224,193));
+  tft.setTextColor(TFT_WHITE,BRLN_BACKGROUND);
+  tft.setCursor(6,113); tft.print(footer);
+  brlnAction(upper,true); brlnAction(lower,false);
+  tft.setTextColor(TFT_WHITE,BRLN_BACKGROUND);
+}
+
+// Character-exact chunks: no ellipsis, omissions, or font reduction.
+// Security-relevant values use physical pages before accepting anything.
+unsigned brlnPageCount(const String &text, unsigned capacity) {
+  return max(1U, (unsigned(text.length())+capacity-1)/capacity);
+}
+
+void brlnLines(const String &text, unsigned start, int y, unsigned lines) {
+  for(unsigned line=0;line<lines;line++) {
+    unsigned offset=start+line*19;
+    if(offset>=text.length()) break;
+    brlnCentered(text.substring(offset,offset+19),y+line*19,2);
+  }
+}
+
+String brlnLabel(const String &text) {
+  if(text=="Wallet password") return "Senha da carteira";
+  if(text=="Repeat password") return "Repita a senha";
+  if(text=="Local operation") return "Na sua placa";
+  if(text=="create") return "Criar carteira?";
+  if(text=="restore") return "Recuperar carteira?";
+  if(text=="unlock") return "Desbloquear?";
+  if(text=="backup") return "Conferir backup?";
+  if(text=="DONE") return "PRONTO";
+  if(text=="BACK") return "APAGAR";
+  if(text=="CANCEL" || text=="Cancel") return "CANCELAR";
+  if(text=="USE WORD") return "USAR";
+  if(text==" ") return "ESPACO";
+  if(text=="Backup recorded?") return "Anotou o backup?";
+  if(text=="Keep it offline") return "Guarde fora da rede";
+  if(text=="Storage unavailable") return "Preparar memoria";
+  if(text=="Format ERASES wallet") return "APAGAR a carteira?";
+  if(text=="Have your backup?") return "Tem seu backup?";
+  if(text=="Confirm ERASE") return "APAGAR tudo?";
+  if(text=="Create BIP39") return "Gerar as palavras";
+  if(text=="Restore BIP39") return "Recuperar backup";
+  if(text=="Hardware RNG") return "Aleatorio da placa";
+  if(text=="100 dice rolls") return "100 lances de dado";
+  if(text=="12 words") return "12 palavras";
+  if(text=="24 words") return "24 palavras";
+  if(text=="No passphrase") return "Sem passphrase";
+  if(text=="Enter passphrase") return "Usar passphrase";
+  if(text=="Confirm signing" || text=="Sign reviewed PSBT?") return "Assinar agora?";
+  if(text=="Outputs and fee reviewed" || text=="Review complete") return "Destinos e taxa ja conferidos";
+  if(text=="BRLN experimental") return "EM TESTE";
+  if(text=="No funds until tested") return "Use sem fundos reais";
+  if(text=="Operation complete") return "Concluido";
+  if(text=="Cancelled / invalid") return "Cancelado / invalido";
+  if(text=="Cancelled" || text=="Operation canceled") return "Cancelado";
+  if(text=="Backup review ended") return "Backup conferido";
+  if(text=="Please wait") return "Aguarde";
+  if(text=="Parsing PSBT...") return "Lendo transacao";
+  if(text=="Wallet exists") return "Carteira existente";
+  if(text=="Use another device") return "Use outra placa";
+  if(text=="12+ chars, no spaces") return "Senha: 12 ou mais caracteres, sem espacos";
+  if(text.startsWith("Write word ")) return "Anote " + text.substring(11);
+  if(text.startsWith("Word ")) return "Palavra " + text.substring(5);
+  if(text.startsWith("Roll ")) return "Dado " + text.substring(5);
+  return text;
+}
+
+void brlnHashScreen(const String &hash, bool help) {
+  bool valid=hash.length()==64;
+  brlnFrame(help?"HASH":"AJUDA",help?"VOLTAR":valid?"CONFIRMAR":"",help?"AJUDA":"SHA256");
+  if(help) {
+    brlnLines("Compare os 64",0,32,1);
+    brlnLines("digitos com a",0,51,1);
+    brlnLines("versao publicada.",0,70,1);
+    brlnLines("So aceite se igual.",0,89,1);
+  } else if(valid) {
+    tft.setTextColor(tft.color565(255,204,72),BRLN_BACKGROUND);
+    for(unsigned row=0;row<4;row++) brlnCentered(hash.substring(row*16,row*16+16),32+row*19,2);
+  } else {
+    brlnLines("Hash indisponivel",0,42,1);
+    brlnLines("Reinstale firmware",0,70,1);
+  }
+}
+
+void brlnLocalScreen(const String &title,const String &value,const String &hint) {
+  bool input=hint.startsWith("Selected: ");
+  bool confirm=hint.startsWith("A: confirm");
+  String heading=brlnLabel(title);
+  brlnFrame(confirm?"CANCELAR":"PROXIMO",input?"ESCOLHER":confirm?"CONFIRMAR":"ESCOLHER",
+    input && (title=="Wallet password" || title=="Repeat password")?"MIN 12":"");
+  brlnCentered(heading,32,2);
+  if(input) {
+    String shown=value;
+    if(shown.endsWith(" chars")) shown=shown.substring(0,shown.length()-6)+" caracteres";
+    brlnCentered(shown,54,2);
+    String selected=brlnLabel(hint.substring(10));
+    tft.setTextColor(tft.color565(255,204,72),BRLN_BACKGROUND);
+    brlnCentered(selected,77,selected.length()<=12?3:2);
+  } else {
+    String body=brlnLabel(value);
+    tft.setTextColor(tft.color565(255,204,72),BRLN_BACKGROUND);
+    if(body.length()<=12) brlnCentered(body,65,3);
+    else brlnLines(body,0,60,2);
+  }
+}
+
+void brlnPairScreen(const String &code) {
+  brlnFrame("","","USB");
+  brlnCentered("PAREAMENTO",32,2);
+  tft.setTextColor(tft.color565(255,204,72),BRLN_BACKGROUND);
+  brlnCentered(code,56,4);
+  tft.setTextColor(TFT_WHITE,BRLN_BACKGROUND);
+  brlnCentered("Compare no app",91,2);
+}
+
+String brlnWrap(const String &text) {
+  String result=""; unsigned offset=0;
+  while(offset<text.length()) {
+    unsigned count=min(19U,unsigned(text.length())-offset);
+    if(offset+count<text.length() && text[offset+count]!=' ') {
+      for(unsigned n=count;n>0;n--) {
+        if(text[offset+n-1]==' ') {count=n-1;break;}
+      }
+    }
+    if(!count) {offset++;continue;}
+    result+=text.substring(offset,offset+count);
+    for(unsigned pad=count;pad<19;pad++) result+=" ";
+    offset+=count;
+    while(offset<text.length() && text[offset]==' ') offset++;
+  }
+  return result;
+}
+
+void brlnInfoScreen(const String &message,const String &additional) {
+  String text=brlnLabel(message);
+  if(additional.length()) text+=" | "+brlnLabel(additional);
+  text=brlnWrap(text);
+  brlnInfoPages=brlnPageCount(text,76);
+  brlnInfoPage%=brlnInfoPages;
+  brlnFrame(brlnInfoPages>1?"MAIS":"","",brlnInfoPages>1?String(brlnInfoPage+1)+"/"+String(brlnInfoPages):"");
+  brlnLines(text,brlnInfoPage*76,32,4);
+}
+
+void brlnReviewScreen(const String &title,const String &text,unsigned page,unsigned pages) {
+  brlnFrame("CANCELAR",page+1<pages?"PROXIMO":"CONFIRMAR",String(page+1)+"/"+String(pages));
+  brlnCentered(title,32,2);
+  tft.setTextColor(tft.color565(255,204,72),BRLN_BACKGROUND);
+  brlnLines(text,page*38,60,2);
+}
+
+bool brlnReviewText(const String &title,const String &text) {
+  unsigned pages=brlnPageCount(text,38);
+  for(unsigned page=0;page<pages;page++) {
+    brlnReviewScreen(title,text,page,pages);
+    if(!awaitPhysicalReviewApproval()) return false;
+  }
+  return true;
+}
+#endif
+
+#ifdef BOWSER_BRLN
+void brlnAmountScreen(const String &title,const String &sats) {
+  brlnFrame("CANCELAR","CONFIRMAR","");
+  brlnCentered(title,32,2);
+  tft.setTextColor(tft.color565(255,204,72),BRLN_BACKGROUND);
+  if(sats.length()>19) brlnLines(sats,0,51,2);
+  else brlnCentered(sats,57,sats.length()<=12?3:2);
+  tft.setTextColor(TFT_WHITE,BRLN_BACKGROUND);
+  brlnCentered("sats",sats.length()>19?91:86,2);
+}
+bool brlnReviewAmount(const String &title,const String &sats) {
+  brlnAmountScreen(title,sats);
+  return awaitPhysicalReviewApproval();
+}
+#endif

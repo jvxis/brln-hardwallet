@@ -4,6 +4,41 @@ Validation date: 2026-10-14. Disposable original ESP32 T-Display, 1.14-inch scre
 two buttons, CH9102 USB bridge and 16 MB physical flash. No wallet, seed or funds.
 The owner explicitly authorized erase/reflash and bounded camera observations.
 
+## Readability and identity follow-up (2026-10-15)
+
+The owner physically approved the prior firmware hash, compared pairing code
+`92AFB` and confirmed it in the browser. The app accepted BRLN capabilities.
+Local creation reached `Repeat password`; the owner then cancelled, before seed
+generation or storage. This exposed poor readability in the local input screens.
+
+Commit `c1222a8670a34cac85d95bd42341095706c7442e` enlarges operational titles,
+counts and button instructions to 16 pixels, with the selected character/action
+at 32 pixels. Password content remains hidden. The official logo from
+https://br-ln.com/static-landing/brln-logo.png is compiled into boot and local
+operation screens; colors follow the public BRLN site. Source/provenance and
+rebuild instructions are in `assets/brand/README.md`.
+
+The app now keeps first-install preparation collapsible, remembers that it was
+shown, and exposes a shortcut for boards already prepared. It inherits the LOS
+visual theme, palette and light/dark mode when opened from the Store. Themes and
+fonts are bundled locally. Only validated appearance enums cross the port boundary
+in a consumed URL fragment; preferences are handled by the audited storage module.
+Reopen from the Store after changing the LOS appearance.
+
+91 web tests, Svelte checks, production builds and native firmware compilation
+passed. The browser regression reproduced the old app ignoring LOS appearance.
+Candidate and deployed browser validation covered twelve theme/mode combinations against LOS
+computed colors/background/font, remembered collapse, reopening, acknowledgement
+and mobile overflow. [CI 38716906395](https://github.com/jvxis/brln-hardwallet/actions/runs/38716906395)
+passed and published the new firmware and multi-architecture app image.
+
+New ESP display hash:
+`60db227bb4d2bcdf1653bae3bf8f77329faa972893867bc8d08ba30390df1064`.
+The attempted lab write stopped before programming because COM5 was unavailable;
+the owner was asked to disconnect the browser while keeping the USB cable.
+Physical inspection and approval of this new build are still pending. Earlier
+sections below are historical evidence for the previous firmware.
+
 ## Tested version
 
 Source: `f60d68b46975d6890070b1f55d0c5b58f94fa4c0`.

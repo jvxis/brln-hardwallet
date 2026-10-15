@@ -15,10 +15,10 @@ void brlnAction(const String &label, bool upper) {
   if (!label.length()) return;
   tft.setTextFont(1); tft.setTextSize(2); tft.setTextWrap(false);
   tft.setTextColor(upper ? TFT_WHITE : tft.color565(78,224,193), BRLN_BACKGROUND);
-  // Arrow touches the display's right edge, beside the physical button.
+  // Inset the arrow from the bezel, beside the physical button.
   int y = upper ? 6 : 113;
-  tft.setCursor(228-int(label.length())*12, y); tft.print(label);
-  tft.fillTriangle(232,y+2,232,y+12,239,y+7,
+  tft.setCursor(216-int(label.length())*12, y); tft.print(label);
+  tft.fillTriangle(220,y+2,220,y+12,227,y+7,
                    upper ? TFT_WHITE : tft.color565(78,224,193));
 }
 

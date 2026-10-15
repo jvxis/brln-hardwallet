@@ -16,11 +16,11 @@ void brlnCentered(const String &text, int y, uint8_t size) {
 }
 
 void brlnScreen(const String &title,const String &value,const String &hint) {
-  beginUiScreen();
+  beginUiScreen(); tft.fillScreen(BRLN_BACKGROUND);
   tft.setTextFont(1); tft.setTextWrap(false);
-  tft.setTextColor(TFT_WHITE,TFT_BLACK);
+  tft.setTextColor(TFT_WHITE,BRLN_BACKGROUND);
   brlnCentered(title, 5, 2);
-  tft.drawFastHLine(6, 26, tft.width()-12, tft.color565(28,115,123));
+  tft.drawFastHLine(6, 26, tft.width()-12, tft.color565(78,224,193));
   bool input = hint.startsWith("Selected: ");
   bool confirm = hint.startsWith("A: confirm");
   if (input) {
@@ -28,15 +28,20 @@ void brlnScreen(const String &title,const String &value,const String &hint) {
     brlnCentered(value, 33, 2);
     String selected = hint.substring(10);
     if (selected == " ") selected = "SPACE";
-    tft.setTextColor(TFT_YELLOW,TFT_BLACK);
+    tft.setTextColor(tft.color565(255,204,72),BRLN_BACKGROUND);
     brlnCentered(selected, 61, selected.length() <= 9 ? 4 : 2);
   } else {
     uint8_t size = value.length() <= 12 ? 3 : 2;
     brlnCentered(value, 49, size);
   }
-  tft.drawFastHLine(6, 106, tft.width()-12, tft.color565(28,115,123));
-  tft.setTextColor(TFT_WHITE,TFT_BLACK);
-  brlnCentered(confirm ? "A:OK  B:CANCEL" : "A:OK  B:NEXT", 114, 2);
+  tft.drawFastHLine(6, 106, tft.width()-12, tft.color565(78,224,193));
+  tft.setTextColor(TFT_WHITE,BRLN_BACKGROUND);
+  bool swap = tft.getSwapBytes(); tft.setSwapBytes(true);
+  tft.pushImage(6, 111, BRLN_MARK_WIDTH, BRLN_MARK_HEIGHT, BRLN_MARK_PIXELS);
+  tft.setSwapBytes(swap);
+  const String controls = confirm ? "A:OK B:CANCEL" : "A:OK B:NEXT";
+  tft.setTextSize(2);
+  tft.setCursor(tft.width()-6-controls.length()*12, 114); tft.print(controls);
   tft.setTextWrap(true);
 }
 

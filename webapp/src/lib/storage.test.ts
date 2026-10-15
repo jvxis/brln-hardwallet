@@ -252,3 +252,20 @@ describe('persistence allowlists', () => {
     expect(settings.mempoolTestnet).toBe('https://mempool.space/testnet4/api')
   })
 })
+
+
+describe('public display preferences', () => {
+  it('drops extra fields when persisting appearance', async () => {
+    const { saveAppearance, loadAppearance } = await import('./storage')
+    saveAppearance({visualTheme:'kernel',palette:'teal',mode:'dark',extra:'do not persist'} as Parameters<typeof saveAppearance>[0])
+    expect(loadAppearance()).toEqual({visualTheme:'kernel',palette:'teal',mode:'dark'})
+    expect(values.get('brln-los-appearance')).not.toContain('do not persist')
+  })
+  it('remembers installer display without recording device or wallet data', async () => {
+    const { installerWasSeen, rememberInstaller } = await import('./storage')
+    expect(installerWasSeen()).toBe(false)
+    rememberInstaller()
+    expect(installerWasSeen()).toBe(true)
+    expect(values.get('brln-installer-seen')).toBe('true')
+  })
+})

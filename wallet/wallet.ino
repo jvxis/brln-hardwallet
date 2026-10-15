@@ -28,6 +28,7 @@
 #include "bowser_logo.h"
 #include "thinking_animation.h"
 #else
+#include "brln_brand.h"
 const uint8_t THINKING_FRAME_COUNT = 3;
 #endif
 extern "C" {

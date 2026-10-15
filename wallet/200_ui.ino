@@ -11,7 +11,7 @@ void drawThinkingFrame(uint8_t frameIndex) {
 #ifdef BOWSER_BRLN
   // The BRLN profile never renders the upstream mascot, including idle frames.
   if (frameIndex == 0) showBootLogo();
-  const int16_t y = uiContentHeight() - 12;
+  const int16_t y = uiContentHeight() - 3;
   for (uint8_t i = 0; i < THINKING_FRAME_COUNT; i++) {
     tft.fillCircle(tft.width() / 2 + (int16_t(i) - 1) * 12, y, 2,
                    i == frameIndex ? TFT_YELLOW : TFT_DARKGREY);
@@ -78,9 +78,9 @@ void logo(int counter) {
   showBootLogo();
   if (counter > 0) {
     String status = "Conectar USB: " + String(counter) + "s";
-    tft.fillRect(0, 86, tft.width(), 22, TFT_BLACK);
-    tft.setTextSize(2); tft.setTextColor(TFT_WHITE, TFT_BLACK);
-    tft.setCursor((tft.width() - uiTextPixelWidth(status, 2)) / 2, 91);
+    tft.fillRect(0, 104, tft.width(), 24, BRLN_BACKGROUND);
+    tft.setTextSize(2); tft.setTextColor(TFT_WHITE, BRLN_BACKGROUND);
+    tft.setCursor((tft.width() - uiTextPixelWidth(status, 2)) / 2, 108);
     tft.print(status);
   }
 #else
@@ -148,21 +148,14 @@ void logo(int counter) {
 void showBootLogo() {
   beginUiScreen();
 #ifdef BOWSER_BRLN
-  // BR⚡LN: the bolt is drawn as geometry; the TFT font has no emoji glyphs.
-  tft.setTextFont(4); tft.setTextSize(2);
-  const int brWidth = tft.textWidth("BR");
-  const int lnWidth = tft.textWidth("LN");
-  const int boltHeight = 48, boltWidth = boltHeight * 2 / 3, gap = 8;
-  const int x = (tft.width() - brWidth - lnWidth - boltWidth - 2 * gap) / 2;
-  const int y = 21;
-  tft.drawRoundRect(14, 13, tft.width() - 28, 67, 9, tft.color565(28, 115, 123));
-  tft.setTextColor(TFT_WHITE, TFT_BLACK);
-  tft.setCursor(x, y); tft.print("BR");
-  drawBrlnBolt(x + brWidth + gap, y + 2, boltHeight);
-  tft.setCursor(x + brWidth + gap + boltWidth + gap, y); tft.print("LN");
+  tft.fillScreen(BRLN_BACKGROUND);
+  bool swap = tft.getSwapBytes(); tft.setSwapBytes(true);
+  tft.pushImage((tft.width()-BRLN_BOOT_WIDTH)/2, 3, BRLN_BOOT_WIDTH, BRLN_BOOT_HEIGHT, BRLN_BOOT_PIXELS);
+  tft.setSwapBytes(swap);
   tft.setTextFont(1); tft.setTextSize(2);
+  tft.setTextColor(TFT_WHITE, BRLN_BACKGROUND);
   const String subtitle = "ASSINADOR BITCOIN";
-  tft.setCursor((tft.width() - uiTextPixelWidth(subtitle, 2)) / 2, 91);
+  tft.setCursor((tft.width()-uiTextPixelWidth(subtitle,2))/2, 108);
   tft.print(subtitle);
 #else
   drawBowserLogo((uiContentHeight() - BOWSER_LOGO_HEIGHT) / 2);

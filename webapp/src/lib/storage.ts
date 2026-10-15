@@ -1,3 +1,4 @@
+import { parseAppearance, type Appearance } from './los-appearance'
 import type {
   AddressRecord,
   HistoryRecord,
@@ -350,4 +351,16 @@ export const clearWalletData = () => {
   localStorage.removeItem(ACCOUNTS_KEY)
   localStorage.removeItem(ADDRESSES_KEY)
   localStorage.removeItem(CHAIN_STATE_KEY)
+}
+
+// Display preferences contain only validated public enums and a boolean.
+export const loadAppearance = () => parseAppearance(read<unknown>('brln-los-appearance', null))
+export function saveAppearance(value: Appearance) {
+  const checked = parseAppearance(value)
+  if (!checked) return
+  try { localStorage.setItem('brln-los-appearance', JSON.stringify(checked)) } catch { /* Optional preference. */ }
+}
+export const installerWasSeen = () => read<boolean>('brln-installer-seen', false) === true
+export function rememberInstaller() {
+  try { localStorage.setItem('brln-installer-seen', 'true') } catch { /* Optional preference. */ }
 }

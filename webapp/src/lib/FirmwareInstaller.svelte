@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte'
+  import { installerWasSeen, rememberInstaller } from './storage'
   import { identifyBoard, loadFirmware, writeFirmware, FIRMWARE_ROOT, type FirmwareBundle, type FirmwareLoader } from './brln-firmware'
   export let busy = false
   export let connected = false
@@ -10,7 +11,10 @@
   let bundle: FirmwareBundle | null = null
   let loader: FirmwareLoader | null = null
   let transport: { disconnect(): Promise<void> } | null = null
-  let ownsPort = false
+  let ownsPort = false, expanded = false, mounted = false
+  function remember() { rememberInstaller() }
+  function collapse() { if (!ownsPort) { expanded=false; remember() } }
+  $: if (mounted && connected && !ownsPort) collapse()
   const warning = (event: BeforeUnloadEvent) => {
     if (ownsPort) { event.preventDefault(); event.returnValue = '' }
   }
@@ -53,7 +57,7 @@
     phase = 'writing'; progress = 0; message = 'Gravando e verificando o firmware. Não retire o cabo nem feche esta página.'
     try {
       await writeFirmware(loader, bundle, value => progress = value)
-      phase = 'done'; message = 'Gravação verificada. Confira BR⚡LN na tela da placa e use “Conectar por USB” abaixo. A criação ou recuperação da carteira acontece nos botões.'
+      remember(); phase = 'done'; message = 'Gravação verificada. Confira BR⚡LN na tela da placa e use “Conectar por USB” abaixo. A criação ou recuperação da carteira acontece nos botões.'
     } catch {
       phase = 'error'; message = 'A instalação não foi concluída e verificada. Não crie uma carteira. Reconecte a placa e repita a preparação; não há repetição automática.'
     } finally { await release(); acknowledged = false }
@@ -63,6 +67,8 @@
     await release(true); phase = 'idle'; message = 'Preparação cancelada. Nenhum firmware foi gravado.'
   }
   onMount(() => {
+    try { expanded=!installerWasSeen() && !connected } catch { expanded=!connected }
+    mounted=true; remember()
     supported = isSecureContext && !!navigator.serial && !!crypto.subtle
     void prepare()
     window.addEventListener('beforeunload', warning)
@@ -70,8 +76,10 @@
   })
 </script>
 
-<section class="installer" aria-labelledby="firmware-title">
-  <h2 id="firmware-title">Preparar meu LilyGO <span>INSTALAÇÃO USB</span></h2>
+<details class="installer section-card" bind:open={expanded}>
+  <summary on:click={event => { if (ownsPort) event.preventDefault() }}><strong>Preparar meu LilyGO</strong><span>{phase === 'done' ? 'Instalação verificada' : 'Primeira instalação · USB'}</span></summary>
+  <div class="installer-body">
+  <button class="secondary skip" disabled={ownsPort} on:click={collapse}>Já tenho o firmware · ir para a carteira</button>
   <p>Instale o firmware pelo navegador, com a placa conectada a este computador. O próprio LOS fornece todos os arquivos.</p>
   <p><strong>Placa compatível:</strong> LilyGO T-Display original · ESP32 · tela 1,14″ · dois botões · flash 4 MB ou 16 MB. A T-Display S3 não é compatível.</p>
   <label>O que você deseja fazer?
@@ -111,8 +119,9 @@
     <p class:error={phase === 'error'} role="status" aria-live="polite">{message}</p>
     <details><summary>Se a placa não conectar</summary><p>Use um cabo com dados e feche o monitor serial, Arduino IDE e outras abas conectadas à placa. Se necessário, mantenha BOOT (GPIO0) pressionado, pressione e solte RESET e solte BOOT quando a conexão começar. Em algumas placas, o sistema precisa do driver da ponte USB. Após cancelar ou desconectar, pressione RESET para sair do modo de gravação.</p></details>
   {/if}
-</section>
+  </div>
+</details>
 
 <style>
-  .installer{border:1px solid #455565;border-radius:12px;background:#17212b;padding:24px;margin:28px 0}h2{font-size:24px;margin:0 0 14px}h2 span{display:inline-block;color:#f4b34b;font-size:11px;letter-spacing:1px;margin-left:10px}p{overflow-wrap:anywhere;color:#c1ccd6}select{display:block;width:100%;max-width:440px;background:#10151b;color:#e9edf2;padding:12px;border:1px solid #617384;border-radius:6px;margin:8px 0 20px;font-size:15px}.ack{display:flex;gap:12px;margin:20px 0;font-size:14px}.ack input{flex:none;width:18px;height:18px;margin-top:4px}.buttons{display:flex;gap:12px;flex-wrap:wrap;margin:20px 0}button{border:1px solid #f4b34b;border-radius:7px;background:#f4b34b;color:#10151b;padding:12px 16px;font-size:14px;font-weight:650;cursor:pointer}button.secondary{background:transparent;color:#e9edf2;border-color:#617384}button:disabled{opacity:.45;cursor:default}.notice,.error{border-left:3px solid #f4b34b;padding:12px;background:#332a1b}.error{border-color:#f18686;background:#48272b}details{margin:18px 0;font-size:14px}summary{cursor:pointer;color:#f4b34b}.mono{font-family:ui-monospace,monospace;font-size:12px}a{color:#8ed7ed}progress{width:100%;height:14px;accent-color:#f4b34b}button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid #66c9e8;outline-offset:3px}
+  .installer{padding:16px 22px;margin:18px 0}summary{cursor:pointer;list-style:disclosure-closed;color:rgb(var(--color-fog));font-size:17px}details[open]>summary{list-style:disclosure-open}summary>span{display:inline-block;color:rgb(var(--color-fog)/.65);font-size:12px;margin-left:14px}.installer-body{padding-top:10px}.skip{margin:8px 0}p{overflow-wrap:anywhere;color:rgb(var(--color-fog)/.8)}select{display:block;width:100%;max-width:440px;background:rgb(var(--color-ink));color:rgb(var(--color-fog));padding:12px;border:1px solid rgb(var(--color-fog)/.25);border-radius:8px;margin:8px 0 20px;font:inherit}.ack{display:flex;gap:12px;margin:20px 0;font-size:14px}.ack input{flex:none;width:18px;height:18px;margin-top:4px}.buttons{display:flex;gap:12px;flex-wrap:wrap;margin:20px 0}button{border:1px solid rgb(var(--color-glow));border-radius:8px;background:rgb(var(--color-glow));color:#08111f;padding:12px 16px;font-size:14px;font-weight:650;font-family:inherit;cursor:pointer}button.secondary{background:transparent;color:rgb(var(--color-fog));border-color:rgb(var(--color-fog)/.25)}button:disabled{opacity:.5;cursor:default}.notice,.error{border-left:3px solid rgb(var(--color-brass));padding:12px;background:rgb(var(--color-brass)/.1)}.error{border-color:rgb(var(--color-ember));background:rgb(var(--color-ember)/.12)}details:not(.installer){margin:18px 0;font-size:14px}.mono{font-family:ui-monospace,monospace;font-size:12px}a{color:rgb(var(--color-glow))}progress{width:100%;height:14px;accent-color:rgb(var(--color-glow))}button:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid rgb(var(--color-glow));outline-offset:3px}
 </style>

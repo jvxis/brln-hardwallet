@@ -3,9 +3,10 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 names = ['hash', 'help', 'pair', 'confirm', 'password', 'cancel-entry',
-         'word', 'address-1', 'address-2', 'amount', 'fee', 'sign']
+         'word', 'address-1', 'address-2', 'amount', 'fee', 'sign',
+         'entropy-auto', 'backup', 'creating', 'ready', 'short-password']
 width, height = 504, 310
-sheet = Image.new('RGB', (width * 3, height * 4), '#172333')
+sheet = Image.new('RGB', (width * 3, height * ((len(names)+2)//3)), '#172333')
 draw = ImageDraw.Draw(sheet)
 for index, name in enumerate(names):
     source = Path('artifacts') / f'ui-device-{name}.ppm'

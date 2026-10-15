@@ -78,7 +78,8 @@ int main(){
   brlnHashScreen("",false);tft.save("hash-error");
   brlnPairScreen("50711");tft.save("pair");
   brlnLocalScreen("Local operation","create","A: confirm");tft.save("confirm");
-  brlnLocalScreen("Wallet password","0 chars","Selected: DONE");tft.save("password");
+  brlnLocalScreen("Wallet password","0 chars","Selected: a");tft.save("password");
+  brlnLocalScreen("Wallet password","5 chars","Selected: MINIMO 12");tft.save("short-password");
   brlnLocalScreen("Repeat password","32 chars","Selected: a");tft.save("repeat");
   brlnLocalScreen("Word 24/24","aban_","Selected: USE WORD");tft.save("restore");
   brlnLocalScreen("Write word 24/24","abandon","A: confirm");tft.save("word");

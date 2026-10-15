@@ -21,7 +21,7 @@ const account={id:'test',name:'test',xpub:root.derivePath(accountPath).neutered(
    return route.fulfill({json:{history:[],utxos:[],balance:{confirmed:0,unconfirmed:0}}}).catch(()=>{});
   }
   if(pathname.startsWith('/firmware/'))return route.fulfill({status:404,body:''});
-  const base=path.resolve('webapp/build'),file=path.resolve(base,'.'+(pathname==='/'?'/index.html':pathname));
+  const base=path.resolve(process.env.WEB_ROOT || 'webapp/build'),file=path.resolve(base,'.'+(pathname==='/'?'/index.html':pathname));
   assert(file.startsWith(base+path.sep));
   if(!fs.existsSync(file))return route.fulfill({status:404,body:''});
   const types={'.html':'text/html','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.png':'image/png','.woff2':'font/woff2'};

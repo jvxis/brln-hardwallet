@@ -21,6 +21,25 @@ the isolated browser; it must not be described as a confirmed fixed defect.
 This board now contains a test wallet. Preserve its storage during firmware
 updates; recovery and transaction signing remain unvalidated.
 
+Follow-up firmware `7f5ed2111d2a0cbcfd175ff20eaeb3f9bca4b756` passed
+[CI 38728510723](https://github.com/jvxis/brln-hardwallet/actions/runs/38728510723).
+Only the authorized COM5 identity was programmed. The partition table is
+byte-identical to the previous build; the four package regions passed independent
+readback and no NVS/SPIFFS erase was performed. Camera inspection confirmed the
+new embedded hash, still awaiting the owner's physical approval:
+`e3d2674a1cf682e5fd217c6131911828031f7bd73766ee00ae59f9490e56d85f`.
+Esptool intermittently estimated the 40 MHz crystal at 41.01 MHz; the last
+readback reported 40 MHz without warning and all four regions matched.
+Wallet unlock after this update remains an owner-assisted check.
+
+The candidate browser completed real club Electrum discovery on LOS-TEST2 in
+approximately 213 seconds, with 40 successful script requests, no JavaScript
+errors, exactly one account section, and controls re-enabled. Unit tests (94),
+Svelte check/build, native framebuffer checks and real Chrome regression tests
+passed. The latter also ran against the static assets extracted from the exact
+published OCI image: disconnected discovery, session expiry, cancellation and
+control recovery. They use synthetic public accounts, never the owner's seed.
+
 Validation date: 2026-10-14. Disposable original ESP32 T-Display, 1.14-inch screen,
 two buttons, CH9102 USB bridge and 16 MB physical flash. No wallet, seed or funds.
 The owner explicitly authorized erase/reflash and bounded camera observations.

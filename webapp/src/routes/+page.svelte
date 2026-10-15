@@ -8,6 +8,7 @@
   import { ACCOUNT_PATH, publicAccount, preparePayment } from '$lib/brln-wallet'
   import { deriveAddress, finalizePsbt } from '$lib/bitcoin'
   import { loadAccounts, saveAccounts } from '$lib/storage'
+  import { loadSummary, saveSummary, clearSummary, updatedLabel, revalidateSelection } from '$lib/brln-snapshot'
   import type { WalletAccount, UtxoRecord, UnsignedTransaction } from '$lib/types'
 
   let connected = false, unlocked = false, busy = false, message = '', failure = false
@@ -15,6 +16,7 @@
   let coins: UtxoRecord[] = [], history: Array<{txid:string;height:number}> = []
   let height: number | null = null, scanned = false, address = '', amount = 0, rate = 1
   let source = ''
+  let updatedAt=0, now=Date.now(), cachedBalance=0, syncMessage='', syncFailure=false
   let tab: 'receive' | 'send' | 'history' = 'receive'
   let receiveQR = '', receiveChecked = false
   let confirmation: HTMLDialogElement
@@ -30,7 +32,7 @@
   }
   $: if (!receive) { receiveQR = ''; receiveChecked = false }
   let syncController: AbortController | null = null
-  $: balanceLabel = scanned ? `Saldo descoberto: ${balance.toLocaleString('pt-BR')} sats · ${history.length} transações` : 'Saldo ainda não consultado. Sincronize a conta pública; não é necessário conectar a LilyGO.'
+  $: balanceLabel = updatedAt ? `Saldo na última consulta: ${(scanned?balance:cachedBalance).toLocaleString('pt-BR')} sats · ${history.length} transações` : 'Saldo ainda não consultado. Sincronize a conta pública; não é necessário conectar a LilyGO.'
   let receive = '', proposal: UnsignedTransaction | null = null
   let signed: ReturnType<typeof finalizePsbt> | null = null
   let broadcastState: 'new' | 'unknown' | 'done' = 'new'
@@ -50,24 +52,36 @@
   }
   function persist(next: WalletAccount) { next = publicAccount(next); saveAccounts([next]); account = next }
   async function refresh() {
+    if(syncController || proposal)throw new Error('Aguarde a atualização ou encerre a proposta antes de sincronizar.')
     syncController = new AbortController()
+    syncFailure=false
     try {
-    message = 'Consultando o node. A LilyGO pode permanecer desconectada.'
+    syncMessage = 'Consultando o node. A LilyGO pode permanecer desconectada.'
     const status = await api<{height:number;electrum_source:string}>('status', undefined, syncController.signal)
+    if(source && source!==status.electrum_source){updatedAt=0;scanned=false;coins=[];history=[];clearSummary()}
     height=status.height; source=status.electrum_source
+    if(!account)syncMessage=''
     if (account) {
-      message = 'Buscando histórico e saldo. Isso pode levar alguns minutos.'
+      syncMessage = 'Buscando histórico e saldo. Isso pode levar alguns minutos.'
       const snapshot = await scanAccount(account, (checked, branch) => {
-        message = `Sincronizando: ${checked} endereços consultados · ${branch === 0 ? 'recebimento' : 'troco'}. Aguarde.`
+        syncMessage = `Sincronizando: ${checked} endereços consultados · ${branch === 0 ? 'recebimento' : 'troco'}. Aguarde.`
       }, syncController.signal)
-      persist({...account, receiveIndex:snapshot.receiveIndex, changeIndex:snapshot.changeIndex})
-      coins = snapshot.utxos; history = snapshot.history; scanned = true; receive = ''
-      message = 'Sincronização concluída. Saldo e histórico atualizados.'
+      syncController.signal.throwIfAborted()
+      persist({...account, receiveIndex:Math.max(account.receiveIndex,snapshot.receiveIndex), changeIndex:Math.max(account.changeIndex,snapshot.changeIndex)})
+      coins = snapshot.utxos; history = snapshot.history; scanned = true
+      updatedAt=Date.now(); now=updatedAt; cachedBalance=coins.reduce((sum,c)=>sum+c.value,0)
+      if(source==='local'||source==='club')saveSummary(account,{source,updatedAt,balance:cachedBalance,history})
+      syncMessage = 'Sincronização concluída. Saldo e histórico atualizados.'
     }
     } catch (error) {
-      if (syncController.signal.aborted) throw new Error('Sincronização cancelada. Nenhum resultado parcial foi aplicado.')
-      throw error
+      const failure=syncController.signal.aborted ? new Error('Sincronização cancelada. Nenhum resultado parcial foi aplicado.') : error
+      syncFailure=true;syncMessage=failure instanceof Error?failure.message:'Falha na sincronização.'
+      throw failure
     } finally { syncController = null }
+  }
+  async function synchronize() {
+    if(syncController || proposal)return
+    try { await refresh() } catch(error) { syncFailure=true; syncMessage=(error instanceof Error?error.message:'Falha na sincronização.')+(updatedAt?' A última consulta continua visível; os dados podem estar desatualizados.':'') }
   }
   async function sameDevice() {
     if (!account) throw new Error('Importe a conta pública primeiro.')
@@ -75,26 +89,29 @@
     if (key.xpub !== account.xpub || key.fingerprint.toLowerCase() !== account.fingerprint) throw new Error('A conta não corresponde à carteira ou à passphrase desbloqueada no dispositivo.')
   }
   async function importDevice() {
+    if(syncController)throw new Error('Aguarde ou cancele a sincronização antes de trocar a conta.')
     const key = await device.getXpub('Mainnet', ACCOUNT_PATH)
     if (account && key.xpub !== account.xpub && !await askConfirmation('Substituir a conta pública neste navegador? Exporte a configuração atual antes.')) return
     persist({...key, id:'', name:'', accountPath:ACCOUNT_PATH, network:'Mainnet', type:'p2wpkh', receiveIndex:account?.xpub === key.xpub ? account.receiveIndex : 0, changeIndex:account?.xpub === key.xpub ? account.changeIndex : 0, createdAt:new Date().toISOString()})
-    coins = []; history = []; scanned = false; proposal = null; signed = null; receive = ''
+    coins = []; history = []; scanned = false; proposal = null; signed = null; receive = ''; updatedAt=0; clearSummary()
     message = 'Conta pública importada. Exporte a configuração e sincronize com seu node.'
+    void synchronize()
   }
   function download(name:string, data:string, type='application/json') {
     const url = URL.createObjectURL(new Blob([data],{type})); const anchor = document.createElement('a')
     anchor.href = url; anchor.download = name; anchor.click(); setTimeout(() => URL.revokeObjectURL(url),1000)
   }
   async function importConfig(event: Event) {
+    if(syncController)throw new Error('Aguarde ou cancele a sincronização antes de trocar a conta.')
     const input = event.target as HTMLInputElement; const file = input.files?.[0]
     if (!file) return
     if (file.size > 8192) throw new Error('Configuração muito grande.')
     const value = publicAccount(JSON.parse(await file.text()))
     if (account && !await askConfirmation('Substituir a conta pública deste navegador?')) return
-    persist(value); coins=[]; history=[]; scanned=false; receive=''; proposal=null; signed=null; input.value=''
+    persist(value); coins=[]; history=[]; scanned=false; receive=''; proposal=null; signed=null; input.value=''; updatedAt=0; clearSummary(); void synchronize()
   }
   async function showReceive() {
-    if (!account || !scanned) throw new Error('Sincronize a conta antes de gerar um endereço.')
+    if (!account || !updatedAt) throw new Error('Sincronize a conta antes de gerar um endereço.')
     await sameDevice()
     const next = deriveAddress(account!, 0, account!.receiveIndex)
     await device.verifyAddress('Mainnet', next.path, next.address)
@@ -117,7 +134,10 @@
   }
   async function prepare() {
     if (!account || !scanned) throw new Error('Sincronize a conta primeiro.')
-    const result = await preparePayment(account, selected, address.trim(), amount, rate, getTxHex)
+    const previous=selected.slice(), destination=address.trim(), sendAmount=amount, sendRate=rate
+    await refresh()
+    const fresh=revalidateSelection(previous,coins)
+    const result = await preparePayment(account, fresh, destination, sendAmount, sendRate, getTxHex)
     persist({...account, changeIndex:result.changeIndex})
     proposal = result.transaction; signed=null; broadcastState='new'
     message = 'Proposta pronta. Confira cada saída e a taxa antes de assinar.'
@@ -136,6 +156,7 @@
       await getTxHex(expected); broadcastState='done'; scanned=false; message='Transação encontrada no node.'; return
     }
     broadcastState='unknown'
+    clearSummary(); updatedAt=0
     try {
       const result = await api<{txid:string}>('broadcast',{hex:signed.hex})
       if (result.txid !== expected) throw new Error('Txid divergente.')
@@ -146,8 +167,10 @@
     initializeAppearance()
     window.addEventListener('hashchange', initializeAppearance)
     try { const saved = loadAccounts()[0]; if (saved) account=publicAccount(saved) } catch { message='Configuração local inválida. Importe novamente a conta pública.'; failure=true }
-    void run(async () => { const status=await api<{height:number;electrum_source:string}>('status');height=status.height;source=status.electrum_source })
-    return () => { resolveConfirmation?.(false); window.removeEventListener('hashchange', initializeAppearance); syncController?.abort(); void device.disconnect() }
+    if(account){const cached=loadSummary(account);if(cached){updatedAt=cached.updatedAt;cachedBalance=cached.balance;history=cached.history;source=cached.source}}
+    void synchronize()
+    const clock=window.setInterval(()=>now=Date.now(),30000)
+    return () => { clearInterval(clock); resolveConfirmation?.(false); window.removeEventListener('hashchange', initializeAppearance); syncController?.abort(); void device.disconnect() }
   })
 </script>
 
@@ -160,6 +183,7 @@
   <div class="status"><span>Node · {height === null ? 'indisponível' : 'bloco ' + height}</span><span>Electrum · {source==='club' ? 'clube · servidor público' : source==='local' ? 'meu node' : 'não consultado'}</span><span>Dispositivo · {connected ? unlocked ? 'desbloqueado' : 'bloqueado' : 'desconectado'}</span><span>Bitcoin mainnet · BIP84</span></div>
   {#if source==='club'}<p>O LOS consulta o servidor público electrum.br-ln.com:50001 pela internet. Essa conexão usa TCP sem TLS: o servidor e intermediários de rede podem observar suas consultas. As chaves continuam no dispositivo. A escolha do servidor é feita na loja do LOS, sem fallback automático.</p>{/if}
   <p class:failure role="status" aria-live="polite" hidden={!message}>{busy ? 'Em andamento · ' : ''}{message}</p>
+  <p role="status" class:failure={syncFailure} aria-live="polite" hidden={!syncMessage}>{syncMessage}</p>
   {#if syncController}<button class="secondary" on:click={() => syncController?.abort()}>Cancelar sincronização</button>{/if}
   <FirmwareInstaller bind:busy {connected} hasProposal={!!proposal} />
   <section class="section-card"><h2>01 <span>Conectar o assinador</span></h2><p>Com o firmware já instalado, conecte o dispositivo por USB a este computador. Use Chromium, Chrome ou Edge com HTTPS confiável e confira o código de pareamento na tela do dispositivo.</p>
@@ -173,10 +197,10 @@
     </details>
   </section>
   <section class="section-card"><h2>02 <span>Minha carteira Bitcoin</span></h2>
-    {#if account}<p>{balanceLabel}</p><p class="mono">Conta {account.fingerprint} · {account.accountPath}</p><button disabled={busy || !!proposal} on:click={() => run(refresh)}>Sincronizar com Electrum selecionado</button>{:else}<p>Importe a conta pública do assinador ou seu arquivo de configuração para começar.</p>{/if}
+    {#if account}<p>{balanceLabel}</p>{#if updatedAt}<p class="updated">{updatedLabel(updatedAt,now)} · {new Date(updatedAt).toLocaleString('pt-BR')}<br />{syncController ? 'Atualizando em segundo plano. Você pode usar o assinador.' : 'Consulta salva neste navegador; o saldo pode ter mudado.'}</p>{/if}<p class="mono">Conta {account.fingerprint} · {account.accountPath}</p><button disabled={busy || !!syncController || !!proposal} on:click={() => synchronize()}>Sincronizar com Electrum selecionado</button>{:else}<p>Importe a conta pública do assinador ou seu arquivo de configuração para começar.</p>{/if}
     <details open={!account}><summary>Conta pública e backup</summary>
       <p>A configuração pública permite consultar saldo e histórico com o dispositivo desconectado. Ela revela sua atividade financeira; guarde-a com privacidade. O backup das palavras fica offline.</p>
-      <div class="buttons"><button disabled={busy || !unlocked || !!proposal} on:click={() => run(importDevice)}>Importar do assinador</button><label class="file">Importar configuração pública<input type="file" accept="application/json,.json" disabled={busy || !!proposal} on:change={event => run(() => importConfig(event))} /></label><button class="secondary" disabled={busy || !account} on:click={() => account && download('brln-conta-publica.json',JSON.stringify(publicAccount(account),null,2))}>Exportar configuração</button></div>
+      <div class="buttons"><button disabled={busy || !!syncController || !unlocked || !!proposal} on:click={() => run(importDevice)}>Importar do assinador</button><label class="file">Importar configuração pública<input type="file" accept="application/json,.json" disabled={busy || !!syncController || !!proposal} on:change={event => run(() => importConfig(event))} /></label><button class="secondary" disabled={busy || !account} on:click={() => account && download('brln-conta-publica.json',JSON.stringify(publicAccount(account),null,2))}>Exportar configuração</button></div>
       {#if account}<p class="mono">{account.xpub}</p>{/if}
     </details>
   </section>
@@ -187,19 +211,19 @@
   </nav>
   {#if tab==='receive'}<section class="section-card"><h2><span>Receber Bitcoin</span></h2>
     <p>Sincronize a conta, conecte e desbloqueie o assinador. Compare o endereço completo na LilyGO antes de compartilhá-lo.</p>
-    <button class="secondary" disabled={busy || !scanned || !unlocked || !!proposal} on:click={() => run(showReceive)}>Conferir endereço para receber</button>
+    <button class="secondary" disabled={busy || !updatedAt || !unlocked || !!proposal} on:click={() => run(showReceive)}>Conferir endereço para receber</button>
     {#if receive}<div class="receive"><p class="mono">{receive}</p>
       <label><input type="checkbox" bind:checked={receiveChecked} /> Conferi todos os caracteres no dispositivo e são iguais.</label>
       {#if receiveChecked}<img class="receive-qr" src={receiveQR} alt="QR code do endereço Bitcoin conferido" width="256" height="256" /><button class="secondary" on:click={() => run(() => copy(receive))}>Copiar endereço</button>{/if}
     </div>{/if}
   </section>{/if}
   {#if tab==='history'}<section class="section-card"><h2><span>Histórico</span></h2>
-    {#if !scanned}<p>Sincronize a conta para consultar o histórico.</p>{:else if !history.length}<p>Nenhuma transação encontrada nesta conta.</p>{:else}<ul class="transactions">{#each history as tx}<li><p>{tx.height>0 ? `Confirmada no bloco ${tx.height}` : 'Não confirmada'}</p><p class="mono">{tx.txid}</p><button class="secondary" disabled={busy} on:click={() => run(() => copy(tx.txid))}>Copiar ID da transação</button></li>{/each}</ul>{/if}
+    {#if !updatedAt}<p>Sincronize a conta para consultar o histórico.</p>{:else if !history.length}<p>Nenhuma transação encontrada nesta conta.</p>{:else}<ul class="transactions">{#each history as tx}<li><p>{tx.height>0 ? `Confirmada no bloco ${tx.height}` : 'Não confirmada'}</p><p class="mono">{tx.txid}</p><button class="secondary" disabled={busy} on:click={() => run(() => copy(tx.txid))}>Copiar ID da transação</button></li>{/each}</ul>{/if}
   </section>{/if}
   {#if tab==='send'}
-  <section class="section-card"><h2><span>Enviar Bitcoin</span></h2><p>Prepare a transação, confira e assine no dispositivo. A transmissão exige uma confirmação separada.</p>{#if scanned && !coins.length}<p>Nenhum saldo disponível para enviar nesta conta.</p>{/if}
-    {#if coins.length}<fieldset disabled={busy || !!proposal}><legend>UTXOs · somente confirmados podem ser gastos</legend>{#each coins as coin}<label class="coin"><input type="checkbox" bind:checked={coin.selected} disabled={!coin.status.confirmed} /><span>{coin.value.toLocaleString('pt-BR')} sats <small class="mono">{coin.txid}:{coin.vout}</small></span></label>{/each}</fieldset>{/if}
-    <fieldset disabled={busy || !!proposal || !scanned}><label>Endereço de destino<input bind:value={address} autocomplete="off" spellcheck="false" placeholder="bc1…" /></label><div class="fields"><label>Valor em sats<input type="number" bind:value={amount} min="1" step="1" /></label><label>Taxa em sat/vB<input type="number" bind:value={rate} min="1" max="1000" step="0.1" /></label></div><div class="buttons"><button class="secondary" on:click={() => run(async () => {rate=(await api<{sat_per_vbyte:number}>('fees')).sat_per_vbyte})}>Consultar taxa no node</button><button disabled={!selected.length} on:click={() => run(prepare)}>Preparar transação</button></div></fieldset>
+  <section class="section-card"><h2><span>Enviar Bitcoin</span></h2><p>Antes de preparar, os fundos selecionados serão consultados novamente. Confira e assine no dispositivo. A transmissão exige uma confirmação separada.</p>{#if scanned && !coins.length}<p>Nenhum saldo disponível para enviar nesta conta.</p>{/if}
+    {#if coins.length}<fieldset disabled={busy || !!syncController || !!proposal}><legend>UTXOs · somente confirmados podem ser gastos</legend>{#each coins as coin}<label class="coin"><input type="checkbox" bind:checked={coin.selected} disabled={!coin.status.confirmed} /><span>{coin.value.toLocaleString('pt-BR')} sats <small class="mono">{coin.txid}:{coin.vout}</small></span></label>{/each}</fieldset>{/if}
+    <fieldset disabled={busy || !!syncController || !!proposal || !scanned}><label>Endereço de destino<input bind:value={address} autocomplete="off" spellcheck="false" placeholder="bc1…" /></label><div class="fields"><label>Valor em sats<input type="number" bind:value={amount} min="1" step="1" /></label><label>Taxa em sat/vB<input type="number" bind:value={rate} min="1" max="1000" step="0.1" /></label></div><div class="buttons"><button class="secondary" on:click={() => run(async () => {rate=(await api<{sat_per_vbyte:number}>('fees')).sat_per_vbyte})}>Consultar taxa no node</button><button disabled={!selected.length} on:click={() => run(prepare)}>Preparar transação</button></div></fieldset>
     {#if proposal}<div class="review"><h3>Proposta congelada</h3>{#each proposal.outputs as output}<p><strong>{output.change ? 'Troco' : 'Destino'} · {output.amount.toLocaleString('pt-BR')} sats</strong><br /><span class="mono">{output.address}</span></p>{/each}<p>Taxa: <strong>{proposal.fee} sats</strong> · estimativa {proposal.feeRate.toFixed(2)} sat/vB</p><div class="buttons"><button disabled={busy || !unlocked || !!signed} on:click={() => run(sign)}>Conferir e assinar no dispositivo</button><button class="secondary" disabled={busy || broadcastState==='unknown'} on:click={() => {proposal=null; signed=null; coins=[]; scanned=false; message='Proposta encerrada. Sincronize a conta antes de preparar outra.'}}>Encerrar proposta</button></div></div>{/if}
     {#if signed}<div class="review"><h3>Assinatura verificada</h3><p class="mono">{signed.txid}</p><p>Taxa final: {signed.fee} sats · {signed.feeRate.toFixed(2)} sat/vB</p><div class="buttons"><button disabled={busy || broadcastState==='done'} on:click={() => run(broadcast)}>{broadcastState==='unknown' ? 'Consultar resultado no node' : broadcastState==='done' ? 'Transmitida' : 'Transmitir pelo Electrum selecionado'}</button><button class="secondary" on:click={() => signed && download('brln-' + signed.txid + '.hex',signed.hex,'text/plain')}>Exportar transação assinada</button></div></div>{/if}
   </section>

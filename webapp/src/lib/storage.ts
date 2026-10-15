@@ -351,6 +351,7 @@ export const clearWalletData = () => {
   localStorage.removeItem(ACCOUNTS_KEY)
   localStorage.removeItem(ADDRESSES_KEY)
   localStorage.removeItem(CHAIN_STATE_KEY)
+  localStorage.removeItem('brln-wallet-summary.v1')
 }
 
 // Display preferences contain only validated public enums and a boolean.
@@ -364,3 +365,27 @@ export const installerWasSeen = () => read<boolean>('brln-installer-seen', false
 export function rememberInstaller() {
   try { localStorage.setItem('brln-installer-seen', 'true') } catch { /* Optional preference. */ }
 }
+
+const SUMMARY_KEY = 'brln-wallet-summary.v1'
+export type WalletSummary = { source: 'local' | 'club'; updatedAt:number; balance:number; history:Array<{txid:string;height:number}> }
+const identity = (a:WalletAccount) => [a.network,a.type,a.accountPath,a.fingerprint,a.xpub].join(':')
+export function loadSummary(account:WalletAccount, now=Date.now()):WalletSummary | null {
+  try {
+    const raw=localStorage.getItem(SUMMARY_KEY)
+    if (!raw || raw.length>2_000_000) return null
+    const v=JSON.parse(raw)
+    if(v.account!==identity(account) || !['local','club'].includes(v.source) ||
+      !Number.isSafeInteger(v.updatedAt) || v.updatedAt<=0 || v.updatedAt>now ||
+      !Number.isSafeInteger(v.balance) || v.balance<0 || v.balance>21e14 ||
+      !Array.isArray(v.history) || v.history.length>10000 ||
+      !v.history.every((t:any)=>t && typeof t.txid==='string' && /^[a-f0-9]{64}$/i.test(t.txid) && Number.isSafeInteger(t.height)))return null
+    return {source:v.source,updatedAt:v.updatedAt,balance:v.balance,history:v.history.map((t:any)=>({txid:t.txid,height:t.height}))}
+  } catch { return null }
+}
+// Display-only cache: never persist spendable inputs, selections or secret data.
+export function saveSummary(account:WalletAccount, summary:WalletSummary) {
+  if(containsPrivateExtendedKey(account.xpub))return
+  try { localStorage.setItem(SUMMARY_KEY,JSON.stringify({account:identity(account),source:summary.source,
+    updatedAt:summary.updatedAt,balance:summary.balance,history:summary.history.map(t=>({txid:t.txid,height:t.height}))})) } catch { /* Cache is optional. */ }
+}
+export function clearSummary() { try { localStorage.removeItem(SUMMARY_KEY) } catch { /* Optional storage. */ } }

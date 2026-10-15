@@ -1,5 +1,22 @@
 # BRLN T-Display: physical lab validation
 
+## Owner-approved unlock and cached public summary (2026-10-15)
+
+The owner approved the `5275570` hash and completed normal unlock. Camera
+inspection showed `Desbloqueando / Aguarde / Nao desconecte`; the owner then
+reported `Desbloqueada`, without an implicit passphrase prompt. The owner's LOS
+capture subsequently showed full-address acknowledgment, QR and successful copy.
+Advanced passphrase unlock and signing/recovery still require physical validation.
+
+Coordinator source `b61de2f` retains an account/source-bound public display summary
+(balance, transaction IDs/blocks, timestamp), never spendable inputs or secrets.
+Opening the app restores it and starts a nonblocking update. Failed/cancelled
+updates retain the last completed summary; source/account changes discard it.
+Preparing a payment always re-queries Electrum and rejects changed/spent inputs.
+The current device protocol remains compatible; no firmware update is needed.
+104 unit tests, Svelte check/build and browser automatic scan/cache reload/age/
+cancellation/session-expiry/changed-input rejection tests passed locally.
+
 ## Explicit wallet modes and LOS menu (2026-10-15)
 
 After the owner released the serial port, the identity-guarded COM5 board was

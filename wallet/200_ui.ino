@@ -154,7 +154,7 @@ void showBootLogo() {
   tft.setSwapBytes(swap);
   tft.setTextFont(1); tft.setTextSize(2);
   tft.setTextColor(TFT_WHITE, BRLN_BACKGROUND);
-  const String subtitle = "ASSINADOR BITCOIN";
+  const String subtitle = "Signer";
   tft.setCursor((tft.width()-uiTextPixelWidth(subtitle,2))/2, 108);
   tft.print(subtitle);
 #else

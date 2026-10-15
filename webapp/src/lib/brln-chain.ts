@@ -9,7 +9,7 @@ export async function api<T>(path: string, body?: unknown, signal?: AbortSignal)
     body: body === undefined ? undefined : JSON.stringify(body),
     credentials: 'same-origin', signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(40_000)]) : AbortSignal.timeout(40_000),
   })
-  if (!response.ok) throw new Error(response.status === 401 ? 'Entre no LightningOS neste mesmo endereço e abra o app novamente.' : `Node indisponível ou solicitação recusada (${response.status}).`)
+  if (!response.ok) throw new Error(response.status === 401 ? 'Entre no BR⚡LN LightningOS neste mesmo endereço e abra o app novamente.' : `Node indisponível ou solicitação recusada (${response.status}).`)
   return response.json() as Promise<T>
 }
 type ScriptState = {

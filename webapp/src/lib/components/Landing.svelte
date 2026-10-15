@@ -10,7 +10,7 @@
 <main class="landing">
   <header>
     <span class="logo"
-      ><img src={`${base}/favicon.svg`} alt="BRLN Hardwallet" /></span
+      ><img src={`${base}/favicon.svg`} alt="BR⚡LN Hardwallet" /></span
     >
     <span>Version v0.1.1 · made by LNbits</span>
   </header>

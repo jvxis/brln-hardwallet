@@ -32,14 +32,14 @@
   }
   $: if (!receive) { receiveQR = ''; receiveChecked = false }
   let syncController: AbortController | null = null
-  $: balanceLabel = updatedAt ? `Saldo na última consulta: ${(scanned?balance:cachedBalance).toLocaleString('pt-BR')} sats · ${history.length} transações` : 'Saldo ainda não consultado. Sincronize a conta pública; não é necessário conectar a LilyGO.'
+  $: balanceLabel = updatedAt ? `Saldo na última consulta: ${(scanned?balance:cachedBalance).toLocaleString('pt-BR')} sats · ${history.length} transações` : 'Saldo ainda não consultado. Sincronize a conta pública; não é necessário conectar o BR⚡LN Signer.'
   let receive = '', proposal: UnsignedTransaction | null = null
   let signed: ReturnType<typeof finalizePsbt> | null = null
   let broadcastState: 'new' | 'unknown' | 'done' = 'new'
   const operations = [{id:'unlock',label:'Desbloquear carteira'},{id:'create',label:'Criar carteira'},{id:'restore',label:'Recuperar carteira'},{id:'backup',label:'Conferir backup'}] as const
   const device = new BRLNDevice({
-    confirmPair: code => askConfirmation('Confira o código ' + code + ' na tela do dispositivo. Os códigos são iguais?'),
-    psbtReview: step => { if (step) message = 'Confira o endereço completo, valor, troco e taxa no dispositivo. Aprove pelos botões.' },
+    confirmPair: code => askConfirmation('Confira o código ' + code + ' na tela do BR⚡LN Signer. Os códigos são iguais?'),
+    psbtReview: step => { if (step) message = 'Confira o endereço completo, valor, troco e taxa no BR⚡LN Signer. Aprove pelos botões.' },
     log: () => {}, state: () => { connected = device.connected; unlocked = device.authenticated },
   })
   $: balance = coins.reduce((sum, coin) => sum + coin.value, 0)
@@ -56,7 +56,7 @@
     syncController = new AbortController()
     syncFailure=false
     try {
-    syncMessage = 'Consultando o node. A LilyGO pode permanecer desconectada.'
+    syncMessage = 'Consultando o node. O BR⚡LN Signer pode permanecer desconectado.'
     const status = await api<{height:number;electrum_source:string}>('status', undefined, syncController.signal)
     if(source && source!==status.electrum_source){updatedAt=0;scanned=false;coins=[];history=[];clearSummary()}
     height=status.height; source=status.electrum_source
@@ -86,7 +86,7 @@
   async function sameDevice() {
     if (!account) throw new Error('Importe a conta pública primeiro.')
     const key = await device.getXpub('Mainnet', ACCOUNT_PATH)
-    if (key.xpub !== account.xpub || key.fingerprint.toLowerCase() !== account.fingerprint) throw new Error('A conta não corresponde à carteira ou à passphrase desbloqueada no dispositivo.')
+    if (key.xpub !== account.xpub || key.fingerprint.toLowerCase() !== account.fingerprint) throw new Error('A conta não corresponde à carteira ou à passphrase desbloqueada no BR⚡LN Signer.')
   }
   async function importDevice() {
     if(syncController)throw new Error('Aguarde ou cancele a sincronização antes de trocar a conta.')
@@ -118,19 +118,19 @@
     const qr = await QRCode.toDataURL(next.address, {width:256, margin:4, errorCorrectionLevel:'M'})
     persist({...account!, receiveIndex:account!.receiveIndex+1}); receive=next.address
     receiveQR=qr; receiveChecked=false
-    message = 'Endereço exibido no dispositivo. Compare todos os caracteres com o endereço abaixo.'
+    message = 'Endereço exibido no BR⚡LN Signer. Compare todos os caracteres com o endereço abaixo.'
   }
   async function copy(text: string) {
     await navigator.clipboard.writeText(text)
     message='Copiado para a área de transferência.'
   }
   async function localAction(operation: 'unlock' | 'unlock-passphrase' | 'create' | 'restore' | 'backup') {
-    message='Continue pelos dois botões do dispositivo.'
+    message='Continue pelos dois botões do BR⚡LN Signer.'
     if (operation !== 'backup') { receive=''; proposal=null; signed=null }
     await device.local(operation)
-    message=operation==='backup' ? 'Conferência do backup encerrada no dispositivo.' :
+    message=operation==='backup' ? 'Conferência do backup encerrada no BR⚡LN Signer.' :
       operation==='unlock-passphrase' ? 'Carteira com passphrase aberta. Importe sua conta pública para consultar esta carteira.' :
-      operation==='unlock' ? 'Carteira desbloqueada, sem passphrase. Continue em Receber ou Enviar.' : 'Carteira pronta. Importe a conta pública do assinador.'
+      operation==='unlock' ? 'Carteira desbloqueada, sem passphrase. Continue em Receber ou Enviar.' : 'Carteira pronta. Importe a conta pública do BR⚡LN Signer.'
   }
   async function prepare() {
     if (!account || !scanned) throw new Error('Sincronize a conta primeiro.')
@@ -174,33 +174,33 @@
   })
 </script>
 
-<svelte:head><link rel="stylesheet" href="/los-theme/theme.css" /><title>BRLN · Carteira soberana</title><meta name="description" content="Coordenador Bitcoin local com assinador ESP32 e LightningOS" /></svelte:head>
+<svelte:head><link rel="stylesheet" href="/los-theme/theme.css" /><title>BR⚡LN Hardwallet</title><meta name="description" content="Coordenador Bitcoin local com assinador ESP32 e BR⚡LN LightningOS" /></svelte:head>
 <main>
   <dialog bind:this={confirmation} on:close={finishConfirmation} aria-labelledby="confirmation-title"><form method="dialog"><h2 id="confirmation-title">Confira antes de continuar</h2><p>{confirmationText}</p><div class="buttons"><button class="secondary" value="cancel">Cancelar</button><button value="accept">Sim, confirmo</button></div></form></dialog>
-  <header><div class="brand"><img src="/brln-logo.png" alt="BRLN" /><div><h1>Hardwallet</h1><small>BITCOIN · LIGHTNINGOS</small></div></div><span class="badge">PILOTO EXPERIMENTAL</span></header>
-  <p class="intro">O LightningOS consulta a blockchain. A T-Display confere e assina. Seed, senha e passphrase são digitadas somente pelos botões do dispositivo.</p>
+  <header><div class="brand"><img src="/brln-logo.png" alt="BR⚡LN" /><div><h1>Hardwallet</h1><small>BR⚡LN LightningOS + BR⚡LN Signer</small></div></div><span class="badge">PILOTO EXPERIMENTAL</span></header>
+  <p class="intro">O BR⚡LN LightningOS consulta a blockchain. O BR⚡LN Signer confere e assina. Seed, senha e passphrase são digitadas somente pelos botões do BR⚡LN Signer.</p>
   <aside>Protótipo sem auditoria independente e sem validação física concluída. Use uma carteira de laboratório, sem fundos reais. USB não é air gap. Esta aplicação não controla o saldo nem os canais do LND.</aside>
-  <div class="status"><span>Node · {height === null ? 'indisponível' : 'bloco ' + height}</span><span>Electrum · {source==='club' ? 'clube · servidor público' : source==='local' ? 'meu node' : 'não consultado'}</span><span>Dispositivo · {connected ? unlocked ? 'desbloqueado' : 'bloqueado' : 'desconectado'}</span><span>Bitcoin mainnet · BIP84</span></div>
-  {#if source==='club'}<p>O LOS consulta o servidor público electrum.br-ln.com:50001 pela internet. Essa conexão usa TCP sem TLS: o servidor e intermediários de rede podem observar suas consultas. As chaves continuam no dispositivo. A escolha do servidor é feita na loja do LOS, sem fallback automático.</p>{/if}
+  <div class="status"><span>Node · {height === null ? 'indisponível' : 'bloco ' + height}</span><span>Electrum · {source==='club' ? 'clube · servidor público' : source==='local' ? 'meu node' : 'não consultado'}</span><span>BR⚡LN Signer · {connected ? unlocked ? 'desbloqueado' : 'bloqueado' : 'desconectado'}</span><span>Bitcoin mainnet · BIP84</span></div>
+  {#if source==='club'}<p>O BR⚡LN LightningOS consulta o servidor público electrum.br-ln.com:50001 pela internet. Essa conexão usa TCP sem TLS: o servidor e intermediários de rede podem observar suas consultas. As chaves continuam no BR⚡LN Signer. A escolha do servidor é feita na loja do BR⚡LN LightningOS, sem fallback automático.</p>{/if}
   <p class:failure role="status" aria-live="polite" hidden={!message}>{busy ? 'Em andamento · ' : ''}{message}</p>
   <p role="status" class:failure={syncFailure} aria-live="polite" hidden={!syncMessage}>{syncMessage}</p>
   {#if syncController}<button class="secondary" on:click={() => syncController?.abort()}>Cancelar sincronização</button>{/if}
   <FirmwareInstaller bind:busy {connected} hasProposal={!!proposal} />
-  <section class="section-card"><h2>01 <span>Conectar o assinador</span></h2><p>Com o firmware já instalado, conecte o dispositivo por USB a este computador. Use Chromium, Chrome ou Edge com HTTPS confiável e confira o código de pareamento na tela do dispositivo.</p>
+  <section class="section-card"><h2>01 <span>Conectar o BR⚡LN Signer</span></h2><p>Com o firmware já instalado, conecte o BR⚡LN Signer por USB a este computador. Use Chromium, Chrome ou Edge com HTTPS confiável e confira o código de pareamento na tela do BR⚡LN Signer.</p>
     <div class="buttons"><button disabled={busy || connected} on:click={() => run(() => device.connect())}>Conectar por USB</button><button class="secondary" disabled={busy || !connected} on:click={() => run(() => device.disconnect())}>Desconectar</button></div>
     {#if connected}<div class="buttons">{#each operations as operation}<button class="secondary" disabled={busy || !!proposal || (operation.id==='backup' && !unlocked)} on:click={() => run(() => localAction(operation.id))}>{operation.label}</button>{/each}<button class="secondary" disabled={busy || !unlocked} on:click={() => run(() => device.logout())}>Bloquear</button></div>{/if}
-    <p>Desbloqueie com a senha no dispositivo e aguarde. O desbloqueio normal abre sua carteira sem passphrase BIP39.</p>
+    <p>Desbloqueie com a senha no BR⚡LN Signer e aguarde. O desbloqueio normal abre sua carteira sem passphrase BIP39.</p>
     <details><summary>Avançado · abrir carteira com passphrase</summary>
-      <p>Cada passphrase abre uma carteira diferente. Não é a senha do dispositivo e não existe aviso de passphrase incorreta. Você precisará das mesmas palavras e da mesma passphrase em cada abertura ou recuperação.</p>
-      <p>Digite a passphrase somente na LilyGO. Depois importe a conta pública dessa carteira; a conta atual não será substituída automaticamente.</p>
+      <p>Cada passphrase abre uma carteira diferente. Não é a senha do BR⚡LN Signer e não existe aviso de passphrase incorreta. Você precisará das mesmas palavras e da mesma passphrase em cada abertura ou recuperação.</p>
+      <p>Digite a passphrase somente no BR⚡LN Signer. Depois importe a conta pública dessa carteira; a conta atual não será substituída automaticamente.</p>
       <button class="secondary" disabled={busy || !connected || !!proposal} on:click={() => run(() => localAction('unlock-passphrase'))}>Abrir carteira com passphrase</button>
     </details>
   </section>
   <section class="section-card"><h2>02 <span>Minha carteira Bitcoin</span></h2>
-    {#if account}<p>{balanceLabel}</p>{#if updatedAt}<p class="updated">{updatedLabel(updatedAt,now)} · {new Date(updatedAt).toLocaleString('pt-BR')}<br />{syncController ? 'Atualizando em segundo plano. Você pode usar o assinador.' : 'Consulta salva neste navegador; o saldo pode ter mudado.'}</p>{/if}<p class="mono">Conta {account.fingerprint} · {account.accountPath}</p><button disabled={busy || !!syncController || !!proposal} on:click={() => synchronize()}>Sincronizar com Electrum selecionado</button>{:else}<p>Importe a conta pública do assinador ou seu arquivo de configuração para começar.</p>{/if}
+    {#if account}<p>{balanceLabel}</p>{#if updatedAt}<p class="updated">{updatedLabel(updatedAt,now)} · {new Date(updatedAt).toLocaleString('pt-BR')}<br />{syncController ? 'Atualizando em segundo plano. Você pode usar o BR⚡LN Signer.' : 'Consulta salva neste navegador; o saldo pode ter mudado.'}</p>{/if}<p class="mono">Conta {account.fingerprint} · {account.accountPath}</p><button disabled={busy || !!syncController || !!proposal} on:click={() => synchronize()}>Sincronizar com Electrum selecionado</button>{:else}<p>Importe a conta pública do BR⚡LN Signer ou seu arquivo de configuração para começar.</p>{/if}
     <details open={!account}><summary>Conta pública e backup</summary>
-      <p>A configuração pública permite consultar saldo e histórico com o dispositivo desconectado. Ela revela sua atividade financeira; guarde-a com privacidade. O backup das palavras fica offline.</p>
-      <div class="buttons"><button disabled={busy || !!syncController || !unlocked || !!proposal} on:click={() => run(importDevice)}>Importar do assinador</button><label class="file">Importar configuração pública<input type="file" accept="application/json,.json" disabled={busy || !!syncController || !!proposal} on:change={event => run(() => importConfig(event))} /></label><button class="secondary" disabled={busy || !account} on:click={() => account && download('brln-conta-publica.json',JSON.stringify(publicAccount(account),null,2))}>Exportar configuração</button></div>
+      <p>A configuração pública permite consultar saldo e histórico com o BR⚡LN Signer desconectado. Ela revela sua atividade financeira; guarde-a com privacidade. O backup das palavras fica offline.</p>
+      <div class="buttons"><button disabled={busy || !!syncController || !unlocked || !!proposal} on:click={() => run(importDevice)}>Importar do BR⚡LN Signer</button><label class="file">Importar configuração pública<input type="file" accept="application/json,.json" disabled={busy || !!syncController || !!proposal} on:change={event => run(() => importConfig(event))} /></label><button class="secondary" disabled={busy || !account} on:click={() => account && download('brln-conta-publica.json',JSON.stringify(publicAccount(account),null,2))}>Exportar configuração</button></div>
       {#if account}<p class="mono">{account.xpub}</p>{/if}
     </details>
   </section>
@@ -210,10 +210,10 @@
     <button class:secondary={tab!=='history'} aria-pressed={tab==='history'} on:click={() => tab='history'}>Histórico</button>
   </nav>
   {#if tab==='receive'}<section class="section-card"><h2><span>Receber Bitcoin</span></h2>
-    <p>Sincronize a conta, conecte e desbloqueie o assinador. Compare o endereço completo na LilyGO antes de compartilhá-lo.</p>
+    <p>Sincronize a conta, conecte e desbloqueie o BR⚡LN Signer. Compare o endereço completo no BR⚡LN Signer antes de compartilhá-lo.</p>
     <button class="secondary" disabled={busy || !updatedAt || !unlocked || !!proposal} on:click={() => run(showReceive)}>Conferir endereço para receber</button>
     {#if receive}<div class="receive"><p class="mono">{receive}</p>
-      <label><input type="checkbox" bind:checked={receiveChecked} /> Conferi todos os caracteres no dispositivo e são iguais.</label>
+      <label><input type="checkbox" bind:checked={receiveChecked} /> Conferi todos os caracteres no BR⚡LN Signer e são iguais.</label>
       {#if receiveChecked}<img class="receive-qr" src={receiveQR} alt="QR code do endereço Bitcoin conferido" width="256" height="256" /><button class="secondary" on:click={() => run(() => copy(receive))}>Copiar endereço</button>{/if}
     </div>{/if}
   </section>{/if}
@@ -221,14 +221,14 @@
     {#if !updatedAt}<p>Sincronize a conta para consultar o histórico.</p>{:else if !history.length}<p>Nenhuma transação encontrada nesta conta.</p>{:else}<ul class="transactions">{#each history as tx}<li><p>{tx.height>0 ? `Confirmada no bloco ${tx.height}` : 'Não confirmada'}</p><p class="mono">{tx.txid}</p><button class="secondary" disabled={busy} on:click={() => run(() => copy(tx.txid))}>Copiar ID da transação</button></li>{/each}</ul>{/if}
   </section>{/if}
   {#if tab==='send'}
-  <section class="section-card"><h2><span>Enviar Bitcoin</span></h2><p>Antes de preparar, os fundos selecionados serão consultados novamente. Confira e assine no dispositivo. A transmissão exige uma confirmação separada.</p>{#if scanned && !coins.length}<p>Nenhum saldo disponível para enviar nesta conta.</p>{/if}
+  <section class="section-card"><h2><span>Enviar Bitcoin</span></h2><p>Antes de preparar, os fundos selecionados serão consultados novamente. Confira e assine no BR⚡LN Signer. A transmissão exige uma confirmação separada.</p>{#if scanned && !coins.length}<p>Nenhum saldo disponível para enviar nesta conta.</p>{/if}
     {#if coins.length}<fieldset disabled={busy || !!syncController || !!proposal}><legend>UTXOs · somente confirmados podem ser gastos</legend>{#each coins as coin}<label class="coin"><input type="checkbox" bind:checked={coin.selected} disabled={!coin.status.confirmed} /><span>{coin.value.toLocaleString('pt-BR')} sats <small class="mono">{coin.txid}:{coin.vout}</small></span></label>{/each}</fieldset>{/if}
     <fieldset disabled={busy || !!syncController || !!proposal || !scanned}><label>Endereço de destino<input bind:value={address} autocomplete="off" spellcheck="false" placeholder="bc1…" /></label><div class="fields"><label>Valor em sats<input type="number" bind:value={amount} min="1" step="1" /></label><label>Taxa em sat/vB<input type="number" bind:value={rate} min="1" max="1000" step="0.1" /></label></div><div class="buttons"><button class="secondary" on:click={() => run(async () => {rate=(await api<{sat_per_vbyte:number}>('fees')).sat_per_vbyte})}>Consultar taxa no node</button><button disabled={!selected.length} on:click={() => run(prepare)}>Preparar transação</button></div></fieldset>
-    {#if proposal}<div class="review"><h3>Proposta congelada</h3>{#each proposal.outputs as output}<p><strong>{output.change ? 'Troco' : 'Destino'} · {output.amount.toLocaleString('pt-BR')} sats</strong><br /><span class="mono">{output.address}</span></p>{/each}<p>Taxa: <strong>{proposal.fee} sats</strong> · estimativa {proposal.feeRate.toFixed(2)} sat/vB</p><div class="buttons"><button disabled={busy || !unlocked || !!signed} on:click={() => run(sign)}>Conferir e assinar no dispositivo</button><button class="secondary" disabled={busy || broadcastState==='unknown'} on:click={() => {proposal=null; signed=null; coins=[]; scanned=false; message='Proposta encerrada. Sincronize a conta antes de preparar outra.'}}>Encerrar proposta</button></div></div>{/if}
+    {#if proposal}<div class="review"><h3>Proposta congelada</h3>{#each proposal.outputs as output}<p><strong>{output.change ? 'Troco' : 'Destino'} · {output.amount.toLocaleString('pt-BR')} sats</strong><br /><span class="mono">{output.address}</span></p>{/each}<p>Taxa: <strong>{proposal.fee} sats</strong> · estimativa {proposal.feeRate.toFixed(2)} sat/vB</p><div class="buttons"><button disabled={busy || !unlocked || !!signed} on:click={() => run(sign)}>Conferir e assinar no BR⚡LN Signer</button><button class="secondary" disabled={busy || broadcastState==='unknown'} on:click={() => {proposal=null; signed=null; coins=[]; scanned=false; message='Proposta encerrada. Sincronize a conta antes de preparar outra.'}}>Encerrar proposta</button></div></div>{/if}
     {#if signed}<div class="review"><h3>Assinatura verificada</h3><p class="mono">{signed.txid}</p><p>Taxa final: {signed.fee} sats · {signed.feeRate.toFixed(2)} sat/vB</p><div class="buttons"><button disabled={busy || broadcastState==='done'} on:click={() => run(broadcast)}>{broadcastState==='unknown' ? 'Consultar resultado no node' : broadcastState==='done' ? 'Transmitida' : 'Transmitir pelo Electrum selecionado'}</button><button class="secondary" on:click={() => signed && download('brln-' + signed.txid + '.hex',signed.hex,'text/plain')}>Exportar transação assinada</button></div></div>{/if}
   </section>
   {/if}
-  <footer>BRLN · Código aberto · Sem custódia do clube<br />O protótipo usa ESP32 da Espressif. A portabilidade do backup é independente deste dispositivo e do LightningOS.</footer>
+  <footer>BRLN · Código aberto · Sem custódia do clube<br />O protótipo usa ESP32 da Espressif. A portabilidade do backup é independente deste BR⚡LN Signer e do BR⚡LN LightningOS.</footer>
 </main>
 
 <style>

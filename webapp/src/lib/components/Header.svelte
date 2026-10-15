@@ -23,7 +23,7 @@
 <header class="topbar">
   <div class="brand">
     <span class="logo-wrap"
-      ><img src={`${base}/favicon.svg`} alt="BRLN Hardwallet" /></span
+      ><img src={`${base}/favicon.svg`} alt="BR⚡LN Hardwallet" /></span
     >
   </div>
   <div class="top-actions">

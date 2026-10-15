@@ -28,6 +28,6 @@ describe('public account synchronization without a signer', () => {
   })
   it('reports expired authentication instead of treating it as an empty balance', async () => {
     vi.stubGlobal('fetch',vi.fn(async()=>new Response('',{status:401})))
-    await expect(scanAccount(account)).rejects.toThrow('Entre no LightningOS')
+    await expect(scanAccount(account)).rejects.toThrow('Entre no BR⚡LN LightningOS')
   })
 })

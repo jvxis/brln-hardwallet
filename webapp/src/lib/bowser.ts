@@ -172,7 +172,7 @@ export class BowserDevice implements DeviceAdapter {
     let timer: ReturnType<typeof setTimeout>
     const ready = new Promise<void>((resolve, reject) => {
       this.startupReady = { resolve, reject }
-      timer = setTimeout(() => reject(new Error('A placa não concluiu a inicialização. Confira a tela e os botões.')), 20000)
+      timer = setTimeout(() => reject(new Error('O BR⚡LN Signer não concluiu a inicialização. Confira a tela e os botões.')), 20000)
     })
     void ready.catch(() => undefined)
     try {

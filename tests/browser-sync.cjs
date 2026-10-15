@@ -57,7 +57,7 @@ const fundedHash=require('node:crypto').createHash('sha256').update(fundedScript
  await page.getByText('Sincronização cancelada.',{exact:false}).waitFor();
  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('brln-wallet-summary.v1')).updatedAt),saved.updatedAt);
  await page.getByRole('button',{name:'Receber',exact:true}).click();
- mode='expired';await sync.click();await page.getByText('Entre no LightningOS neste mesmo endereço',{exact:false}).waitFor();
+ mode='expired';await sync.click();await page.getByText('Entre no BR⚡LN LightningOS neste mesmo endereço',{exact:false}).waitFor();
  assert.equal(await sync.isEnabled(),true);assert.equal(await sync.count(),1);
  mode='slow';await sync.click();await page.getByRole('button',{name:'Cancelar sincronização'}).click();
  await page.getByText('Sincronização cancelada.',{exact:false}).waitFor();

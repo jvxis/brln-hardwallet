@@ -1,4 +1,8 @@
-﻿# BRLN Hardwallet — experimental
+# BR⚡LN Hardwallet — experimental
+
+BR⚡LN Hardwallet é a solução completa: **BR⚡LN LightningOS** coordena a carteira
+e **BR⚡LN Signer** guarda as chaves e assina no dispositivo.
+Veja os [nomes oficiais e a primeira jornada](docs/PRODUCT_NAMES_AND_FIRST_RUN.md).
 
 Assinador Bitcoin de propósito geral para a LilyGO T-Display original, baseado no [Bowser da LNbits](https://github.com/lnbits/hardware-wallet). Firmware C/C++, interface Svelte/TypeScript e backend Go para integração com Electrum e LightningOS.
 
@@ -11,15 +15,15 @@ Assinador Bitcoin de propósito geral para a LilyGO T-Display original, baseado 
 - [Infográfico](research/2026-10-14/infografico-bowser-los-v1.png)
 - [Documentação original do Bowser](UPSTREAM_README.md)
 
-A seed, a senha e a passphrase são inseridas somente na placa. O navegador mantém apenas a conta pública e envia PSBTs para conferência e aprovação física. O servidor consulta o Electrum local e transmite transações assinadas; não recebe chaves privadas nem credenciais do LND. Não existe fallback automático para serviços públicos.
+A seed, a senha e a passphrase são inseridas somente no BR⚡LN Signer. O navegador mantém apenas a conta pública e envia PSBTs para conferência e aprovação física. O servidor consulta o Electrum local e transmite transações assinadas; não recebe chaves privadas nem credenciais do LND. Não existe fallback automático para serviços públicos.
 
-O app inclui **Preparar meu LilyGO**: instalação inicial pelo USB do computador,
+O app inclui **Preparar meu BR⚡LN Signer**: instalação inicial pelo USB do computador,
 com firmware e instalador servidos pelo próprio LOS. Use Chrome/Edge com HTTPS
 confiável, selecione a T-Display original ESP32 de 4 MB ou 16 MB sem carteira, confira a
 versão e autorize a gravação. Depois, use **Conectar por USB** para parear o
-assinador e criar ou recuperar a carteira nos botões. Atualizar uma placa com
+assinador e criar ou recuperar a carteira nos botões. Atualizar um BR⚡LN Signer com
 carteira ainda não é suportado. A gravação física está pendente de validação.
 
-O piloto usa ESP32 da Espressif, com dependência desse fabricante. Hardware comum e código aberto facilitam reposição e inspeção; não eliminam essa dependência ou os riscos de cadeia de fornecimento. O backup BIP39 e a configuração pública permitem recuperação fora do LOS e desta placa.
+O piloto usa ESP32 da Espressif, com dependência desse fabricante. Hardware comum e código aberto facilitam reposição e inspeção; não eliminam essa dependência ou os riscos de cadeia de fornecimento. O backup BIP39 e a configuração pública permitem recuperação fora do LOS e do BR⚡LN Signer.
 
 Licença MIT do upstream preservada. Dependências vendorizadas mantêm suas licenças. Nunca publique seeds reais, passphrases, lançamentos privados de dados ou backups de membros.

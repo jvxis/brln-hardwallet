@@ -33,7 +33,7 @@ async function readLocal(path: string, limit: number): Promise<Uint8Array> {
   const response = await fetch(FIRMWARE_ROOT + path, {
     credentials: 'same-origin', cache: 'no-store', redirect: 'error', signal: AbortSignal.timeout(30000),
   })
-  if (!response.ok || !response.body) throw new Error('Firmware indisponível. Confira sua sessão do LOS e recarregue a página.')
+  if (!response.ok || !response.body) throw new Error('Firmware indisponível. Confira sua sessão do BR⚡LN LightningOS e recarregue a página.')
   const reader = response.body.getReader(), chunks: Uint8Array[] = []
   let length = 0
   try {
@@ -111,7 +111,7 @@ export async function writeFirmware(loader: FirmwareLoader, bundle: FirmwareBund
   // SHA-256 above checks downloaded bytes. No wallet memory is read or uploaded.
   for (const [index, part] of bundle.manifest.parts.entries()) {
     if ((await loader.flashMd5sum(part.offset, part.size)).toLowerCase() !== part.md5)
-      throw new Error('A verificação da gravação falhou. Não crie uma carteira; reconecte a placa e repita a instalação.')
+      throw new Error('A verificação da gravação falhou. Não crie uma carteira; reconecte o BR⚡LN Signer e repita a instalação.')
     progress(90 + (index + 1) * 2)
   }
   await loader.after('hard_reset')

@@ -53,7 +53,7 @@ void brlnLines(const String &text, unsigned start, int y, unsigned lines) {
 String brlnLabel(const String &text) {
   if(text=="Wallet password") return "Senha da carteira";
   if(text=="Repeat password") return "Repita a senha";
-  if(text=="Local operation") return "No assinador";
+  if(text=="Local operation") return "No Signer";
   if(text=="BIP39 passphrase") return "Passphrase BIP39";
   if(text=="create") return "Criar carteira?";
   if(text=="restore") return "Recuperar carteira?";
@@ -69,7 +69,7 @@ String brlnLabel(const String &text) {
   if(text=="Keep it offline") return "Mantenha offline";
   if(text=="Wallet ready") return "Carteira pronta";
   if(text=="Wallet unlocked") return "Desbloqueada";
-  if(text=="Continue in app") return "Continue no app LOS";
+  if(text=="Continue in app") return "Abra o LightningOS";
   if(text=="Storage unavailable") return "Preparar memoria";
   if(text=="Format ERASES wallet") return "APAGAR a carteira?";
   if(text=="Have your backup?") return "Tem seu backup?";
@@ -93,7 +93,7 @@ String brlnLabel(const String &text) {
   if(text=="Please wait") return "Aguarde";
   if(text=="Parsing PSBT...") return "Lendo transacao";
   if(text=="Wallet exists") return "Carteira existente";
-  if(text=="Use another device") return "Use outro assinador";
+  if(text=="Use another device") return "Use outro Signer";
   if(text=="12+ chars, no spaces") return "Senha: 12 ou mais caracteres, sem espacos";
   if(text.startsWith("Write word ")) return "Anote " + text.substring(11);
   if(text.startsWith("Word ")) return "Palavra " + text.substring(5);
@@ -129,7 +129,7 @@ void brlnLocalScreen(const String &title,const String &value,const String &hint)
     tft.setTextColor(tft.color565(255,204,72),BRLN_BACKGROUND);
     brlnCentered(brlnLabel(value),57,3);
     tft.setTextColor(TFT_WHITE,BRLN_BACKGROUND);
-    brlnCentered(value=="Hardware RNG"?"No dispositivo":"100 lances",87,2);
+    brlnCentered(value=="Hardware RNG"?"No Signer":"100 lances",87,2);
   } else if(title=="BIP39 passphrase" && !input && !confirm) {
     tft.setTextColor(tft.color565(255,204,72),BRLN_BACKGROUND);
     brlnCentered(brlnLabel(value),59,2);
@@ -192,7 +192,7 @@ void brlnInfoScreen(const String &message,const String &additional) {
     brlnCentered(brlnLabel(message),38,2);
     tft.setTextColor(tft.color565(78,224,193),BRLN_BACKGROUND);
     brlnCentered("Continue no",66,2);
-    brlnCentered("app LOS",87,2);
+    brlnCentered("LightningOS",87,2);
     return;
   }
   String text=brlnLabel(message);

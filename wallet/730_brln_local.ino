@@ -117,6 +117,8 @@ bool brlnReview(const String &mnemonic) {
 }
 
 CommandResponse executeBrlnLocal(String command) {
+  const bool advanced=command=="/brln-unlock-passphrase";
+  const bool unlocking=command=="/brln-unlock" || advanced;
   if(!brlnConfirm("Local operation",command.substring(6))) {
     sendCommandOutput(command,"0 cancelled");return {"Cancelled",""};
   }
@@ -124,7 +126,7 @@ CommandResponse executeBrlnLocal(String command) {
     bool ok=global.authenticated && brlnReview(global.mnemonic);
     sendCommandOutput(command,ok?"1":"0 cancelled");return {"Backup review ended",""};
   }
-  if(command!="/brln-unlock" && global.walletConfigured) {
+  if(!unlocking && global.walletConfigured) {
     sendCommandOutput(command,"0 already_configured");return {"Wallet exists","Use another device"};
   }
   global.authenticated=false;brlnClear(global.mnemonic);brlnClear(global.passphrase);
@@ -133,13 +135,13 @@ CommandResponse executeBrlnLocal(String command) {
   do {
     if(!brlnText("Wallet password",password,true,32))break;
     if(password.length()<12 || password.indexOf(' ')!=-1) {showMessage("12+ chars, no spaces","");break;}
-    if(command=="/brln-unlock") {
+    if(unlocking) {
       brlnWorkingScreen("Desbloqueando");
       if(!unlockProtectedWallet(password))break;
-      const char *choices[]={"No passphrase","Enter passphrase","Cancel"};
-      int choice=brlnChoice("BIP39 passphrase",choices,3);
-      if(choice<0 || choice==2){brlnClear(global.mnemonic);break;}
-      if(choice==1 && !brlnText("BIP39 passphrase",passphrase,false,64)){brlnClear(global.mnemonic);break;}
+      if(advanced) {
+        if(!brlnConfirm("Passphrase BIP39","Outra carteira"))break;
+        if(!brlnText("BIP39 passphrase",passphrase,false,64) || passphrase.length()==0)break;
+      }
       global.passphrase=passphrase;global.authenticated=true;ok=true;break;
     }
     if(!brlnText("Repeat password",repeat,true,32) || password!=repeat)break;
@@ -175,6 +177,6 @@ CommandResponse executeBrlnLocal(String command) {
   brlnClear(password);brlnClear(repeat);brlnClear(mnemonic);brlnClear(passphrase);
   if(!ok){global.authenticated=false;brlnClear(global.mnemonic);brlnClear(global.passphrase);}
   sendCommandOutput(command,ok?"1":"0 cancelled_or_invalid");
-  return {ok?(command=="/brln-unlock"?"Wallet unlocked":"Wallet ready"):"Cancelled / invalid",ok?"Continue in app":"BRLN experimental"};
+  return {ok?(unlocking?"Wallet unlocked":"Wallet ready"):"Cancelled / invalid",ok?"Continue in app":"BRLN experimental"};
 }
 #endif

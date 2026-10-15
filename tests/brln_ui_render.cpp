@@ -65,6 +65,8 @@ int main(){
   assert(!brlnPasswordCharacterAllowed(' '));assert(brlnPasswordCharacterAllowed('a'));
   brlnWorkingScreen("Criando carteira");tft.save("creating");
   brlnWorkingScreen("Desbloqueando");tft.save("unlocking");
+  brlnLocalScreen("Local operation","unlock-passphrase","A: confirm");tft.save("advanced-unlock");
+  brlnLocalScreen("Passphrase BIP39","Outra carteira","A: confirm");tft.save("advanced-warning");
   brlnLocalScreen("BIP39 passphrase","No passphrase","Choose on device");tft.save("passphrase-choice");
   brlnInfoScreen("Wallet ready","Continue in app");tft.save("ready");
   brlnLocalScreen("Backup recorded?","Keep it offline","A: confirm");tft.save("backup");

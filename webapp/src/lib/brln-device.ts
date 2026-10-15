@@ -8,11 +8,12 @@ export class BRLNDevice extends BowserDevice {
     await super.connect()
     try {
       const capability = await this.request('/capabilities')
-      if (capability !== 'brln-1 mainnet bip84 local-secrets physical-review')
+      if (capability !== 'brln-2 mainnet bip84 local-secrets physical-review explicit-passphrase')
         throw new Error('Firmware incompatível. Instale o perfil BRLN T-Display validado.')
     } catch (error) { await this.disconnect(); throw error }
   }
-  async local(operation: 'create' | 'restore' | 'unlock' | 'backup') {
+  async local(operation: 'create' | 'restore' | 'unlock' | 'unlock-passphrase' | 'backup') {
+    if (operation !== 'backup') this.authenticated = false
     const result = await this.request(`/brln-${operation}`, [], true, 60 * 60_000)
     if (result.trim() !== '1') throw new Error('Operação cancelada ou recusada na placa.')
     if (operation !== 'backup') { this.authenticated = true; this.walletConfigured = true }

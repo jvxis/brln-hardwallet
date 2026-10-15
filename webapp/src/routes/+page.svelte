@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte'
+  import QRCode from 'qrcode'
   import { initializeAppearance } from '$lib/appearance'
   import { BRLNDevice } from '$lib/brln-device'
   import FirmwareInstaller from '$lib/FirmwareInstaller.svelte'
@@ -14,6 +15,20 @@
   let coins: UtxoRecord[] = [], history: Array<{txid:string;height:number}> = []
   let height: number | null = null, scanned = false, address = '', amount = 0, rate = 1
   let source = ''
+  let tab: 'receive' | 'send' | 'history' = 'receive'
+  let receiveQR = '', receiveChecked = false
+  let confirmation: HTMLDialogElement
+  let confirmationText = ''
+  let resolveConfirmation: ((accepted:boolean)=>void) | null = null
+  function askConfirmation(text:string): Promise<boolean> {
+    confirmationText=text
+    confirmation.returnValue='cancel'
+    return new Promise(resolve => { resolveConfirmation=resolve; confirmation.showModal() })
+  }
+  function finishConfirmation() {
+    resolveConfirmation?.(confirmation.returnValue==='accept'); resolveConfirmation=null
+  }
+  $: if (!receive) { receiveQR = ''; receiveChecked = false }
   let syncController: AbortController | null = null
   $: balanceLabel = scanned ? `Saldo descoberto: ${balance.toLocaleString('pt-BR')} sats · ${history.length} transações` : 'Saldo ainda não consultado. Sincronize a conta pública; não é necessário conectar a LilyGO.'
   let receive = '', proposal: UnsignedTransaction | null = null
@@ -21,7 +36,7 @@
   let broadcastState: 'new' | 'unknown' | 'done' = 'new'
   const operations = [{id:'unlock',label:'Desbloquear carteira'},{id:'create',label:'Criar carteira'},{id:'restore',label:'Recuperar carteira'},{id:'backup',label:'Conferir backup'}] as const
   const device = new BRLNDevice({
-    confirmPair: async code => window.confirm('Confira o código ' + code + ' na tela do dispositivo. Os códigos são iguais?'),
+    confirmPair: code => askConfirmation('Confira o código ' + code + ' na tela do dispositivo. Os códigos são iguais?'),
     psbtReview: step => { if (step) message = 'Confira o endereço completo, valor, troco e taxa no dispositivo. Aprove pelos botões.' },
     log: () => {}, state: () => { connected = device.connected; unlocked = device.authenticated },
   })
@@ -61,9 +76,9 @@
   }
   async function importDevice() {
     const key = await device.getXpub('Mainnet', ACCOUNT_PATH)
-    if (account && key.xpub !== account.xpub && !window.confirm('Substituir a conta pública neste navegador? Exporte a configuração atual antes.')) return
+    if (account && key.xpub !== account.xpub && !await askConfirmation('Substituir a conta pública neste navegador? Exporte a configuração atual antes.')) return
     persist({...key, id:'', name:'', accountPath:ACCOUNT_PATH, network:'Mainnet', type:'p2wpkh', receiveIndex:account?.xpub === key.xpub ? account.receiveIndex : 0, changeIndex:account?.xpub === key.xpub ? account.changeIndex : 0, createdAt:new Date().toISOString()})
-    coins = []; scanned = false; proposal = null; signed = null; receive = ''
+    coins = []; history = []; scanned = false; proposal = null; signed = null; receive = ''
     message = 'Conta pública importada. Exporte a configuração e sincronize com seu node.'
   }
   function download(name:string, data:string, type='application/json') {
@@ -75,7 +90,7 @@
     if (!file) return
     if (file.size > 8192) throw new Error('Configuração muito grande.')
     const value = publicAccount(JSON.parse(await file.text()))
-    if (account && !window.confirm('Substituir a conta pública deste navegador?')) return
+    if (account && !await askConfirmation('Substituir a conta pública deste navegador?')) return
     persist(value); coins=[]; history=[]; scanned=false; receive=''; proposal=null; signed=null; input.value=''
   }
   async function showReceive() {
@@ -83,8 +98,22 @@
     await sameDevice()
     const next = deriveAddress(account!, 0, account!.receiveIndex)
     await device.verifyAddress('Mainnet', next.path, next.address)
+    const qr = await QRCode.toDataURL(next.address, {width:256, margin:4, errorCorrectionLevel:'M'})
     persist({...account!, receiveIndex:account!.receiveIndex+1}); receive=next.address
+    receiveQR=qr; receiveChecked=false
     message = 'Endereço exibido no dispositivo. Compare todos os caracteres com o endereço abaixo.'
+  }
+  async function copy(text: string) {
+    await navigator.clipboard.writeText(text)
+    message='Copiado para a área de transferência.'
+  }
+  async function localAction(operation: 'unlock' | 'unlock-passphrase' | 'create' | 'restore' | 'backup') {
+    message='Continue pelos dois botões do dispositivo.'
+    if (operation !== 'backup') { receive=''; proposal=null; signed=null }
+    await device.local(operation)
+    message=operation==='backup' ? 'Conferência do backup encerrada no dispositivo.' :
+      operation==='unlock-passphrase' ? 'Carteira com passphrase aberta. Importe sua conta pública para consultar esta carteira.' :
+      operation==='unlock' ? 'Carteira desbloqueada, sem passphrase. Continue em Receber ou Enviar.' : 'Carteira pronta. Importe a conta pública do assinador.'
   }
   async function prepare() {
     if (!account || !scanned) throw new Error('Sincronize a conta primeiro.')
@@ -118,38 +147,68 @@
     window.addEventListener('hashchange', initializeAppearance)
     try { const saved = loadAccounts()[0]; if (saved) account=publicAccount(saved) } catch { message='Configuração local inválida. Importe novamente a conta pública.'; failure=true }
     void run(async () => { const status=await api<{height:number;electrum_source:string}>('status');height=status.height;source=status.electrum_source })
-    return () => { window.removeEventListener('hashchange', initializeAppearance); void device.disconnect() }
+    return () => { resolveConfirmation?.(false); window.removeEventListener('hashchange', initializeAppearance); syncController?.abort(); void device.disconnect() }
   })
 </script>
 
 <svelte:head><link rel="stylesheet" href="/los-theme/theme.css" /><title>BRLN · Carteira soberana</title><meta name="description" content="Coordenador Bitcoin local com assinador ESP32 e LightningOS" /></svelte:head>
 <main>
+  <dialog bind:this={confirmation} on:close={finishConfirmation} aria-labelledby="confirmation-title"><form method="dialog"><h2 id="confirmation-title">Confira antes de continuar</h2><p>{confirmationText}</p><div class="buttons"><button class="secondary" value="cancel">Cancelar</button><button value="accept">Sim, confirmo</button></div></form></dialog>
   <header><div class="brand"><img src="/brln-logo.png" alt="BRLN" /><div><h1>Hardwallet</h1><small>BITCOIN · LIGHTNINGOS</small></div></div><span class="badge">PILOTO EXPERIMENTAL</span></header>
   <p class="intro">O LightningOS consulta a blockchain. A T-Display confere e assina. Seed, senha e passphrase são digitadas somente pelos botões do dispositivo.</p>
   <aside>Protótipo sem auditoria independente e sem validação física concluída. Use uma carteira de laboratório, sem fundos reais. USB não é air gap. Esta aplicação não controla o saldo nem os canais do LND.</aside>
-  <div class="status"><span>Node · {height === null ? 'indisponível' : 'bloco ' + height}</span><span>Electrum · {source==='club' ? 'clube · servidor público' : source==='local' ? 'meu node' : 'não consultado'}</span><span>Dispositivo · {connected ? unlocked ? 'desbloqueada' : 'bloqueada' : 'desconectada'}</span><span>Bitcoin mainnet · BIP84</span></div>
+  <div class="status"><span>Node · {height === null ? 'indisponível' : 'bloco ' + height}</span><span>Electrum · {source==='club' ? 'clube · servidor público' : source==='local' ? 'meu node' : 'não consultado'}</span><span>Dispositivo · {connected ? unlocked ? 'desbloqueado' : 'bloqueado' : 'desconectado'}</span><span>Bitcoin mainnet · BIP84</span></div>
   {#if source==='club'}<p>O LOS consulta o servidor público electrum.br-ln.com:50001 pela internet. Essa conexão usa TCP sem TLS: o servidor e intermediários de rede podem observar suas consultas. As chaves continuam no dispositivo. A escolha do servidor é feita na loja do LOS, sem fallback automático.</p>{/if}
   <p class:failure role="status" aria-live="polite" hidden={!message}>{busy ? 'Em andamento · ' : ''}{message}</p>
   {#if syncController}<button class="secondary" on:click={() => syncController?.abort()}>Cancelar sincronização</button>{/if}
   <FirmwareInstaller bind:busy {connected} hasProposal={!!proposal} />
   <section class="section-card"><h2>01 <span>Conectar o assinador</span></h2><p>Com o firmware já instalado, conecte o dispositivo por USB a este computador. Use Chromium, Chrome ou Edge com HTTPS confiável e confira o código de pareamento na tela do dispositivo.</p>
     <div class="buttons"><button disabled={busy || connected} on:click={() => run(() => device.connect())}>Conectar por USB</button><button class="secondary" disabled={busy || !connected} on:click={() => run(() => device.disconnect())}>Desconectar</button></div>
-    {#if connected}<div class="buttons">{#each operations as operation}<button class="secondary" disabled={busy || (operation.id==='backup' && !unlocked)} on:click={() => run(async () => {message='Continue pelos dois botões do dispositivo.'; await device.local(operation.id); message=operation.id==='backup'?'Conferência do backup encerrada no dispositivo.':operation.id==='unlock'?'Carteira desbloqueada. Continue na etapa Conta pública e backup.':'Carteira pronta. Importe a conta pública do assinador.'})}>{operation.label}</button>{/each}<button class="secondary" disabled={busy || !unlocked} on:click={() => run(() => device.logout())}>Bloquear</button></div>{/if}
+    {#if connected}<div class="buttons">{#each operations as operation}<button class="secondary" disabled={busy || !!proposal || (operation.id==='backup' && !unlocked)} on:click={() => run(() => localAction(operation.id))}>{operation.label}</button>{/each}<button class="secondary" disabled={busy || !unlocked} on:click={() => run(() => device.logout())}>Bloquear</button></div>{/if}
+    <p>Desbloqueie com a senha no dispositivo e aguarde. O desbloqueio normal abre sua carteira sem passphrase BIP39.</p>
+    <details><summary>Avançado · abrir carteira com passphrase</summary>
+      <p>Cada passphrase abre uma carteira diferente. Não é a senha do dispositivo e não existe aviso de passphrase incorreta. Você precisará das mesmas palavras e da mesma passphrase em cada abertura ou recuperação.</p>
+      <p>Digite a passphrase somente na LilyGO. Depois importe a conta pública dessa carteira; a conta atual não será substituída automaticamente.</p>
+      <button class="secondary" disabled={busy || !connected || !!proposal} on:click={() => run(() => localAction('unlock-passphrase'))}>Abrir carteira com passphrase</button>
+    </details>
   </section>
-  <p class="unlock-help">Para desbloquear, digite a senha da carteira no dispositivo e aguarde. Depois escolha se deseja usar uma passphrase BIP39: ela é opcional e diferente da senha. Na criação atual, a carteira inicia sem passphrase.</p>
-  <section class="section-card"><h2>02 <span>Conta pública e backup</span></h2><p>A configuração pública permite acompanhar o saldo e recuperar endereços em outro coordenador. Ela revela sua atividade financeira; guarde-a com privacidade. O backup das palavras fica offline, preferencialmente em metal.</p>
-    <div class="buttons"><button disabled={busy || !unlocked || !!proposal} on:click={() => run(importDevice)}>Importar do assinador</button><label class="file">Importar configuração pública<input type="file" accept="application/json,.json" disabled={busy || !!proposal} on:change={event => run(() => importConfig(event))} /></label><button class="secondary" disabled={busy || !account} on:click={() => account && download('brln-conta-publica.json',JSON.stringify(publicAccount(account),null,2))}>Exportar configuração</button></div>
-    {#if account}<p class="mono">Fingerprint {account.fingerprint} · {account.accountPath}<br />{account.xpub}</p><p>{balanceLabel}</p><div class="buttons"><button disabled={busy || !!proposal} on:click={() => run(refresh)}>Sincronizar com Electrum selecionado</button><button class="secondary" disabled={busy || !scanned || !unlocked || !!proposal} on:click={() => run(showReceive)}>Conferir endereço para receber</button></div>{#if receive}<p class="mono receive">{receive}</p>{/if}{/if}
+  <section class="section-card"><h2>02 <span>Minha carteira Bitcoin</span></h2>
+    {#if account}<p>{balanceLabel}</p><p class="mono">Conta {account.fingerprint} · {account.accountPath}</p><button disabled={busy || !!proposal} on:click={() => run(refresh)}>Sincronizar com Electrum selecionado</button>{:else}<p>Importe a conta pública do assinador ou seu arquivo de configuração para começar.</p>{/if}
+    <details open={!account}><summary>Conta pública e backup</summary>
+      <p>A configuração pública permite consultar saldo e histórico com o dispositivo desconectado. Ela revela sua atividade financeira; guarde-a com privacidade. O backup das palavras fica offline.</p>
+      <div class="buttons"><button disabled={busy || !unlocked || !!proposal} on:click={() => run(importDevice)}>Importar do assinador</button><label class="file">Importar configuração pública<input type="file" accept="application/json,.json" disabled={busy || !!proposal} on:change={event => run(() => importConfig(event))} /></label><button class="secondary" disabled={busy || !account} on:click={() => account && download('brln-conta-publica.json',JSON.stringify(publicAccount(account),null,2))}>Exportar configuração</button></div>
+      {#if account}<p class="mono">{account.xpub}</p>{/if}
+    </details>
   </section>
-  <section class="section-card"><h2>03 <span>Preparar, conferir e assinar</span></h2>
+  <nav class="buttons" aria-label="Carteira Bitcoin">
+    <button class:secondary={tab!=='receive'} aria-pressed={tab==='receive'} on:click={() => tab='receive'}>Receber</button>
+    <button class:secondary={tab!=='send'} aria-pressed={tab==='send'} on:click={() => tab='send'}>Enviar</button>
+    <button class:secondary={tab!=='history'} aria-pressed={tab==='history'} on:click={() => tab='history'}>Histórico</button>
+  </nav>
+  {#if tab==='receive'}<section class="section-card"><h2><span>Receber Bitcoin</span></h2>
+    <p>Sincronize a conta, conecte e desbloqueie o assinador. Compare o endereço completo na LilyGO antes de compartilhá-lo.</p>
+    <button class="secondary" disabled={busy || !scanned || !unlocked || !!proposal} on:click={() => run(showReceive)}>Conferir endereço para receber</button>
+    {#if receive}<div class="receive"><p class="mono">{receive}</p>
+      <label><input type="checkbox" bind:checked={receiveChecked} /> Conferi todos os caracteres no dispositivo e são iguais.</label>
+      {#if receiveChecked}<img class="receive-qr" src={receiveQR} alt="QR code do endereço Bitcoin conferido" width="256" height="256" /><button class="secondary" on:click={() => run(() => copy(receive))}>Copiar endereço</button>{/if}
+    </div>{/if}
+  </section>{/if}
+  {#if tab==='history'}<section class="section-card"><h2><span>Histórico</span></h2>
+    {#if !scanned}<p>Sincronize a conta para consultar o histórico.</p>{:else if !history.length}<p>Nenhuma transação encontrada nesta conta.</p>{:else}<ul class="transactions">{#each history as tx}<li><p>{tx.height>0 ? `Confirmada no bloco ${tx.height}` : 'Não confirmada'}</p><p class="mono">{tx.txid}</p><button class="secondary" disabled={busy} on:click={() => run(() => copy(tx.txid))}>Copiar ID da transação</button></li>{/each}</ul>{/if}
+  </section>{/if}
+  {#if tab==='send'}
+  <section class="section-card"><h2><span>Enviar Bitcoin</span></h2><p>Prepare a transação, confira e assine no dispositivo. A transmissão exige uma confirmação separada.</p>{#if scanned && !coins.length}<p>Nenhum saldo disponível para enviar nesta conta.</p>{/if}
     {#if coins.length}<fieldset disabled={busy || !!proposal}><legend>UTXOs · somente confirmados podem ser gastos</legend>{#each coins as coin}<label class="coin"><input type="checkbox" bind:checked={coin.selected} disabled={!coin.status.confirmed} /><span>{coin.value.toLocaleString('pt-BR')} sats <small class="mono">{coin.txid}:{coin.vout}</small></span></label>{/each}</fieldset>{/if}
     <fieldset disabled={busy || !!proposal || !scanned}><label>Endereço de destino<input bind:value={address} autocomplete="off" spellcheck="false" placeholder="bc1…" /></label><div class="fields"><label>Valor em sats<input type="number" bind:value={amount} min="1" step="1" /></label><label>Taxa em sat/vB<input type="number" bind:value={rate} min="1" max="1000" step="0.1" /></label></div><div class="buttons"><button class="secondary" on:click={() => run(async () => {rate=(await api<{sat_per_vbyte:number}>('fees')).sat_per_vbyte})}>Consultar taxa no node</button><button disabled={!selected.length} on:click={() => run(prepare)}>Preparar transação</button></div></fieldset>
     {#if proposal}<div class="review"><h3>Proposta congelada</h3>{#each proposal.outputs as output}<p><strong>{output.change ? 'Troco' : 'Destino'} · {output.amount.toLocaleString('pt-BR')} sats</strong><br /><span class="mono">{output.address}</span></p>{/each}<p>Taxa: <strong>{proposal.fee} sats</strong> · estimativa {proposal.feeRate.toFixed(2)} sat/vB</p><div class="buttons"><button disabled={busy || !unlocked || !!signed} on:click={() => run(sign)}>Conferir e assinar no dispositivo</button><button class="secondary" disabled={busy || broadcastState==='unknown'} on:click={() => {proposal=null; signed=null; coins=[]; scanned=false; message='Proposta encerrada. Sincronize a conta antes de preparar outra.'}}>Encerrar proposta</button></div></div>{/if}
     {#if signed}<div class="review"><h3>Assinatura verificada</h3><p class="mono">{signed.txid}</p><p>Taxa final: {signed.fee} sats · {signed.feeRate.toFixed(2)} sat/vB</p><div class="buttons"><button disabled={busy || broadcastState==='done'} on:click={() => run(broadcast)}>{broadcastState==='unknown' ? 'Consultar resultado no node' : broadcastState==='done' ? 'Transmitida' : 'Transmitir pelo Electrum selecionado'}</button><button class="secondary" on:click={() => signed && download('brln-' + signed.txid + '.hex',signed.hex,'text/plain')}>Exportar transação assinada</button></div></div>{/if}
   </section>
+  {/if}
   <footer>BRLN · Código aberto · Sem custódia do clube<br />O protótipo usa ESP32 da Espressif. A portabilidade do backup é independente deste dispositivo e do LightningOS.</footer>
 </main>
 
 <style>
+  dialog{max-width:520px;width:calc(100% - 32px);color:rgb(var(--color-fog));background:rgb(var(--color-ink));border:1px solid rgb(var(--color-glow)/.5);border-radius:16px;padding:24px}dialog::backdrop{background:#000a}
+  details{margin:18px 0}summary{cursor:pointer;font-weight:650;padding:10px 0}.receive-qr{display:block;margin:20px 0;background:white;border-radius:8px;max-width:100%;height:auto}.transactions{list-style:none;padding:0}.transactions li{padding:16px 0;border-bottom:1px solid rgb(var(--color-fog)/.2)}
   :global(*){box-sizing:border-box} :global(body){margin:0;line-height:1.6}main{max-width:1120px;margin:auto;padding:24px}header,.status,.buttons,.fields{display:flex;align-items:center;gap:16px;flex-wrap:wrap}header{justify-content:space-between;margin-bottom:20px}.brand{display:flex;align-items:center;gap:18px}.brand img{width:112px;padding:8px;background:#08111f;border-radius:12px}.brand h1{font-size:25px;margin:0;font-weight:700}.brand small{display:block;color:rgb(var(--color-fog)/.7);font-size:11px;letter-spacing:1px}.badge{font-size:11px;border:1px solid rgb(var(--color-brass)/.5);color:rgb(var(--color-fog));border-radius:20px;padding:4px 12px}.intro{max-width:850px;color:rgb(var(--color-fog)/.8);font-size:15px;margin:10px 0}aside{border-left:3px solid rgb(var(--color-brass));padding:10px 16px;background:rgb(var(--color-brass)/.08);font-size:13px}.status{font-size:13px;color:rgb(var(--color-fog)/.75);margin:16px 0}section{margin:20px 0;padding:22px}h2{color:rgb(var(--color-glow));font-size:15px;margin:0 0 12px}h2 span{color:rgb(var(--color-fog));font-size:22px;margin-left:12px}p{overflow-wrap:anywhere}section>p{color:rgb(var(--color-fog)/.8)}.buttons{margin:16px 0;gap:10px}button,.file{background:rgb(var(--color-glow));color:#08111f;border:1px solid rgb(var(--color-glow));padding:10px 15px;border-radius:8px;font-weight:650;font-size:14px;font-family:inherit;cursor:pointer}button.secondary,.file{background:transparent;color:rgb(var(--color-fog));border-color:rgb(var(--color-fog)/.25)}button:disabled,input:disabled,fieldset:disabled{opacity:.5;cursor:default}input:not([type=checkbox]){display:block;width:100%;padding:12px;background:rgb(var(--color-ink)/.7);color:rgb(var(--color-fog));border:1px solid rgb(var(--color-fog)/.25);border-radius:8px;margin-top:7px;font:inherit}input[type=file]{font-size:12px}.file{max-width:280px}fieldset{border:0;padding:0;margin:20px 0}label{display:block;font-size:14px}.fields>label{flex:1;min-width:160px;margin-top:18px}.coin{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid rgb(var(--color-fog)/.15)}.coin small{display:block;overflow-wrap:anywhere}.coin span{min-width:0}.mono{font-family:ui-monospace,monospace;font-size:13px;overflow-wrap:anywhere}.review,.receive{background:rgb(var(--color-glow)/.06);border:1px solid rgb(var(--color-glow)/.25);border-radius:8px;padding:20px;margin-top:20px}[role=status]{padding:12px;background:rgb(var(--color-glow)/.12);border-radius:8px}.failure{background:rgb(var(--color-ember)/.15)!important;border-left:3px solid rgb(var(--color-ember))}footer{color:rgb(var(--color-fog)/.65);font-size:12px;padding:20px 0}button:focus-visible,input:focus-visible{outline:3px solid rgb(var(--color-glow));outline-offset:3px}@media(max-width:600px){main{padding:16px}section{padding:16px}h2 span{font-size:19px}.brand img{width:90px}.brand h1{font-size:22px}}
 </style>

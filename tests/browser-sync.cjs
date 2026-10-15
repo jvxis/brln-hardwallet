@@ -36,11 +36,17 @@ const account={id:'test',name:'test',xpub:root.derivePath(accountPath).neutered(
  await sync.click();await page.getByText('Sincronização concluída.',{exact:false}).waitFor();
  assert.equal(queries,40);assert.equal(await sync.count(),1);assert.equal(await sync.isEnabled(),true);
  assert.equal(await page.getByRole('button',{name:'Conferir endereço para receber'}).isDisabled(),true);
+ await page.getByRole('button',{name:'Histórico',exact:true}).click();
+ await page.getByText('Nenhuma transação encontrada nesta conta.',{exact:true}).waitFor();
+ await page.getByRole('button',{name:'Enviar',exact:true}).click();
+ assert.equal(await page.getByRole('button',{name:'Preparar transação',exact:true}).isDisabled(),true);
+ await page.getByRole('button',{name:'Receber',exact:true}).click();
  mode='expired';await sync.click();await page.getByText('Entre no LightningOS neste mesmo endereço',{exact:false}).waitFor();
  assert.equal(await sync.isEnabled(),true);assert.equal(await sync.count(),1);
  mode='slow';await sync.click();await page.getByRole('button',{name:'Cancelar sincronização'}).click();
  await page.getByText('Sincronização cancelada.',{exact:false}).waitFor();
  assert.equal(await sync.isEnabled(),true);assert.equal(await sync.count(),1);
+ await page.getByText('Conta pública e backup',{exact:true}).click();
  assert.equal(await page.getByRole('button',{name:'Exportar configuração'}).isEnabled(),true);
  assert.deepEqual(errors,[]);
  console.log('PASS: disconnected discovery, 40 addresses, session expiry, cancellation, controls restored, no duplicate account or JS errors.');

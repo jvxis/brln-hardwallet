@@ -8,8 +8,10 @@ import (
 	"errors"
 	"io"
 	"math"
+	"net"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -44,6 +46,16 @@ func validHex(s string, size int) bool {
 	return err == nil
 }
 
+// Only the Manager on this same node may embed the authenticated wallet.
+// Reject malformed hosts rather than reflecting arbitrary CSP directives.
+func managerFrameAncestor(hostport string) string {
+	host, port, err := net.SplitHostPort(hostport)
+	if err != nil || port != "4449" || (net.ParseIP(host) == nil && !regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9.-]*$`).MatchString(host)) {
+		return "'none'"
+	}
+	return "https://" + net.JoinHostPort(host, "8443")
+}
+
 func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.Header().Set("Referrer-Policy", "no-referrer")
@@ -60,6 +72,7 @@ func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		fail(w, 401, "authentication_required")
 		return
 	}
+	w.Header().Set("Content-Security-Policy", "frame-ancestors "+managerFrameAncestor(r.Host)+"; object-src 'none'; base-uri 'self'")
 	if r.Method != http.MethodGet && r.Method != http.MethodPost {
 		fail(w, 405, "method_not_allowed")
 		return
@@ -104,7 +117,7 @@ func (a *App) api(ctx context.Context, w http.ResponseWriter, r *http.Request) e
 			if err := a.RPC.Call(ctx, "blockchain.headers.subscribe", []any{}, &tip); err != nil {
 				return err
 			}
-			writeJSON(w, 200, map[string]any{"version": "0.1.0-dev", "protocol": "brln-1", "network": "mainnet", "height": tip.Height, "experimental": true, "electrum_source": a.Source})
+			writeJSON(w, 200, map[string]any{"version": "0.1.0-dev", "protocol": "brln-2", "network": "mainnet", "height": tip.Height, "experimental": true, "electrum_source": a.Source})
 			return nil
 		case "fees":
 			var relay float64

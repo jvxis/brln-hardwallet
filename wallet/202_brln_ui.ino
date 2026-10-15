@@ -58,6 +58,7 @@ String brlnLabel(const String &text) {
   if(text=="create") return "Criar carteira?";
   if(text=="restore") return "Recuperar carteira?";
   if(text=="unlock") return "Desbloquear?";
+  if(text=="unlock-passphrase") return "Com passphrase?";
   if(text=="backup") return "Conferir backup?";
   if(text=="DONE") return "PRONTO";
   if(text=="BACK") return "APAGAR";

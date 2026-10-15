@@ -15,6 +15,29 @@ type fakeRPC struct {
 	fail  bool
 }
 
+func TestEmbeddedWalletRestrictedToManager(t *testing.T) {
+	for host, want := range map[string]string{
+		"192.168.68.92:4449": "https://192.168.68.92:8443",
+		"node.example:4449":  "https://node.example:8443",
+		"[::1]:4449":         "https://[::1]:8443",
+		"node:443":           "'none'", "node": "'none'",
+		"evil;frame-ancestors *:4449": "'none'", "user@node:4449": "'none'",
+	} {
+		if got := managerFrameAncestor(host); got != want {
+			t.Fatalf("%q: got %q want %q", host, got, want)
+		}
+	}
+	a := NewApp(&fakeRPC{}, "token", http.NotFoundHandler())
+	w := request(a, "GET", "/", "", "", "token")
+	if got := w.Header().Get("Content-Security-Policy"); got != "frame-ancestors https://node:8443; object-src 'none'; base-uri 'self'" {
+		t.Fatal(got)
+	}
+	w = request(a, "GET", "/", "", "", "")
+	if !strings.Contains(w.Header().Get("Content-Security-Policy"), "frame-ancestors 'none'") {
+		t.Fatal("unauthenticated embedding allowed")
+	}
+}
+
 func (f *fakeRPC) Call(_ context.Context, method string, _ []any, out any) error {
 	f.calls = append(f.calls, method)
 	if f.fail {

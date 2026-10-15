@@ -73,7 +73,7 @@ CommandResponse executeCommand(Command c) {
     return {"Use local controls", "Host secrets refused"};
   }
   if (c.cmd == "/capabilities") {
-    sendCommandOutput(c.cmd, "brln-1 mainnet bip84 local-secrets physical-review");
+    sendCommandOutput(c.cmd, "brln-2 mainnet bip84 local-secrets physical-review explicit-passphrase");
     return {"BRLN experimental", "No funds until tested"};
   }
   if (brln::localCommand(c.cmd.c_str())) {

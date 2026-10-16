@@ -14,15 +14,22 @@ placas do clube e a revisão independente são bloqueadores da promoção.
 - Perfil `brln_tdisplay`; botões GPIO 0/35, sem câmera, teclado ou microSD.
 - Seed, senha e passphrase entram pelos controles físicos. O firmware recusa
   `/password`, `/restore`, `/create`, `/wipe`, `/seed` vindos do protocolo legado.
-- `/capabilities`: `brln-1 mainnet bip84 local-secrets physical-review`.
+- `/capabilities`: `brln-2 mainnet bip84 local-secrets physical-review explicit-passphrase`.
+  O app exige exatamente essa string e desconecta firmware com outra versão.
 - Comandos locais sem argumentos: `/brln-create`, `/brln-restore`,
-  `/brln-unlock`, `/brln-backup`. Aprovação física; nenhum segredo na resposta.
+  `/brln-unlock`, `/brln-unlock-passphrase`, `/brln-backup`. Aprovação física;
+  nenhum segredo na resposta, apenas `1` ou `0 <motivo>`. Argumentos e opções
+  extras em `/pair` são recusados.
 - Conta do app: BIP84 `m/84'/0'/0'`, mainnet, xpub pública, fingerprint,
   índices de recebimento/troco. Não usa a seed do LND.
 - Criação: 24 palavras; RNG da placa ou SHA256 de 100 lançamentos de dado justo.
-  Recuperação: 12/24 palavras BIP39 inglesas. Passphrase ASCII opcional ao
-  desbloquear; sua perda ou erro abre outra carteira. Entrada Unicode ainda não
-  suportada. Senha local 12–32 caracteres; não é a passphrase BIP39.
+  Recuperação: 12/24 palavras BIP39 inglesas. Senha local 12–32 caracteres;
+  não é a passphrase BIP39.
+- `/brln-unlock` abre a carteira sem passphrase. A passphrase BIP39 (ASCII,
+  até 64 caracteres) só é pedida em `/brln-unlock-passphrase`, após um aviso
+  confirmado nos botões; cada passphrase abre outra carteira e não há aviso de
+  passphrase incorreta. O app então exige importar a conta pública dessa carteira.
+  Entrada Unicode ainda não suportada.
 - O armazenamento criptografado do upstream permanece experimental. Não há
   promessa de proteção contra acesso físico ou eliminação completa de cópias
   em RAM. Não grava seed no servidor, navegador ou cartão.
@@ -68,7 +75,7 @@ proxy após autenticação LOS. POST também exige Origin HTTPS igual ao Host e
 
 | Método | Rota | Finalidade |
 |---|---|---|
-| GET | `/api/v1/status` | versão, rede, altura via Electrum |
+| GET | `/api/v1/status` | versão, protocolo `brln-2`, rede, altura via Electrum, fonte `local`/`club` |
 | GET | `/api/v1/fees` | estimativa em sat/vB |
 | GET | `/api/v1/script/{scripthash}` | histórico, saldo, UTXOs |
 | GET | `/api/v1/transaction/{txid}` | transação bruta |

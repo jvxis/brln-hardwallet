@@ -5,7 +5,7 @@
   import { BRLNDevice } from '$lib/brln-device'
   import FirmwareInstaller from '$lib/FirmwareInstaller.svelte'
   import { api, scanAccount, getTxHex } from '$lib/brln-chain'
-  import { ACCOUNT_PATH, publicAccount, preparePayment } from '$lib/brln-wallet'
+  import { ACCOUNT_INDEX_LIMIT, ACCOUNT_PATH, publicAccount, preparePayment } from '$lib/brln-wallet'
   import { deriveAddress, finalizePsbt } from '$lib/bitcoin'
   import { loadAccounts, saveAccounts } from '$lib/storage'
   import { loadSummary, saveSummary, clearSummary, updatedLabel, revalidateSelection } from '$lib/brln-snapshot'
@@ -14,7 +14,7 @@
   let connected = false, unlocked = false, busy = false, message = '', failure = false
   let account: WalletAccount | null = null
   let coins: UtxoRecord[] = [], history: Array<{txid:string;height:number}> = []
-  let height: number | null = null, scanned = false, address = '', amount = 0, rate = 1
+  let height: number | null = null, scanned = false, address = '', amount = 0, rate = 1, sendAll = false
   let source = ''
   let updatedAt=0, now=Date.now(), cachedBalance=0, syncMessage='', syncFailure=false
   let tab: 'receive' | 'send' | 'history' = 'receive'
@@ -112,6 +112,7 @@
   }
   async function showReceive() {
     if (!account || !updatedAt) throw new Error('Sincronize a conta antes de gerar um endereço.')
+    if (account.receiveIndex >= ACCOUNT_INDEX_LIMIT) throw new Error(`Os ${ACCOUNT_INDEX_LIMIT} endereços de recebimento do piloto já foram usados. Use um coordenador compatível com esta conta pública.`)
     await sameDevice()
     const next = deriveAddress(account!, 0, account!.receiveIndex)
     await device.verifyAddress('Mainnet', next.path, next.address)
@@ -134,11 +135,12 @@
   }
   async function prepare() {
     if (!account || !scanned) throw new Error('Sincronize a conta primeiro.')
-    const previous=selected.slice(), destination=address.trim(), sendAmount=amount, sendRate=rate
+    const previous=selected.slice(), destination=address.trim(), sendAmount=amount, sendRate=rate, sweep=sendAll
     await refresh()
     const fresh=revalidateSelection(previous,coins)
-    const result = await preparePayment(account, fresh, destination, sendAmount, sendRate, getTxHex)
-    persist({...account, changeIndex:result.changeIndex})
+    const result = await preparePayment(account!, fresh, destination, sendAmount, sendRate, getTxHex, {sendAll:sweep})
+    if (result.highFee && !await askConfirmation(`A taxa de ${result.transaction.fee.toLocaleString('pt-BR')} sats passa de 10% do valor enviado. Deseja continuar mesmo assim?`)) { message='Proposta descartada. Ajuste o valor ou a taxa.'; return }
+    persist({...account!, changeIndex:result.changeIndex})
     proposal = result.transaction; signed=null; broadcastState='new'
     message = 'Proposta pronta. Confira cada saída e a taxa antes de assinar.'
   }
@@ -223,7 +225,7 @@
   {#if tab==='send'}
   <section class="section-card"><h2><span>Enviar Bitcoin</span></h2><p>Antes de preparar, os fundos selecionados serão consultados novamente. Confira e assine no BR⚡LN Signer. A transmissão exige uma confirmação separada.</p>{#if scanned && !coins.length}<p>Nenhum saldo disponível para enviar nesta conta.</p>{/if}
     {#if coins.length}<fieldset disabled={busy || !!syncController || !!proposal}><legend>UTXOs · somente confirmados podem ser gastos</legend>{#each coins as coin}<label class="coin"><input type="checkbox" bind:checked={coin.selected} disabled={!coin.status.confirmed} /><span>{coin.value.toLocaleString('pt-BR')} sats <small class="mono">{coin.txid}:{coin.vout}</small></span></label>{/each}</fieldset>{/if}
-    <fieldset disabled={busy || !!syncController || !!proposal || !scanned}><label>Endereço de destino<input bind:value={address} autocomplete="off" spellcheck="false" placeholder="bc1…" /></label><div class="fields"><label>Valor em sats<input type="number" bind:value={amount} min="1" step="1" /></label><label>Taxa em sat/vB<input type="number" bind:value={rate} min="1" max="1000" step="0.1" /></label></div><div class="buttons"><button class="secondary" on:click={() => run(async () => {rate=(await api<{sat_per_vbyte:number}>('fees')).sat_per_vbyte})}>Consultar taxa no node</button><button disabled={!selected.length} on:click={() => run(prepare)}>Preparar transação</button></div></fieldset>
+    <fieldset disabled={busy || !!syncController || !!proposal || !scanned}><label>Endereço de destino<input bind:value={address} autocomplete="off" spellcheck="false" placeholder="bc1…" /></label><div class="fields"><label>Valor em sats<input type="number" bind:value={amount} min="1" step="1" disabled={sendAll} /></label><label>Taxa em sat/vB<input type="number" bind:value={rate} min="1" max="1000" step="0.1" /></label></div><label><input type="checkbox" bind:checked={sendAll} /> Enviar todo o saldo selecionado, sem troco (o valor é calculado descontando a taxa)</label><div class="buttons"><button class="secondary" on:click={() => run(async () => {rate=(await api<{sat_per_vbyte:number}>('fees')).sat_per_vbyte})}>Consultar taxa no node</button><button disabled={!selected.length} on:click={() => run(prepare)}>Preparar transação</button></div></fieldset>
     {#if proposal}<div class="review"><h3>Proposta congelada</h3>{#each proposal.outputs as output}<p><strong>{output.change ? 'Troco' : 'Destino'} · {output.amount.toLocaleString('pt-BR')} sats</strong><br /><span class="mono">{output.address}</span></p>{/each}<p>Taxa: <strong>{proposal.fee} sats</strong> · estimativa {proposal.feeRate.toFixed(2)} sat/vB</p><div class="buttons"><button disabled={busy || !unlocked || !!signed} on:click={() => run(sign)}>Conferir e assinar no BR⚡LN Signer</button><button class="secondary" disabled={busy || broadcastState==='unknown'} on:click={() => {proposal=null; signed=null; coins=[]; scanned=false; message='Proposta encerrada. Sincronize a conta antes de preparar outra.'}}>Encerrar proposta</button></div></div>{/if}
     {#if signed}<div class="review"><h3>Assinatura verificada</h3><p class="mono">{signed.txid}</p><p>Taxa final: {signed.fee} sats · {signed.feeRate.toFixed(2)} sat/vB</p><div class="buttons"><button disabled={busy || broadcastState==='done'} on:click={() => run(broadcast)}>{broadcastState==='unknown' ? 'Consultar resultado no node' : broadcastState==='done' ? 'Transmitida' : 'Transmitir pelo Electrum selecionado'}</button><button class="secondary" on:click={() => signed && download('brln-' + signed.txid + '.hex',signed.hex,'text/plain')}>Exportar transação assinada</button></div></div>{/if}
   </section>

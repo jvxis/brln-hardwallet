@@ -251,7 +251,7 @@ void drawMessageContent(String message, String additional) {
 
 void showMessage(String message, String additional) {
 #ifdef BOWSER_BRLN
-  if(message=="Confirm" && additional.startsWith("Code: ") && additional.length()==11) {
+  if(message=="Confirm" && additional.startsWith("Code: ") && additional.length()==15) {
     brlnPairScreen(additional.substring(6));
   } else brlnInfoScreen(message,additional);
 #else

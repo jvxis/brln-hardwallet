@@ -128,3 +128,130 @@ void updateDeviceConfig(String button1Pin, String button2Pin) {
   global.button2Pin = BOARD.secondaryButtonPin;
   writeFile(SPIFFS, global.deviceMetaFileName.c_str(), global.deviceId);
 }
+
+#ifdef BOWSER_BRLN
+// brln-3 pairing. The host first commits to SHA256(its public key); the device
+// then reveals its key, and only afterwards the host reveals its own. A relay
+// therefore cannot try host keys until both pairing codes match.
+struct BrlnPairing {
+  uint8_t secret[EC_PRIVATE_KEY_LEN];
+  uint8_t commitment[SHA256_LEN];
+  uint8_t devicePublicKey[brln::CHANNEL_PUBLIC_KEY_SIZE];
+  bool pending;
+};
+BrlnPairing brlnPairing = {};
+
+// A new or broken channel never inherits an unlocked wallet.
+void brlnLockWallet() {
+  global.authenticated = false;
+  brlnClear(global.mnemonic);
+  brlnClear(global.passphrase);
+}
+
+void clearBrlnPairing() {
+  clearSensitiveBytes((uint8_t *)&brlnPairing, sizeof(brlnPairing));
+}
+
+CommandResponse refuseBrlnPairing(const String &command, const String &code, const String &detail) {
+  clearBrlnPairing();
+  Serial.println(command + " 1 " + code);
+  return {"Pairing refused", detail};
+}
+
+CommandResponse executeBrlnPairCommit(String data) {
+  clearBrlnPairing();
+  brln::clearChannel(&brlnChannel);
+  brlnLockWallet();
+  if ((millis() - global.startTime) > 10 * 1000) {
+    return refuseBrlnPairing(COMMAND_BRLN_PAIR_COMMIT, "connection_period_expired", "10 secs from reboot passed");
+  }
+  if (data.length() != SHA256_LEN * 2 || !isStrictHex(data) ||
+      !hexStringToBytes(data, brlnPairing.commitment, sizeof(brlnPairing.commitment))) {
+    return refuseBrlnPairing(COMMAND_BRLN_PAIR_COMMIT, "invalid_commitment", "Invalid request");
+  }
+  uint8_t compressed[EC_PUBLIC_KEY_LEN] = {0};
+  uint8_t uncompressed[EC_PUBLIC_KEY_UNCOMPRESSED_LEN] = {0};
+  const bool ok =
+    deriveHealthyHardwareEntropy(brlnPairing.secret, sizeof(brlnPairing.secret)) &&
+    wally_ec_public_key_from_private_key(brlnPairing.secret, sizeof(brlnPairing.secret),
+                                         compressed, sizeof(compressed)) == WALLY_OK &&
+    wally_ec_public_key_decompress(compressed, sizeof(compressed),
+                                   uncompressed, sizeof(uncompressed)) == WALLY_OK;
+  memcpy(brlnPairing.devicePublicKey, uncompressed + 1, sizeof(brlnPairing.devicePublicKey));
+  clearSensitiveBytes(compressed, sizeof(compressed));
+  clearSensitiveBytes(uncompressed, sizeof(uncompressed));
+  if (!ok) return refuseBrlnPairing(COMMAND_BRLN_PAIR_COMMIT, "rng_failure", "RNG failure");
+  brlnPairing.pending = true;
+  Serial.println(COMMAND_BRLN_PAIR_COMMIT + " 0 " +
+    bytesToHexString(brlnPairing.devicePublicKey, sizeof(brlnPairing.devicePublicKey)));
+  return {"Pairing", "Waiting for app"};
+}
+
+CommandResponse executeBrlnPairReveal(String data) {
+  if (!brlnPairing.pending || (millis() - global.startTime) > 20 * 1000) {
+    return refuseBrlnPairing(COMMAND_BRLN_PAIR_REVEAL, "no_commitment", "Restart device");
+  }
+  uint8_t hostKey[EC_PUBLIC_KEY_UNCOMPRESSED_LEN] = {0x04};
+  uint8_t digest[SHA256_LEN] = {0};
+  uint8_t shared[SHA256_LEN] = {0};
+  uint8_t sas[brln::CHANNEL_SAS_SIZE] = {0};
+  const bool parsed = data.length() == brln::CHANNEL_PUBLIC_KEY_SIZE * 2 && isStrictHex(data) &&
+    hexStringToBytes(data, hostKey + 1, brln::CHANNEL_PUBLIC_KEY_SIZE) &&
+    wally_sha256(hostKey + 1, brln::CHANNEL_PUBLIC_KEY_SIZE, digest, sizeof(digest)) == WALLY_OK;
+  const bool committed = parsed && brln::constantTimeEqual(digest, brlnPairing.commitment, sizeof(digest));
+  const bool derived = committed && legacyCompatibleEcdh(brlnPairing.secret, hostKey, shared) &&
+    brln::deriveChannel(shared, hostKey + 1, brlnPairing.devicePublicKey, true, &brlnChannel, sas);
+  clearSensitiveBytes(digest, sizeof(digest));
+  clearSensitiveBytes(shared, sizeof(shared));
+  clearSensitiveBytes(hostKey, sizeof(hostKey));
+  clearBrlnPairing();
+  if (!derived) {
+    brln::clearChannel(&brlnChannel);
+    clearSensitiveBytes(sas, sizeof(sas));
+    return refuseBrlnPairing(COMMAND_BRLN_PAIR_REVEAL, committed ? "invalid_public_key" : "commitment_mismatch", "Restart device");
+  }
+  char code[10] = {0};
+  brln::formatSas(sas, code);
+  clearSensitiveBytes(sas, sizeof(sas));
+  Serial.println(COMMAND_BRLN_PAIR_REVEAL + " 0");
+  return {"Confirm", "Code: " + String(code)};
+}
+
+String brlnSealLine(const String &message) {
+  if (!brlnChannel.active) return "";
+  uint8_t iv[brln::CHANNEL_IV_SIZE] = {0};
+  if (!deriveHealthyHardwareEntropy(iv, sizeof(iv))) return "";
+  const size_t size = brln::sealedLength(message.length());
+  uint8_t *sealed = (uint8_t *)malloc(size);
+  if (sealed == NULL) return "";
+  String result = "";
+  if (brln::seal(&brlnChannel, iv, (const uint8_t *)message.c_str(), message.length(), sealed, size)) {
+    result = bytesToHexString(sealed, size);
+  }
+  clearSensitiveBytes(iv, sizeof(iv));
+  clearSensitiveBytes(sealed, size);
+  free(sealed);
+  return result;
+}
+
+// Any authentication, order or format failure closes the channel: the app must
+// reconnect, which reboots the device and requires a new committed pairing.
+String brlnOpenLine(const String &hex) {
+  const size_t size = hex.length() / 2;
+  uint8_t *sealed = brlnChannel.active && hex.length() % 2 == 0 && isStrictHex(hex) ? (uint8_t *)malloc(size) : NULL;
+  uint8_t *message = sealed ? (uint8_t *)malloc(size + 1) : NULL;
+  size_t written = 0;
+  const bool ok = message && hexStringToBytes(hex, sealed, size) &&
+    brln::open(&brlnChannel, sealed, size, message, size, &written) && memchr(message, 0, written) == NULL;
+  String result = "";
+  if (ok) { message[written] = 0; result = String((const char *)message); }
+  if (sealed) { clearSensitiveBytes(sealed, size); free(sealed); }
+  if (message) { clearSensitiveBytes(message, size + 1); free(message); }
+  if (!ok && brlnChannel.active) {
+    brln::clearChannel(&brlnChannel);
+    brlnLockWallet();
+    logInfo("Secure channel closed: invalid frame");
+  }
+  return result;
+}
+#endif

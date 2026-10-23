@@ -81,3 +81,53 @@ func TestElectrumTLSRejectsUntrustedCertificateWithoutTCPFallback(t *testing.T) 
 		t.Fatalf("TLS must fail closed without retry/downgrade: %v, connections=%d", err, connections.Load())
 	}
 }
+
+// Pipelined replies may arrive out of order and interleaved with notifications.
+func TestElectrumPipelinesOnOneConnection(t *testing.T) {
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ln.Close()
+	var accepted atomic.Int32
+	go func() {
+		for {
+			c, e := ln.Accept()
+			if e != nil {
+				return
+			}
+			accepted.Add(1)
+			go func() {
+				defer c.Close()
+				c.SetDeadline(time.Now().Add(2 * time.Second))
+				s := bufio.NewScanner(c)
+				enc := json.NewEncoder(c)
+				if !s.Scan() {
+					return
+				}
+				enc.Encode(map[string]any{"id": 1, "result": map[string]string{"genesis_hash": mainnetGenesis}})
+				var ids []int
+				for len(ids) < 3 && s.Scan() {
+					var call struct{ ID int }
+					json.Unmarshal(s.Bytes(), &call)
+					ids = append(ids, call.ID)
+				}
+				enc.Encode(map[string]any{"method": "blockchain.headers.subscribe", "params": []any{}})
+				for i := len(ids) - 1; i >= 0; i-- {
+					enc.Encode(map[string]any{"id": ids[i], "result": ids[i] * 10})
+				}
+			}()
+		}
+	}()
+	var a, b, c int
+	e := Electrum{Address: ln.Addr().String()}
+	if err := e.Do(context.Background(), Request{"blockchain.relayfee", nil, &a}, Request{"blockchain.estimatefee", []any{6}, &b}, Request{"blockchain.relayfee", nil, &c}); err != nil {
+		t.Fatal(err)
+	}
+	if a != 20 || b != 30 || c != 40 || accepted.Load() != 1 {
+		t.Fatal(a, b, c, accepted.Load())
+	}
+	if err := e.Do(context.Background(), Request{"blockchain.relayfee", nil, &a}, Request{"wallet.dump", nil, &b}); err == nil || err.Error() != "electrum method not allowed" || accepted.Load() != 1 {
+		t.Fatal("a disallowed method must reject the whole batch before dialing", err)
+	}
+}

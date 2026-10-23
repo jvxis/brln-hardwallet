@@ -85,6 +85,10 @@ String psbtOutputDescription(const struct wally_psbt *psbt, size_t index, bool m
 
 bool psbtOutputIsSingleSigChange(const struct wally_psbt *psbt, size_t index,
                                  const struct ext_key *root) {
+#ifdef BOWSER_BRLN
+  // Only change the coordinator can rediscover is labelled as change.
+  return brln::isAccountChange(psbt, index, root);
+#endif
   uint8_t actual[WALLY_SCRIPTPUBKEY_OP_RETURN_MAX_LEN] = {0};
   size_t actualLength = 0;
   uint64_t ignoredAmount = 0;

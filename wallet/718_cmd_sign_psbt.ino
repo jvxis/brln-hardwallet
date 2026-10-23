@@ -221,6 +221,16 @@ CommandResponse executeSignPsbtPayload(const String &networkName,
     sendCommandOutput(responseCommand, "psbt_network_mismatch");
     return {"PSBT rejected", "Network/path mismatch"};
   }
+#ifdef BOWSER_BRLN
+  const char *scopeError = mainnet ? brln::psbtScopeError(psbt, &root) : "BRLN: mainnet only";
+  if (scopeError != NULL) {
+    clearSensitiveBytes((uint8_t *)&root, sizeof(root));
+    wally_psbt_free(psbt);
+    // Fixed firmware strings; they contain no PSBT data.
+    sendCommandOutput(responseCommand, "psbt_unsupported " + String(scopeError));
+    return {"PSBT unsupported", scopeError};
+  }
+#endif
   uint64_t fee = 0;
   if (!calculatePsbtFee(psbt, &fee)) {
     clearSensitiveBytes((uint8_t *)&root, sizeof(root));

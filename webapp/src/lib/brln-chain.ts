@@ -1,5 +1,6 @@
 import * as bitcoin from 'bitcoinjs-lib'
 import { deriveAddress } from './bitcoin'
+import { ACCOUNT_INDEX_LIMIT } from './brln-wallet'
 import type { WalletAccount, UtxoRecord } from './types'
 
 export async function api<T>(path: string, body?: unknown, signal?: AbortSignal): Promise<T> {
@@ -22,38 +23,49 @@ export async function scriptHash(address: string) {
   const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', new Uint8Array(script).buffer))
   return Array.from(digest.reverse(), value => value.toString(16).padStart(2, '0')).join('')
 }
+// Must match maxScriptBatch in backend/server.go.
+export const SCRIPT_BATCH_SIZE = 20
+
 export async function scanAccount(account: WalletAccount, progress: (checked: number, branch: number) => void = () => {}, signal?: AbortSignal) {
   const utxos: UtxoRecord[] = []
   const history = new Map<string, number>()
   let receiveIndex = account.receiveIndex, changeIndex = account.changeIndex
   let checked = 0
   for (const branch of [0, 1] as const) {
-    let unused = 0
+    let unused = 0, index = 0
     const reserved = branch === 0 ? account.receiveIndex : account.changeIndex
-    for (let index = 0; unused < 20 || index < reserved; index++) {
-      if (index >= 500) throw new Error('Limite de descoberta atingido. Use um coordenador compatível para carteiras maiores.')
-      const address = deriveAddress(account, branch, index)
+    // Gap limit 20 beyond the last used or reserved address, in batches of one HTTP request each.
+    while ((unused < 20 || index < reserved) && index < ACCOUNT_INDEX_LIMIT) {
+      const addresses = Array.from({ length: Math.min(SCRIPT_BATCH_SIZE, ACCOUNT_INDEX_LIMIT - index) }, (_, offset) => deriveAddress(account, branch, index + offset))
       signal?.throwIfAborted()
-      const state = await api<ScriptState>(`script/${await scriptHash(address.address)}`, undefined, signal)
-      progress(++checked, branch)
-      const entries = state.history || []
-      unused = entries.length ? 0 : unused + 1
-      if (entries.length) {
-        if (branch === 0) receiveIndex = Math.max(receiveIndex, index + 1)
-        else changeIndex = Math.max(changeIndex, index + 1)
+      const hashes = await Promise.all(addresses.map(address => scriptHash(address.address)))
+      const { scripts } = await api<{ scripts: ScriptState[] }>('scripts', { hashes }, signal)
+      if (!Array.isArray(scripts) || scripts.length !== addresses.length) throw new Error('Resposta inválida do node.')
+      for (const [offset, state] of scripts.entries()) {
+        const address = addresses[offset], current = index + offset
+        progress(++checked, branch)
+        const entries = state.history || []
+        unused = entries.length ? 0 : unused + 1
+        if (entries.length) {
+          if (branch === 0) receiveIndex = Math.max(receiveIndex, current + 1)
+          else changeIndex = Math.max(changeIndex, current + 1)
+        }
+        for (const item of entries) {
+          if (!/^[0-9a-f]{64}$/i.test(item.tx_hash) || !Number.isSafeInteger(item.height)) throw new Error('Histórico inválido.')
+          history.set(item.tx_hash, item.height)
+        }
+        for (const item of state.utxos || []) {
+          if (!Number.isSafeInteger(item.value) || item.value <= 0 || item.value > 21e14 || !Number.isSafeInteger(item.tx_pos) || item.tx_pos < 0 || !/^[0-9a-f]{64}$/i.test(item.tx_hash)) throw new Error('UTXO inválido.')
+          utxos.push({ id: `${item.tx_hash}:${item.tx_pos}`, txid: item.tx_hash, vout: item.tx_pos, value: item.value,
+            status: { confirmed: item.height > 0, block_height: item.height > 0 ? item.height : undefined },
+            address: address.address, path: address.path, branch, index: current, accountId: account.id, accountName: account.name,
+            accountPath: account.accountPath, accountType: account.type, xpub: account.xpub, fingerprint: account.fingerprint, selected: item.height > 0 })
+        }
       }
-      for (const item of entries) {
-        if (!/^[0-9a-f]{64}$/i.test(item.tx_hash) || !Number.isSafeInteger(item.height)) throw new Error('Histórico inválido.')
-        history.set(item.tx_hash, item.height)
-      }
-      for (const item of state.utxos || []) {
-        if (!Number.isSafeInteger(item.value) || item.value <= 0 || item.value > 21e14 || !Number.isSafeInteger(item.tx_pos) || item.tx_pos < 0 || !/^[0-9a-f]{64}$/i.test(item.tx_hash)) throw new Error('UTXO inválido.')
-        utxos.push({ id: `${item.tx_hash}:${item.tx_pos}`, txid: item.tx_hash, vout: item.tx_pos, value: item.value,
-          status: { confirmed: item.height > 0, block_height: item.height > 0 ? item.height : undefined },
-          address: address.address, path: address.path, branch, index, accountId: account.id, accountName: account.name,
-          accountPath: account.accountPath, accountType: account.type, xpub: account.xpub, fingerprint: account.fingerprint, selected: item.height > 0 })
-      }
+      index += addresses.length
     }
+    // Activity within 20 addresses of the limit means funds could exist beyond it.
+    if (unused < 20 && index >= ACCOUNT_INDEX_LIMIT) throw new Error(`Conta maior que o piloto suporta (${ACCOUNT_INDEX_LIMIT} endereços por ramo). Use um coordenador compatível com esta conta pública.`)
   }
   return { utxos, history: Array.from(history, ([txid, height]) => ({ txid, height })), receiveIndex, changeIndex }
 }

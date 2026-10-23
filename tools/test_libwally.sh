@@ -37,3 +37,17 @@ g++ -std=c++11 -Wall -Wextra -Werror -pedantic "${common_flags[@]}" \
   "${output_directory}/libwally.o" \
   -o "${output_directory}/psbt_signing_test"
 "${output_directory}/psbt_signing_test"
+g++ -std=c++11 -Wall -Wextra -Werror -pedantic "${common_flags[@]}" \
+  -fsanitize=address,undefined -fno-omit-frame-pointer \
+  "${repository_root}/tests/brln_psbt_policy_test.cpp" \
+  "${output_directory}/libwally.o" \
+  -o "${output_directory}/brln_psbt_policy_test"
+"${output_directory}/brln_psbt_policy_test"
+g++ -std=c++11 -Wall -Wextra -Werror -pedantic "${common_flags[@]}" \
+  -I"${repository_root}/libraries/tiny-AES-c" \
+  -fsanitize=address,undefined -fno-omit-frame-pointer \
+  "${repository_root}/tests/brln_channel_test.cpp" \
+  "${repository_root}/libraries/tiny-AES-c/aes.cpp" \
+  "${output_directory}/libwally.o" \
+  -o "${output_directory}/brln_channel_test"
+"${output_directory}/brln_channel_test"

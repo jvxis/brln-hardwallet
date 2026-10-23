@@ -14,14 +14,29 @@ placas do clube e a revisão independente são bloqueadores da promoção.
 - Perfil `brln_tdisplay`; botões GPIO 0/35, sem câmera, teclado ou microSD.
 - Seed, senha e passphrase entram pelos controles físicos. O firmware recusa
   `/password`, `/restore`, `/create`, `/wipe`, `/seed` vindos do protocolo legado.
-- `/capabilities`: `brln-2 mainnet bip84 local-secrets physical-review explicit-passphrase`.
+- `/capabilities`: `brln-3 mainnet bip84 local-secrets physical-review explicit-passphrase`.
   O app exige exatamente essa string e desconecta firmware com outra versão.
+- Pareamento brln-3: o app envia `/brln-pair-commit <SHA256(chave do app)>`, o
+  Signer responde com a própria chave efêmera e só então o app revela a sua em
+  `/brln-pair-reveal`. Sem esse commitment, um intermediário na USB poderia testar
+  chaves até os códigos coincidirem. O código tem 8 dígitos hex (`XXXX XXXX`) e é
+  derivado da transcrição. `/pair` e `/check-pairing` legados são recusados.
+- Canal: HKDF-SHA256 deriva chaves separadas por direção; cada frame é
+  AES-256-CBC seguido de HMAC-SHA256 sobre IV e cifra, com contador estrito.
+  Frame inválido, repetido ou fora de ordem encerra o canal e bloqueia a carteira.
+  [brln_channel.h](wallet/brln_channel.h) e `brln-channel.ts` são conferidos com
+  os mesmos vetores nos testes nativos e do app.
 - Comandos locais sem argumentos: `/brln-create`, `/brln-restore`,
   `/brln-unlock`, `/brln-unlock-passphrase`, `/brln-backup`. Aprovação física;
   nenhum segredo na resposta, apenas `1` ou `0 <motivo>`. Argumentos e opções
   extras em `/pair` são recusados.
 - Conta do app: BIP84 `m/84'/0'/0'`, mainnet, xpub pública, fingerprint,
-  índices de recebimento/troco. Não usa a seed do LND.
+  índices de recebimento/troco (0–499 por ramo). Não usa a seed do LND.
+- Escopo de assinatura do perfil BRLN ([brln_psbt_policy.h](wallet/brln_psbt_policy.h)):
+  mainnet, 1–20 entradas P2WPKH em `84'/0'/0'/{0,1}/i` com `i < 500` da seed
+  aberta, 1–2 saídas e exatamente um destino. Só é rotulada **Troco** a saída
+  P2WPKH em `84'/0'/0'/1/i` com `i < 500`; qualquer outro caminho aparece como
+  destino, o que torna a PSBT inválida por ter dois destinos.
 - Criação: 24 palavras; RNG da placa ou SHA256 de 100 lançamentos de dado justo.
   Recuperação: 12/24 palavras BIP39 inglesas. Senha local 12–32 caracteres;
   não é a passphrase BIP39.
@@ -33,8 +48,11 @@ placas do clube e a revisão independente são bloqueadores da promoção.
 - O armazenamento criptografado do upstream permanece experimental. Não há
   promessa de proteção contra acesso físico ou eliminação completa de cópias
   em RAM. Não grava seed no servidor, navegador ou cartão.
-- App: descoberta com gap 20, até 500 índices por ramo; até 20 UTXOs confirmados
-  por pagamento, um destinatário, troco próprio. Sem RBF/CPFP ou funding LND no MVP.
+- App: descoberta com gap 20, até 500 índices por ramo, em lotes de 20 endereços;
+  atividade perto do limite é recusada explicitamente. Até 20 UTXOs confirmados
+  por pagamento, um destinatário, troco próprio ou "enviar todo o saldo
+  selecionado" sem troco. Taxa acima de 100.000 sats é recusada; acima de 10% do
+  valor exige confirmação. Sem RBF/CPFP ou funding LND no MVP.
 - PSBT é construída no navegador. Conferência física, verificação da assinatura
   e transmissão são etapas distintas. Timeout de transmissão exige consulta do txid.
 
@@ -75,13 +93,16 @@ proxy após autenticação LOS. POST também exige Origin HTTPS igual ao Host e
 
 | Método | Rota | Finalidade |
 |---|---|---|
-| GET | `/api/v1/status` | versão, protocolo `brln-2`, rede, altura via Electrum, fonte `local`/`club` |
+| GET | `/api/v1/status` | versão, protocolo `brln-3`, rede, altura via Electrum, fonte `local`/`club` |
 | GET | `/api/v1/fees` | estimativa em sat/vB |
 | GET | `/api/v1/script/{scripthash}` | histórico, saldo, UTXOs |
+| POST | `/api/v1/scripts` | `{ "hashes": [...] }`, até 20 distintos; mesmos dados por hash |
 | GET | `/api/v1/transaction/{txid}` | transação bruta |
 | POST | `/api/v1/broadcast` | `{ "hex": "..." }`, devolve txid |
 
-Todas as conexões Electrum verificam o genesis mainnet. Limites de resposta,
+Cada requisição HTTP usa uma única conexão Electrum: o genesis mainnet é
+verificado antes de qualquer scripthash ser enviado e as chamadas seguintes
+vão em pipeline, casadas por ID. Limites de resposta,
 concorrência e tempo são fechados. Erros não refletem argumentos ou diagnósticos
 do servidor Electrum. Não há RPC genérico, seed import, backup remoto ou logs de payload.
 

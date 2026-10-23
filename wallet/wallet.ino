@@ -38,6 +38,10 @@ extern "C" {
 }
 
 #include <aes.h>
+#ifdef BOWSER_BRLN
+#include "brln_channel.h"
+#include "brln_psbt_policy.h"
+#endif
 
 #include "bootloader_random.h"
 #include "esp_ota_ops.h"

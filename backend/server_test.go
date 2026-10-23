@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -11,8 +12,9 @@ import (
 )
 
 type fakeRPC struct {
-	calls []string
-	fail  bool
+	calls   []string
+	batches int
+	fail    bool
 }
 
 func TestEmbeddedWalletRestrictedToManager(t *testing.T) {
@@ -38,13 +40,22 @@ func TestEmbeddedWalletRestrictedToManager(t *testing.T) {
 	}
 }
 
-func (f *fakeRPC) Call(_ context.Context, method string, _ []any, out any) error {
-	f.calls = append(f.calls, method)
+func (f *fakeRPC) Do(_ context.Context, requests ...Request) error {
+	f.batches++
+	for _, r := range requests {
+		f.calls = append(f.calls, r.Method)
+	}
 	if f.fail {
 		return errors.New("secret upstream diagnostic")
 	}
-	values := map[string]string{"blockchain.headers.subscribe": `{"height":100}`, "blockchain.relayfee": `0.00001`, "blockchain.estimatefee": `0.000023`, "blockchain.transaction.broadcast": `"` + strings.Repeat("a", 64) + `"`}
-	return json.Unmarshal([]byte(values[method]), out)
+	values := map[string]string{"blockchain.headers.subscribe": `{"height":100}`, "blockchain.relayfee": `0.00001`, "blockchain.estimatefee": `0.000023`, "blockchain.transaction.broadcast": `"` + strings.Repeat("a", 64) + `"`,
+		"blockchain.scripthash.get_history": `[{"tx_hash":"` + strings.Repeat("b", 64) + `","height":7}]`, "blockchain.scripthash.get_balance": `{"confirmed":5,"unconfirmed":0}`, "blockchain.scripthash.listunspent": `[]`}
+	for _, r := range requests {
+		if err := json.Unmarshal([]byte(values[r.Method]), r.Result); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 func request(a http.Handler, method, path, body, origin, token string) *httptest.ResponseRecorder {
 	r := httptest.NewRequest(method, "https://node:4449"+path, strings.NewReader(body))
@@ -113,4 +124,51 @@ func TestFeesAndFailureRedaction(t *testing.T) {
 	if w.Code != 503 || strings.Contains(w.Body.String(), "secret") {
 		t.Fatal(w.Body.String())
 	}
+}
+
+func TestScriptBatchUsesOneConnection(t *testing.T) {
+	f := &fakeRPC{}
+	a := NewApp(f, "token", http.NotFoundHandler())
+	hashes := make([]string, maxScriptBatch)
+	for i := range hashes {
+		hashes[i] = fmt.Sprintf("%064x", i)
+	}
+	body, _ := json.Marshal(map[string]any{"hashes": hashes})
+	w := request(a, "POST", "/api/v1/scripts", string(body), "https://node:4449", "token")
+	var result struct {
+		Scripts []struct {
+			History []struct {
+				TxID string `json:"tx_hash"`
+			} `json:"history"`
+			Balance struct{ Confirmed int64 } `json:"balance"`
+		} `json:"scripts"`
+	}
+	if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &result) != nil || len(result.Scripts) != maxScriptBatch || result.Scripts[19].Balance.Confirmed != 5 || len(result.Scripts[0].History) != 1 {
+		t.Fatal(w.Code, w.Body.String())
+	}
+	if f.batches != 1 || len(f.calls) != 3*maxScriptBatch {
+		t.Fatalf("expected one Electrum connection for the batch: batches=%d calls=%d", f.batches, len(f.calls))
+	}
+	w = request(a, "GET", "/api/v1/script/"+hashes[0], "", "", "token")
+	if w.Code != 200 || f.batches != 2 {
+		t.Fatal(w.Code, f.batches)
+	}
+	for _, bad := range []string{`{"hashes":[]}`, `{"hashes":["` + hashes[0] + `","` + hashes[0] + `"]}`, `{"hashes":["zz"]}`, `{"hashes":["` + hashes[0] + `"],"x":1}`, string(must(json.Marshal(map[string]any{"hashes": append(hashes, fmt.Sprintf("%064x", 99))})))} {
+		if w := request(a, "POST", "/api/v1/scripts", bad, "https://node:4449", "token"); w.Code != 400 {
+			t.Fatal(bad, w.Code)
+		}
+	}
+	if w := request(a, "POST", "/api/v1/scripts", string(body), "https://evil.test", "token"); w.Code != 403 {
+		t.Fatal(w.Code)
+	}
+	if f.batches != 2 {
+		t.Fatal("rejected batches reached Electrum")
+	}
+}
+
+func must(b []byte, err error) []byte {
+	if err != nil {
+		panic(err)
+	}
+	return b
 }

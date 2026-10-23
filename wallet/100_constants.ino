@@ -25,6 +25,12 @@ const String COMMAND_CONFIRM_NEXT = "/confirm-next";
 const String COMMAND_CANCEL = "/cancel";
 const String COMMAND_PAIR = "/pair";
 const String COMMAND_CHECK_PAIRING = "/check-pairing";
+#ifdef BOWSER_BRLN
+// brln-3 pairing: commit to the host key, then reveal it. Both are plaintext.
+const String COMMAND_BRLN_PAIR_COMMIT = "/brln-pair-commit";
+const String COMMAND_BRLN_PAIR_REVEAL = "/brln-pair-reveal";
+brln::Channel brlnChannel = {};
+#endif
 
 // data received over the serial port
 const String EVENT_SERIAL_DATA = "serial";

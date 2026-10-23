@@ -80,7 +80,7 @@ int main(){
   brlnHashScreen(hash,false);tft.save("hash");
   brlnHashScreen(hash,true);tft.save("help");
   brlnHashScreen("",false);tft.save("hash-error");
-  brlnPairScreen("50711");tft.save("pair");
+  brlnPairScreen("B971 626B");tft.save("pair");
   brlnLocalScreen("Local operation","create","A: confirm");tft.save("confirm");
   brlnLocalScreen("Wallet password","0 chars","Selected: a");tft.save("password");
   brlnLocalScreen("Wallet password","5 chars","Selected: MINIMO 12");tft.save("short-password");

@@ -35,6 +35,8 @@ const PUBLIC_COMMANDS = new Set([
   '/psbt-begin',
   '/psbt-chunk',
   '/psbt-review',
+  '/brln-pair-commit',
+  '/brln-pair-reveal',
 ])
 
 const PSBT_SERIAL_CHUNK_LENGTH = 64
@@ -61,7 +63,7 @@ export class BowserDevice implements DeviceAdapter {
   private closing = false
   private firstCommandSent = false
   private startupReady: { resolve: () => void; reject: (error: Error) => void } | null = null
-  private events: BowserEvents
+  protected events: BowserEvents
   private options: SerialOptions & {
     buttonOnePin?: number
     buttonTwoPin?: number
@@ -120,7 +122,7 @@ export class BowserDevice implements DeviceAdapter {
     }
   }
 
-  private async pair() {
+  protected async pair() {
     this.privateKey = secp256k1.utils.randomSecretKey()
     const publicKey = secp256k1.getPublicKey(this.privateKey, false).slice(1)
     const args: Array<string | number> = [bytesToHex(publicKey)]
@@ -215,6 +217,7 @@ export class BowserDevice implements DeviceAdapter {
     this.privateKey?.fill(0)
     this.sharedSecret = null
     this.privateKey = null
+    this.clearSession()
     this.deviceId = ''
     this.signingTransaction = null
     this.events.psbtReview(null)
@@ -225,6 +228,9 @@ export class BowserDevice implements DeviceAdapter {
     this.rejectPending(new Error('Serial device disconnected'))
     this.events.state()
   }
+
+  // Subclasses with their own secure channel release it here.
+  protected clearSession() {}
 
   private rejectPending(error: Error) {
     this.pending.forEach((item) => {
@@ -399,7 +405,7 @@ export class BowserDevice implements DeviceAdapter {
     await this.writer.write(new TextEncoder().encode(`${line}\n`))
   }
 
-  private encrypt(message: string) {
+  protected encrypt(message: string) {
     if (!this.sharedSecret) throw new Error('Secure session is not established')
     const iv = crypto.getRandomValues(new Uint8Array(16))
     const encoder = new TextEncoder()
@@ -423,7 +429,7 @@ export class BowserDevice implements DeviceAdapter {
     return result
   }
 
-  private decrypt(value: string) {
+  protected decrypt(value: string) {
     if (!this.sharedSecret)
       throw new Error('Encrypted response arrived before pairing')
     if (value.length < 64 || (value.length - 32) % 32 !== 0)

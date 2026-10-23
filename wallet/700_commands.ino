@@ -46,6 +46,9 @@ void listenForCommands() {
 }
 
 bool isEncryptedCommand(String cmd) {
+#ifdef BOWSER_BRLN
+  if (cmd == COMMAND_BRLN_PAIR_COMMIT || cmd == COMMAND_BRLN_PAIR_REVEAL) return false;
+#endif
   return cmd != COMMAND_PAIR &&
          cmd != COMMAND_CHECK_PAIRING &&
          cmd != COMMAND_PING;
@@ -64,16 +67,19 @@ CommandResponse executeCommand(Command c) {
 #ifdef BOWSER_BRLN
   // The BRLN wiring is compiled in. A host cannot remap physical approval pins
   // or request a different persistence mode through the legacy pair options.
-  if (c.cmd == COMMAND_PAIR && c.data.indexOf(' ') != -1) {
-    sendCommandOutput(c.cmd, "0 invalid_pair_options");
-    return {"Pairing refused", "Use fixed BRLN wiring"};
+  // Legacy pairing has no key commitment or frame authentication.
+  if (c.cmd == COMMAND_PAIR || c.cmd == COMMAND_CHECK_PAIRING) {
+    Serial.println(c.cmd + " 1 brln3_pairing_required");
+    return {"Pairing refused", "Update the app"};
   }
+  if (c.cmd == COMMAND_BRLN_PAIR_COMMIT) return executeBrlnPairCommit(c.data);
+  if (c.cmd == COMMAND_BRLN_PAIR_REVEAL) return executeBrlnPairReveal(c.data);
   if (brln::forbiddenHostSecretCommand(c.cmd.c_str())) {
     sendCommandOutput(c.cmd, "0 device_only");
     return {"Use local controls", "Host secrets refused"};
   }
   if (c.cmd == "/capabilities") {
-    sendCommandOutput(c.cmd, "brln-2 mainnet bip84 local-secrets physical-review explicit-passphrase");
+    sendCommandOutput(c.cmd, "brln-3 mainnet bip84 local-secrets physical-review explicit-passphrase");
     return {"BRLN experimental", "No funds until tested"};
   }
   if (brln::localCommand(c.cmd.c_str())) {
@@ -166,6 +172,15 @@ void sendCommandOutput(const String &command, const String &commandData) {
 }
 
 void serialPrintlnSecure(const String &msg) {
+#ifdef BOWSER_BRLN
+  String sealed = brlnSealLine(msg);
+  if (sealed == "") {
+    logInfo("Secure output aborted: no authenticated channel");
+    return;
+  }
+  Serial.println(sealed);
+  return;
+#endif
   String encryptedHex = encryptDataWithIv(global.dhe_shared_secret, msg);
   if (encryptedHex == "") {
     logInfo("Secure output aborted: RNG health check failed");
@@ -181,6 +196,9 @@ void commandOutToFile(const String &msg) {
 }
 
 Command decryptAndExtractCommand(const String &ecryptedData) {
+#ifdef BOWSER_BRLN
+  return extractCommand(brlnOpenLine(ecryptedData));
+#endif
   String data = decryptDataWithIv(global.dhe_shared_secret, ecryptedData);
   return extractCommand(data);
 }

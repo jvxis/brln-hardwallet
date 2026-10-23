@@ -16,9 +16,56 @@ import (
 	"time"
 )
 
+// RPC runs the requests of one HTTP request on a single Electrum connection.
 type RPC interface {
-	Call(context.Context, string, []any, any) error
+	Do(context.Context, ...Request) error
 }
+
+// Script hashes per POST /api/v1/scripts; must match SCRIPT_BATCH_SIZE in the webapp.
+const maxScriptBatch = 20
+
+type scriptState struct {
+	History []struct {
+		TxID   string `json:"tx_hash"`
+		Height int    `json:"height"`
+	} `json:"history"`
+	Balance struct {
+		Confirmed   int64 `json:"confirmed"`
+		Unconfirmed int64 `json:"unconfirmed"`
+	} `json:"balance"`
+	UTXOs []struct {
+		TxID   string `json:"tx_hash"`
+		Index  uint32 `json:"tx_pos"`
+		Value  int64  `json:"value"`
+		Height int    `json:"height"`
+	} `json:"utxos"`
+}
+
+// scripts fetches history, balance and UTXOs for each hash on one connection.
+// It returns a non-empty code when a response limit is exceeded.
+func (a *App) scripts(ctx context.Context, hashes []string) ([]scriptState, string, error) {
+	states := make([]scriptState, len(hashes))
+	requests := make([]Request, 0, 3*len(hashes))
+	for i, hash := range hashes {
+		requests = append(requests,
+			Request{"blockchain.scripthash.get_history", []any{hash}, &states[i].History},
+			Request{"blockchain.scripthash.get_balance", []any{hash}, &states[i].Balance},
+			Request{"blockchain.scripthash.listunspent", []any{hash}, &states[i].UTXOs})
+	}
+	if err := a.RPC.Do(ctx, requests...); err != nil {
+		return nil, "", err
+	}
+	for _, state := range states {
+		if len(state.History) > 2000 {
+			return nil, "history_limit_exceeded", nil
+		}
+		if len(state.UTXOs) > 2000 {
+			return nil, "utxo_limit_exceeded", nil
+		}
+	}
+	return states, "", nil
+}
+
 type App struct {
 	RPC    RPC
 	Token  string
@@ -114,18 +161,14 @@ func (a *App) api(ctx context.Context, w http.ResponseWriter, r *http.Request) e
 			var tip struct {
 				Height int `json:"height"`
 			}
-			if err := a.RPC.Call(ctx, "blockchain.headers.subscribe", []any{}, &tip); err != nil {
+			if err := a.RPC.Do(ctx, Request{"blockchain.headers.subscribe", []any{}, &tip}); err != nil {
 				return err
 			}
-			writeJSON(w, 200, map[string]any{"version": "0.1.0-dev", "protocol": "brln-2", "network": "mainnet", "height": tip.Height, "experimental": true, "electrum_source": a.Source})
+			writeJSON(w, 200, map[string]any{"version": "0.1.0-dev", "protocol": "brln-3", "network": "mainnet", "height": tip.Height, "experimental": true, "electrum_source": a.Source})
 			return nil
 		case "fees":
-			var relay float64
-			if err := a.RPC.Call(ctx, "blockchain.relayfee", []any{}, &relay); err != nil {
-				return err
-			}
-			var estimate float64
-			if err := a.RPC.Call(ctx, "blockchain.estimatefee", []any{6}, &estimate); err != nil {
+			var relay, estimate float64
+			if err := a.RPC.Do(ctx, Request{"blockchain.relayfee", []any{}, &relay}, Request{"blockchain.estimatefee", []any{6}, &estimate}); err != nil {
 				return err
 			}
 			if estimate <= 0 || math.IsNaN(estimate) || math.IsInf(estimate, 0) || relay < 0 {
@@ -141,38 +184,15 @@ func (a *App) api(ctx context.Context, w http.ResponseWriter, r *http.Request) e
 				fail(w, 400, "invalid_script_hash")
 				return nil
 			}
-			var history []struct {
-				TxID   string `json:"tx_hash"`
-				Height int    `json:"height"`
-			}
-			var balance struct {
-				Confirmed   int64 `json:"confirmed"`
-				Unconfirmed int64 `json:"unconfirmed"`
-			}
-			var utxos []struct {
-				TxID   string `json:"tx_hash"`
-				Index  uint32 `json:"tx_pos"`
-				Value  int64  `json:"value"`
-				Height int    `json:"height"`
-			}
-			if err := a.RPC.Call(ctx, "blockchain.scripthash.get_history", []any{hash}, &history); err != nil {
+			states, limit, err := a.scripts(ctx, []string{hash})
+			if err != nil {
 				return err
 			}
-			if len(history) > 2000 {
-				fail(w, 422, "history_limit_exceeded")
+			if limit != "" {
+				fail(w, 422, limit)
 				return nil
 			}
-			if err := a.RPC.Call(ctx, "blockchain.scripthash.get_balance", []any{hash}, &balance); err != nil {
-				return err
-			}
-			if err := a.RPC.Call(ctx, "blockchain.scripthash.listunspent", []any{hash}, &utxos); err != nil {
-				return err
-			}
-			if len(utxos) > 2000 {
-				fail(w, 422, "utxo_limit_exceeded")
-				return nil
-			}
-			writeJSON(w, 200, map[string]any{"history": history, "balance": balance, "utxos": utxos})
+			writeJSON(w, 200, states[0])
 			return nil
 		}
 		if strings.HasPrefix(path, "transaction/") {
@@ -182,7 +202,7 @@ func (a *App) api(ctx context.Context, w http.ResponseWriter, r *http.Request) e
 				return nil
 			}
 			var raw string
-			if err := a.RPC.Call(ctx, "blockchain.transaction.get", []any{txid, false}, &raw); err != nil {
+			if err := a.RPC.Do(ctx, Request{"blockchain.transaction.get", []any{txid, false}, &raw}); err != nil {
 				return err
 			}
 			if len(raw) > 1<<20 || len(raw)%2 != 0 || !validHex(raw, len(raw)) {
@@ -191,6 +211,36 @@ func (a *App) api(ctx context.Context, w http.ResponseWriter, r *http.Request) e
 			writeJSON(w, 200, map[string]string{"hex": raw})
 			return nil
 		}
+	}
+	if path == "scripts" && r.Method == http.MethodPost {
+		r.Body = http.MaxBytesReader(w, r.Body, 8<<10)
+		dec := json.NewDecoder(r.Body)
+		dec.DisallowUnknownFields()
+		var request struct {
+			Hashes []string `json:"hashes"`
+		}
+		if dec.Decode(&request) != nil || dec.Decode(new(any)) != io.EOF || len(request.Hashes) == 0 || len(request.Hashes) > maxScriptBatch {
+			fail(w, 400, "invalid_script_batch")
+			return nil
+		}
+		seen := make(map[string]bool, len(request.Hashes))
+		for _, hash := range request.Hashes {
+			if !validHex(hash, 64) || seen[hash] {
+				fail(w, 400, "invalid_script_hash")
+				return nil
+			}
+			seen[hash] = true
+		}
+		states, limit, err := a.scripts(ctx, request.Hashes)
+		if err != nil {
+			return err
+		}
+		if limit != "" {
+			fail(w, 422, limit)
+			return nil
+		}
+		writeJSON(w, 200, map[string]any{"scripts": states})
+		return nil
 	}
 	if path == "broadcast" && r.Method == http.MethodPost {
 		r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
@@ -204,7 +254,7 @@ func (a *App) api(ctx context.Context, w http.ResponseWriter, r *http.Request) e
 			return nil
 		}
 		var txid string
-		if err := a.RPC.Call(ctx, "blockchain.transaction.broadcast", []any{request.Hex}, &txid); err != nil {
+		if err := a.RPC.Do(ctx, Request{"blockchain.transaction.broadcast", []any{request.Hex}, &txid}); err != nil {
 			return err
 		}
 		if !validHex(txid, 64) {

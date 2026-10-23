@@ -1,5 +1,32 @@
 # BRLN T-Display: physical lab validation
 
+## Signer-independent checks of c880ef1 (2026-10-23)
+
+An independent brln-3 host written with Python `cryptography` (no app code)
+paired with the COM5 board three times and exchanged authenticated frames.
+Without buttons or an unlocked wallet the board answered `/capabilities brln-3 …`,
+refused a host-supplied seed (`/restore 0 device_only`), a host-supplied password
+(`/brln-unlock 0 invalid_request`) and a PSBT while locked (`/psbt-begin 0 locked`).
+A replayed, a bit-flipped and an out-of-order frame each closed the channel
+(`Secure channel closed: invalid frame`); later valid frames got no reply.
+
+Against the club's public electrs 0.10.8, old (`e6b567f`) and new backends were
+compared on the first 40 addresses of the public BIP84 test-vector account
+(`abandon … about`): identical history, balance and UTXOs for all 40 (21 with
+history); scan time 94.7 s for the old per-script route, 38.7 s for the new
+per-script route and 4.7 s for two `/scripts` batches. A 21-hash batch is
+rejected. Real Chrome behind a local HTTPS proxy (standing in for LOS) synced
+that account in 13.9 s with 8 batch requests: 281 transactions, zero balance.
+
+With a lab Electrum serving synthetic UTXOs, the same stack showed the missing
+amount on insufficient balance, asked before a fee above 10% (cancel discarded
+the proposal, accept built destination + change), and built a one-output sweep.
+This exposed a pre-existing bug fixed here: re-synchronizing before a proposal
+re-selected every coin, so a later attempt spent coins the user had unchecked.
+PSBTs produced by the app (inputs on both branches, change at index 499, sweep)
+pass the firmware scope with the matching seed and are pinned as vectors in
+`tests/brln_psbt_policy_test.cpp`. Nothing was signed or broadcast.
+
 ## brln-3 channel, signing scope and sync limits (2026-10-23)
 
 Source `c880ef1` (issues #1–#6) was built locally (48% flash, no warnings) and

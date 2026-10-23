@@ -111,6 +111,43 @@ void expect(uint32_t version, const std::vector<Input> &inputs, const std::vecto
   for (size_t i = 0; i < change.size(); i++) assert(brln::isAccountChange(psbt, i, &root) == change[i]);
   wally_psbt_free(psbt);
 }
+
+// PSBTs produced by webapp preparePayment for the public BIP84 test-vector seed
+// ("abandon ... about"): inputs on receive 0 and change 7, change at index 499,
+// and a send-all sweep. They must stay inside the firmware scope.
+const char *APP_PSBT_WITH_CHANGE =
+  "cHNidP8BAJoCAAAAAj6Q8diZBMGP92HJD8FeKwyh+UNh7OHUJ5EAPZYbksBjAAAAAAD/////PpDx2JkEwY/3YckPwV4rDKH5"
+  "Q2Hs4dQnkQA9lhuSwGMBAAAAAP////8CIE4AAAAAAAAWABTo3wGMfjJswlP6rH5GzcUeaFQsQpupAQAAAAAAFgAUZ8S5nLZU"
+  "o98dSuaVKH+Je+iqJ34AAAAAAAEBH6CGAQAAAAAAFgAUwM681sPTyox13F7GLr5VMw75EOIiBgMw1U/Q3UIKbl+NNiT180gs"
+  "rjUPedXwdTv1vu+cLZGvPBhzxdoKVAAAgAAAAIAAAACAAAAAAAAAAAAAAQEfMHUAAAAAAAAWABSGLtdSCGkJ3c3IDclCdm2t"
+  "m53fsiIGA+thVWHWMrIbniSvC/Ap2S3zUKYRkyyh+fssEV9r+eUTGHPF2gpUAACAAAAAgAAAAIABAAAABwAAAAAAIgIDZ94C"
+  "Dd2RV+pi9QQBWpq1BG6Kc7A1/KPVmQ3NNhRu4d8Yc8XaClQAAIAAAACAAAAAgAEAAADzAQAAAA==";
+const char *APP_PSBT_SWEEP =
+  "cHNidP8BAHsCAAAAAj6Q8diZBMGP92HJD8FeKwyh+UNh7OHUJ5EAPZYbksBjAAAAAAD/////PpDx2JkEwY/3YckPwV4rDKH5"
+  "Q2Hs4dQnkQA9lhuSwGMBAAAAAP////8BHvsBAAAAAAAWABTo3wGMfjJswlP6rH5GzcUeaFQsQgAAAAAAAQEfoIYBAAAAAAAW"
+  "ABTAzrzWw9PKjHXcXsYuvlUzDvkQ4iIGAzDVT9DdQgpuX402JPXzSCyuNQ951fB1O/W+75wtka88GHPF2gpUAACAAAAAgAAA"
+  "AIAAAAAAAAAAAAABAR8wdQAAAAAAABYAFIYu11IIaQndzcgNyUJ2ba2bnd+yIgYD62FVYdYyshueJK8L8CnZLfNQphGTLKH5"
+  "+ywRX2v55RMYc8XaClQAAIAAAACAAAAAgAEAAAAHAAAAAAA=";
+
+void checkAppPsbts() {
+  unsigned char seed[BIP39_SEED_LEN_512] = {0};
+  struct ext_key abandon = {};
+  assert(bip39_mnemonic_to_seed512("abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
+                                   NULL, seed, sizeof(seed)) == WALLY_OK);
+  assert(bip32_key_from_seed(seed, sizeof(seed), BIP32_VER_MAIN_PRIVATE, 0, &abandon) == WALLY_OK);
+  for (const char *base64 : {APP_PSBT_WITH_CHANGE, APP_PSBT_SWEEP}) {
+    struct wally_psbt *psbt = NULL;
+    assert(wally_psbt_from_base64(base64, WALLY_PSBT_PARSE_FLAG_STRICT, &psbt) == WALLY_OK);
+    assert(brln::psbtScopeError(psbt, &abandon) == NULL);
+    assert(!brln::isAccountChange(psbt, 0, &abandon));
+    if (psbt->num_outputs == 2) assert(brln::isAccountChange(psbt, 1, &abandon));
+    // The same PSBT is foreign to any other seed.
+    assert(brln::psbtScopeError(psbt, &root) != NULL);
+    wally_psbt_free(psbt);
+  }
+  wally_bzero(seed, sizeof(seed));
+  wally_bzero(&abandon, sizeof(abandon));
+}
 }  // namespace
 
 int main() {
@@ -144,8 +181,9 @@ int main() {
     expect(version, twentyOne, {destination}, "BRLN: 1-20 inputs", {});
     expect(version, {owned}, {destination, destination, {account(1, 2), &root, false}}, "BRLN: 1-2 outputs", {});
   }
+  checkAppPsbts();
   wally_bzero(&root, sizeof(root));
   wally_bzero(&foreign, sizeof(foreign));
   assert(wally_cleanup(0) == WALLY_OK);
-  std::cout << "BRLN PSBT scope passed: BIP84 account inputs, rediscoverable change, one destination\n";
+  std::cout << "BRLN PSBT scope passed: BIP84 account inputs, rediscoverable change, one destination, app PSBTs\n";
 }

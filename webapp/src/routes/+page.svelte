@@ -137,6 +137,8 @@
     if (!account || !scanned) throw new Error('Sincronize a conta primeiro.')
     const previous=selected.slice(), destination=address.trim(), sendAmount=amount, sendRate=rate, sweep=sendAll
     await refresh()
+    // The refresh marks every confirmed coin; keep the user's selection instead.
+    coins=coins.map(coin=>({...coin, selected:previous.some(p=>p.txid===coin.txid && p.vout===coin.vout)}))
     const fresh=revalidateSelection(previous,coins)
     const result = await preparePayment(account!, fresh, destination, sendAmount, sendRate, getTxHex, {sendAll:sweep})
     if (result.highFee && !await askConfirmation(`A taxa de ${result.transaction.fee.toLocaleString('pt-BR')} sats passa de 10% do valor enviado. Deseja continuar mesmo assim?`)) { message='Proposta descartada. Ajuste o valor ou a taxa.'; return }

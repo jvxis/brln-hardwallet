@@ -1,5 +1,37 @@
 # BRLN T-Display: physical lab validation
 
+## brln-3 channel, signing scope and sync limits (2026-10-23)
+
+Source `c880ef1` (issues #1–#6) was built locally (48% flash, no warnings) and
+written to the identity-guarded COM5 board (ESP32-D0WDQ6, 16 MB) without erase:
+all four regions passed readback verification and wallet storage was preserved.
+The embedded image hash shown on the device matched the package:
+
+```text
+bfde5ebdddd35574cf493ed686b1104ccc925412bdc1ae22c5970aae3de4b590
+```
+
+The owner approved the hash on the buttons. Raw-serial checks on the board then
+returned `/pair 1 brln3_pairing_required`, `/check-pairing 1 brln3_pairing_required`,
+`commitment_mismatch` for a reveal with a different key, `no_commitment` for a
+repeated reveal, and `connection_period_expired` for a commit after 10 seconds.
+
+Real Chrome with the local app build on `http://localhost` (no LOS session)
+selected COM5 through the existing UI Automation helper. The app sent only
+`/ping`, `/brln-pair-commit` and `/brln-pair-reveal`; the device and app showed
+the same 8-digit codes (`5D51 CEBF`, `F58E 3007`, `78FA F3A2`, `5673 9154`, compared
+through the camera), and the authenticated `/capabilities` exchange returned
+`brln-3`, after which the app stayed connected. In two runs the dialog was
+accepted by a trusted click in the Chrome window before the scripted decision;
+this was recorded, not an app timeout.
+
+Firmware frames match the browser byte for byte (shared vectors in
+`tests/brln_channel_test.cpp` and `brln-channel.test.ts`). The BRLN PSBT scope is
+covered natively, including mutation checks. Not yet validated on hardware:
+unlock and PSBT review/refusal under the new scope (needs owner password entry),
+backend batching against a live Electrs, and deployment through LOS. No seed,
+password or funds were used.
+
 ## Owner-approved unlock and cached public summary (2026-10-15)
 
 The owner approved the `5275570` hash and completed normal unlock. Camera

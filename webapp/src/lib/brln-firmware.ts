@@ -118,13 +118,22 @@ export async function identifyBoard(loader: FirmwareLoader): Promise<'4MB' | '16
   return size
 }
 
-export async function writeFirmware(loader: FirmwareLoader, bundle: FirmwareBundle, progress: (percent: number) => void): Promise<void> {
+// The wallet lives in NVS and the SPIFFS data partition of the fixed layout; after
+// a full erase both must read back as 0xFF (MD5 of the erased bytes).
+export const WALLET_DATA_REGIONS = [
+  { offset: 0x9000, size: 0x5000, erasedMd5: '442acb167f97214178da962aa76cddb6' },
+  { offset: 0x290000, size: 0x160000, erasedMd5: 'f4af7beee0201efb91e4282d4f3da532' },
+] as const
+
+export async function writeFirmware(loader: FirmwareLoader, bundle: FirmwareBundle, progress: (percent: number) => void,
+  { eraseAll = false }: { eraseAll?: boolean } = {}): Promise<void> {
   if (loader.chip.CHIP_NAME !== 'ESP32' || loader.secureDownloadMode) throw new Error('Chip incompatível.')
   await verifyBundle(bundle) // All bytes checked again before the first destructive operation.
   if (!supportedFlash(await loader.detectFlashSize())) throw new Error('Flash incompatível.')
+  // eraseAll erases the whole chip (wallet included) before writing; otherwise only the image ranges change.
   await loader.writeFlash({
     fileArray: bundle.manifest.parts.map((part, index) => ({ address: part.offset, data: bundle.binaries[index] })),
-    flashMode: 'keep', flashFreq: 'keep', flashSize: 'keep', eraseAll: false, compress: true,
+    flashMode: 'keep', flashFreq: 'keep', flashSize: 'keep', eraseAll, compress: true,
     reportProgress: (index, written, total) => progress(Math.min(90, Math.floor((index + written / total) / 4 * 90))),
   })
   // The ROM/stub MD5 checks transport integrity, not publisher authenticity.
@@ -134,6 +143,9 @@ export async function writeFirmware(loader: FirmwareLoader, bundle: FirmwareBund
       throw new Error('A verificação da gravação falhou. Não crie uma carteira; reconecte o BR⚡LN Signer e repita a instalação.')
     progress(90 + (index + 1) * 2)
   }
+  if (eraseAll) for (const region of WALLET_DATA_REGIONS)
+    if ((await loader.flashMd5sum(region.offset, region.size)).toLowerCase() !== region.erasedMd5)
+      throw new Error('O apagamento da memória não foi confirmado. Não crie uma carteira; reconecte o BR⚡LN Signer e repita a instalação com "Apagar tudo".')
   await loader.after('hard_reset')
   progress(100)
 }

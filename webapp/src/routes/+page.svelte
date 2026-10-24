@@ -298,7 +298,7 @@
       {#if step === 1}
         <p class="eyebrow">{$t('Passo {n} de 4', { n: 1 })}</p><h2>{$t('Instale o firmware')}</h2>
         <p class="muted">{$t('Grave o firmware do BR⚡LN Signer pelo navegador, com a placa ligada a este computador. O LightningOS fornece e confere os arquivos.')}</p>
-        <FirmwareInstaller bind:busy bind:done={firmwareDone} {connected} hasProposal={!!proposal} />
+        <FirmwareInstaller bind:busy bind:done={firmwareDone} {connected} hasProposal={!!proposal} confirm={askConfirmation} />
         <div class="actions end"><button class="btn-secondary" disabled={busy} on:click={() => { firmwareSkipped = true; step = 2 }}>{$t('Já tenho o firmware')}</button><button class="btn-primary" disabled={busy || !firmwareReady} on:click={() => step = 2}>{$t('Próximo')}</button></div>
       {:else if step === 2}
         <p class="eyebrow">{$t('Passo {n} de 4', { n: 2 })}</p><h2>{$t('Conecte o BR⚡LN Signer')}</h2>
@@ -445,7 +445,7 @@
     </section>
     <section class="section-card card">
       <p class="eyebrow">{$t('Firmware')}</p><h3>{$t('Reinstalar ou instalar em outro Signer')}</h3>
-      <p class="muted">{$t('Use o passo 1 da configuração. A instalação não apaga a memória de dados; não use em um Signer com carteira que precise preservar sem ter o backup.')}</p>
+      <p class="muted">{$t('Use o passo 1 da configuração. Por padrão, a instalação mantém a carteira guardada no Signer; a opção Apagar tudo apaga a memória inteira para começar do zero.')}</p>
       <div class="actions"><button class="btn-secondary" on:click={() => { view = 'setup'; step = 1 }}>{$t('Abrir instalação')}</button></div>
     </section>
     <section class="section-card card warnbox">

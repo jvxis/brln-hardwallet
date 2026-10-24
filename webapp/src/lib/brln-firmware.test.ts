@@ -81,6 +81,25 @@ describe('browser firmware boundary', () => {
     expect(loader.after.mock.invocationCallOrder[0]).toBeGreaterThan(loader.flashMd5sum.mock.invocationCallOrder[3])
     expect(progress).toHaveBeenLastCalledWith(100)
   })
+  it('erases the whole chip on request and confirms the wallet areas read back erased', async () => {
+    const { WALLET_DATA_REGIONS } = await import('./brln-firmware')
+    for (const region of WALLET_DATA_REGIONS)
+      expect(createHash('md5').update(Buffer.alloc(region.size, 0xff)).digest('hex')).toBe(region.erasedMd5)
+    const bundle = fixture(), loader = fakeLoader(bundle)
+    const erased = (offset: number) => WALLET_DATA_REGIONS.find(region => region.offset === offset)?.erasedMd5
+    loader.flashMd5sum.mockImplementation(async (offset: number) => erased(offset) ?? bundle.manifest.parts.find(part => part.offset === offset)!.md5)
+    await writeFirmware(loader, bundle, vi.fn(), { eraseAll: true })
+    expect(loader.writeFlash).toHaveBeenCalledWith(expect.objectContaining({ eraseAll: true }))
+    expect(loader.flashMd5sum).toHaveBeenCalledWith(0x9000, 0x5000)
+    expect(loader.flashMd5sum).toHaveBeenCalledWith(0x290000, 0x160000)
+    expect(loader.after).toHaveBeenCalledOnce()
+  })
+  it('does not boot a board whose wallet area was not erased', async () => {
+    const bundle = fixture(), loader = fakeLoader(bundle)
+    loader.flashMd5sum.mockImplementation(async (offset: number) => bundle.manifest.parts.find(part => part.offset === offset)?.md5 ?? '0'.repeat(32))
+    await expect(writeFirmware(loader, bundle, vi.fn(), { eraseAll: true })).rejects.toThrow('apagamento')
+    expect(loader.after).not.toHaveBeenCalled()
+  })
   it('does not report success or boot the wallet after a verification failure', async () => {
     const loader = fakeLoader(), progress = vi.fn(); loader.flashMd5sum.mockResolvedValue('0'.repeat(32))
     await expect(writeFirmware(loader, fixture(), progress)).rejects.toThrow('verificação')

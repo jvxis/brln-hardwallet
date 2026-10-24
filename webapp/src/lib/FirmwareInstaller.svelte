@@ -8,7 +8,9 @@
   export let hasProposal = false
   /** Set once a write has been verified in this session. */
   export let done = false
-  let supported = false, acknowledged = false, progress = 0
+  /** Asks the owner before a full erase; without one, nothing is erased. */
+  export let confirm: (text: string) => Promise<boolean> = async () => false
+  let supported = false, acknowledged = false, eraseAll = false, progress = 0
   let phase: 'loading' | 'idle' | 'connecting' | 'ready' | 'writing' | 'done' | 'error' = 'loading'
   let message = 'Verificando o firmware incluído no app…'
   let bundle: FirmwareBundle | null = null
@@ -59,14 +61,19 @@
   }
   async function install() {
     if (phase !== 'ready' || !loader || !bundle || !acknowledged) return
-    phase = 'writing'; progress = 0; message = 'Gravando e verificando o firmware. Não retire o cabo nem feche esta página.'
+    const erase = eraseAll
+    if (erase && !await confirm('Apagar toda a memória do BR⚡LN Signer? A carteira guardada nele será destruída e só poderá ser recuperada com as palavras anotadas.')) {
+      message = 'Apagamento cancelado. Nada foi gravado nem apagado.'; return
+    }
+    phase = 'writing'; progress = 0
+    message = erase ? 'Apagando toda a memória, gravando e verificando o firmware. O apagamento leva até 1 minuto: não retire o cabo nem feche esta página.' : 'Gravando e verificando o firmware. Não retire o cabo nem feche esta página.'
     try {
-      await writeFirmware(loader, bundle, value => progress = value)
+      await writeFirmware(loader, bundle, value => progress = value, { eraseAll: erase })
       rememberInstaller(); phase = 'done'; done = true
-      message = 'Gravação verificada. O BR⚡LN Signer reinicia sozinho: confirme "Preparar memória" se aparecer e compare o hash na tela com o hash acima.'
+      message = erase ? 'Memória apagada e gravação verificada. O BR⚡LN Signer reinicia sozinho: confirme "Preparar memória" duas vezes e compare o hash na tela com o hash acima.' : 'Gravação verificada. O BR⚡LN Signer reinicia sozinho: confirme "Preparar memória" se aparecer e compare o hash na tela com o hash acima.'
     } catch {
       phase = 'error'; message = 'A instalação não foi concluída e verificada. Não crie uma carteira. Reconecte o BR⚡LN Signer e repita a preparação; não há repetição automática.'
-    } finally { await release(); acknowledged = false }
+    } finally { await release(); acknowledged = false; eraseAll = false }
   }
   async function cancel() {
     if (phase !== 'ready') return
@@ -84,7 +91,7 @@
   <div class="facts">
     <div><span>{$t('Hardware')}</span><strong>{$t('LilyGO T-Display original')}</strong><small>{$t('ESP32 · 1,14″ · dois botões · 4 ou 16 MB')}</small></div>
     <div><span>{$t('Firmware')}</span><strong>{bundle ? bundle.manifest.version : '—'}</strong><small>{$t(bundle ? '4 arquivos · SHA-256 conferido' : 'verificando…')}</small></div>
-    <div><span>{$t('Memória de dados')}</span><strong>{$t('Não é apagada')}</strong><small>{$t('Sem carteira, o Signer pede "Preparar memória"')}</small></div>
+    <div><span>{$t('Memória de dados')}</span><strong>{$t(eraseAll ? 'É apagada' : 'Não é apagada')}</strong><small>{$t(eraseAll ? 'A carteira deste Signer é destruída' : 'Sem carteira, o Signer pede "Preparar memória"')}</small></div>
   </div>
   {#if deviceHash}
     <div class="hash"><span>{$t('Hash que o Signer vai mostrar')}</span>
@@ -102,12 +109,15 @@
   <label class="ack"><input type="checkbox" bind:checked={acknowledged} disabled={busy} />
     <span>{$t('Esta é a T-Display original e não contém uma carteira que preciso preservar. Autorizo substituir o firmware atual.')}</span>
   </label>
+  <label class="ack erase"><input type="checkbox" bind:checked={eraseAll} disabled={busy && phase !== 'ready'} />
+    <span><strong>{$t('Apagar tudo')}</strong> · {$t('Também apaga a carteira guardada neste Signer, para começar do zero. Só use com as palavras anotadas ou se não precisar desta carteira.')}</span>
+  </label>
   {#if !supported}<p class="notice">{$t('Use Chrome ou Edge no computador, com HTTPS confiável e suporte a Web Serial.')}</p>{/if}
   {#if connected}<p class="notice">{$t('Desconecte o BR⚡LN Signer antes de instalar o firmware.')}</p>{/if}
   {#if hasProposal}<p class="notice">{$t('Encerre a proposta de transação antes de instalar o firmware.')}</p>{/if}
   <div class="actions">
     {#if phase === 'ready'}
-      <button class="btn-primary" on:click={install}>{$t('Confirmar e instalar firmware')}</button>
+      <button class="btn-primary" class:danger={eraseAll} on:click={install}>{$t(eraseAll ? 'Apagar tudo e instalar firmware' : 'Confirmar e instalar firmware')}</button>
       <button class="btn-secondary" on:click={cancel}>{$t('Cancelar sem gravar')}</button>
     {:else}
       <button class="btn-primary" disabled={busy || connected || hasProposal || !supported || !bundle || !acknowledged} on:click={connect}>{$t('Selecionar BR⚡LN Signer USB')}</button>
@@ -131,6 +141,9 @@
   .hash p.mono{margin:8px 0;font-size:16px;letter-spacing:.08em;color:rgb(var(--color-brass));line-height:1.5}
   .hash small{font-size:12px;color:rgb(var(--color-fog)/.6)}
   .ack{display:flex;gap:12px;margin:18px 0;font-size:14px;line-height:1.5;border:1px solid rgb(255 255 255/.1);background:rgb(var(--color-ink)/.35);border-radius:16px;padding:14px}
+  .ack.erase{margin-top:-6px;border-color:rgb(var(--color-ember)/.45)}
+  .ack.erase strong{color:rgb(var(--color-ember))}
+  .danger{background:rgb(var(--color-ember));border-color:rgb(var(--color-ember))}
   .ack input{flex:none;width:18px;height:18px;margin-top:2px;accent-color:rgb(var(--color-glow))}
   .actions{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}
   .notice,.error{border-left:3px solid rgb(var(--color-brass));padding:10px 12px;background:rgb(var(--color-brass)/.1);border-radius:10px}

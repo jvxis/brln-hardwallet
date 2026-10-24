@@ -251,7 +251,13 @@
 
   <section class="stats" aria-label={$t('Resumo')}>
     <div class="stat"><span>{$t('Saldo')}</span><strong>{updatedAt ? $num(shownBalance) + ' sats' : '—'}</strong><small>{updatedAt ? ago(updatedAt, now) : account ? $t('Ainda não sincronizado') : $t('Configure o Signer')}</small></div>
-    <div class="stat"><span>{$t('BR⚡LN Signer')}</span><strong class:good={unlocked} class:mid={connected && !unlocked}>{$t(signerLabel)}</strong><small>{$t(connected ? unlocked ? 'Pronto para conferir e assinar' : 'Desbloqueie para assinar' : 'Conecte por USB quando precisar assinar')}</small></div>
+    <div class="stat"><span>{$t('BR⚡LN Signer')}</span><strong class:good={unlocked} class:mid={connected && !unlocked}>{$t(signerLabel)}</strong><small>{$t(connected ? unlocked ? 'Pronto para conferir e assinar' : 'Desbloqueie para assinar' : 'Conecte por USB quando precisar assinar')}</small>
+      <div class="stat-actions">
+        {#if !connected}<button class="btn-primary tiny" disabled={busy} on:click={() => run(connectSigner)}>{$t('Conectar por USB')}</button>
+        {:else if !unlocked}<button class="btn-primary tiny" on:click={() => run(() => localAction('unlock'))}>{$t('Desbloquear')}</button><button class="btn-secondary tiny" disabled={busy} on:click={() => run(() => device.disconnect())}>{$t('Desconectar')}</button>
+        {:else}<button class="btn-secondary tiny" disabled={busy} on:click={() => run(() => device.logout())}>{$t('Bloquear')}</button>{/if}
+      </div>
+    </div>
     <div class="stat"><span>{$t('Fonte')}</span><strong>{$t(sourceLabel)}</strong><small>{$t(source === 'club' ? 'Servidor público · TCP sem TLS' : source === 'local' ? 'Consultas ficam no seu node' : 'Consultando…')}</small></div>
     <div class="stat"><span>{$t('Conta pública')}</span><strong class="mono">{account ? account.fingerprint : '—'}</strong><small>{account ? ACCOUNT_PATH : $t('Salva ao abrir a carteira')}</small></div>
   </section>
@@ -337,6 +343,7 @@
       {:else if tab === 'send'}
         <p class="eyebrow">{$t('Enviar')}</p><h2>{$t('Prepare a transação')}</h2>
         <p class="muted">{$t('Os fundos selecionados são consultados de novo antes de preparar. Você confere e assina no Signer; a transmissão é uma ação separada.')}</p>
+        {#if !unlocked}<div class="callout warn"><span>{$t(connected ? 'Desbloqueie o Signer para assinar.' : 'Conecte e desbloqueie o Signer para assinar.')}</span>{#if connected}<button class="btn-secondary" disabled={busy} on:click={() => run(() => localAction('unlock'))}>{$t('Desbloquear')}</button>{:else}<button class="btn-secondary" disabled={busy} on:click={() => run(connectSigner)}>{$t('Conectar por USB')}</button>{/if}</div>{/if}
         {#if scanned && !coins.length}<p class="muted">{$t('Nenhum saldo disponível para enviar nesta conta.')}</p>{/if}
         {#if coins.length}<fieldset class="coins" disabled={busy || !!syncController || !!proposal}><legend>{$t('UTXOs · somente confirmados podem ser gastos')}</legend>{#each coins as coin}<label class="coin"><input type="checkbox" bind:checked={coin.selected} disabled={!coin.status.confirmed} /><span><strong>{$num(coin.value)} sats</strong><small class="mono">{coin.txid}:{coin.vout}</small></span></label>{/each}</fieldset>{/if}
         <fieldset class="form" disabled={busy || !!syncController || !!proposal || !scanned}>
@@ -365,7 +372,7 @@
           {#each proposal.outputs as output}<div class="output"><span>{$t(output.change ? 'Troco' : 'Destino')} · {$num(output.amount)} sats</span><p class="mono">{output.address}</p></div>{/each}
           <div class="output"><span>{$t('Taxa')}</span><p>{$num(proposal.fee)} sats · {proposal.feeRate.toFixed(2)} sat/vB</p></div>
           {#if !signed}
-            {#if !unlocked}<div class="callout warn"><span>{$t('Conecte e desbloqueie o Signer para assinar.')}</span></div>{/if}
+            {#if !unlocked}<div class="callout warn"><span>{$t(connected ? 'Desbloqueie o Signer para assinar.' : 'Conecte e desbloqueie o Signer para assinar.')}</span>{#if connected}<button class="btn-secondary" disabled={busy} on:click={() => run(() => localAction('unlock'))}>{$t('Desbloquear')}</button>{:else}<button class="btn-secondary" disabled={busy} on:click={() => run(connectSigner)}>{$t('Conectar por USB')}</button>{/if}</div>{/if}
             <button class="btn-primary full" disabled={busy || !unlocked} on:click={() => run(sign)}>{$t('Conferir e assinar no BR⚡LN Signer')}</button>
           {:else}
             <div class="output"><span>{$t('Txid')}</span><p class="mono">{signed.txid}</p><p>{$t('Taxa final: {fee} sats · {rate} sat/vB', { fee: $num(signed.fee), rate: signed.feeRate.toFixed(2) })}</p></div>
@@ -468,6 +475,8 @@
   .stat strong.good{color:rgb(var(--color-glow))}
   .stat strong.mid{color:rgb(var(--color-brass))}
   .stat small{display:block;margin-top:4px;font-size:12px;color:rgb(var(--color-fog)/.5)}
+  .stat-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .tiny{padding:6px 12px;font-size:12px}
   .pills{display:inline-flex;gap:4px;padding:4px;border:1px solid rgb(255 255 255/.1);border-radius:16px;background:rgb(0 0 0/.15);margin-bottom:14px}
   .pills button{border:0;background:transparent;color:rgb(var(--color-fog)/.6);font:inherit;font-size:14px;font-weight:500;padding:8px 16px;border-radius:12px;cursor:pointer}
   .pills button.on{background:rgb(var(--color-glow));color:rgb(var(--color-ink))}

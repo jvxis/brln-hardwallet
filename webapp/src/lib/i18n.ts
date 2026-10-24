@@ -143,6 +143,7 @@ const en: Record<string, string> = {
   'Destino': 'Destination',
   'Taxa': 'Fee',
   'Conecte e desbloqueie o Signer para assinar.': 'Connect and unlock the Signer to sign.',
+  'Desbloqueie o Signer para assinar.': 'Unlock the Signer to sign.',
   'Conferir e assinar no BR⚡LN Signer': 'Check and sign on the BR⚡LN Signer',
   'Txid': 'Txid',
   'Taxa final: {fee} sats · {rate} sat/vB': 'Final fee: {fee} sats · {rate} sat/vB',

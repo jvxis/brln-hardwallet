@@ -92,6 +92,22 @@ String brlnLabel(const String &text) {
   if(text=="Backup review ended") return "Backup conferido";
   if(text=="Please wait") return "Aguarde";
   if(text=="Parsing PSBT...") return "Lendo transacao";
+  if(text=="Signing PSBT...") return "Assinando";
+  if(text=="Receiving PSBT") return "Recebendo transacao";
+  if(text=="Signed inputs:") return "Entradas assinadas:";
+  if(text=="PSBT unsupported") return "Transacao recusada";
+  if(text=="PSBT rejected") return "Transacao recusada";
+  if(text=="Invalid PSBT") return "Transacao invalida";
+  if(text=="Signing failed") return "Falha ao assinar";
+  if(text=="No inputs signed") return "Nada assinado";
+  if(text=="PSBT transfer failed") return "Falha na transferencia";
+  if(text=="Output rejected" || text=="Fee rejected" || text=="Signing rejected") return "Recusado no Signer";
+  if(text=="BRLN: one destination") return "Aceita um destino";
+  if(text=="BRLN: 1-2 outputs") return "Maximo 2 saidas";
+  if(text=="BRLN: 1-20 inputs") return "Maximo 20 entradas";
+  if(text=="BRLN: BIP84 inputs only") return "Entrada fora da conta";
+  if(text=="BRLN: mainnet only") return "Somente mainnet";
+  if(text.endsWith(" chunks")) return text.substring(0,text.length()-7)+" partes";
   if(text=="Wallet exists") return "Carteira existente";
   if(text=="Use another device") return "Use outro Signer";
   if(text=="12+ chars, no spaces") return "Senha: 12 ou mais caracteres, sem espacos";
@@ -204,15 +220,29 @@ void brlnInfoScreen(const String &message,const String &additional) {
   brlnLines(text,brlnInfoPage*76,32,4);
 }
 
+// Review values use up to three 19-character rows per page. Pages and rows are
+// balanced: a 42-character address fits one screen as 3 x 14, and a long one
+// never ends with a lone fragment on its last page.
+const unsigned BRLN_REVIEW_ROWS=3, BRLN_REVIEW_ROW=19;
+unsigned brlnReviewPages(const String &text) {
+  return brlnPageCount(text,BRLN_REVIEW_ROWS*BRLN_REVIEW_ROW);
+}
+
 void brlnReviewScreen(const String &title,const String &text,unsigned page,unsigned pages) {
-  brlnFrame("CANCELAR",page+1<pages?"PROXIMO":"CONFIRMAR",String(page+1)+"/"+String(pages));
+  brlnFrame("CANCELAR",page+1<pages?"PROXIMO":"CONFIRMAR",pages>1?String(page+1)+"/"+String(pages):"");
   brlnCentered(title,32,2);
   tft.setTextColor(tft.color565(255,204,72),BRLN_BACKGROUND);
-  brlnLines(text,page*38,60,2);
+  unsigned length=text.length(), per=(length+pages-1)/pages;
+  unsigned start=min(length,page*per), end=min(length,start+per);
+  unsigned rows=max(1U,(end-start+BRLN_REVIEW_ROW-1)/BRLN_REVIEW_ROW);
+  unsigned width=max(1U,(end-start+rows-1)/rows);
+  int y=rows==3?51:rows==2?60:70;
+  for(unsigned row=0;row<rows && start+row*width<end;row++)
+    brlnCentered(text.substring(start+row*width,min(end,start+(row+1)*width)),y+row*19,2);
 }
 
 bool brlnReviewText(const String &title,const String &text) {
-  unsigned pages=brlnPageCount(text,38);
+  unsigned pages=brlnReviewPages(text);
   for(unsigned page=0;page<pages;page++) {
     brlnReviewScreen(title,text,page,pages);
     if(!awaitPhysicalReviewApproval()) return false;

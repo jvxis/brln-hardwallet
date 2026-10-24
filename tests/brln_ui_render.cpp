@@ -25,9 +25,10 @@ struct String : std::string {
 #include "../libraries/TFT_eSPI/Fonts/glcdfont.c"
 struct Display {
   uint16_t pixels[240*135]={}; int x=0,y=0,size=2; uint16_t fg=0xffff,bg=0; bool swap=false;
+  std::vector<std::string> printed;
   int width(){return 240;}
   void pixel(int a,int b,uint16_t c){if(a>=0&&a<240&&b>=0&&b<135)pixels[b*240+a]=c;}
-  void fillScreen(uint16_t c){std::fill(pixels,pixels+240*135,c);}
+  void fillScreen(uint16_t c){std::fill(pixels,pixels+240*135,c);printed.clear();}
   void setTextFont(int n){assert(n==1);}
   void setTextSize(int n){assert(n>=2);size=n;}
   void setTextWrap(bool){}
@@ -46,6 +47,7 @@ struct Display {
   }
   void print(const String&s){
     if(x<0||x+int(s.length())*6*size>240||y<0||y+8*size>135){std::cerr<<"Clipped text: "<<s<<" at "<<x<<","<<y<<" size "<<size<<"\n";std::abort();}
+    printed.push_back(s);
     for(unsigned char ch:s){
       for(int a=0;a<6;a++)for(int b=0;b<8;b++){
       bool on=a<5&&(font[ch*5+a]&(1<<b));
@@ -95,16 +97,38 @@ int main(){
   for(auto value:choices) brlnLocalScreen("BIP39 passphrase",value,"Choose on device");
   for(int ch=32;ch<127;ch++) brlnLocalScreen("BIP39 passphrase",String(16,'x'),String("Selected: ")+String(1,char(ch)));
   brlnLocalScreen("Wallet password","12 chars","Selected: CANCEL");tft.save("cancel-entry");
-  // Full 62-character address across pages, never a prefix/suffix abbreviation.
+  // Review values are shown character-exact across pages: no abbreviation and no
+  // lone fragment. The rows printed after the title must rebuild the whole value.
+  auto reviewed=[&](const String &value,const std::string &name){
+    unsigned pages=brlnReviewPages(value); std::string shown;
+    for(unsigned i=0;i<pages;i++){
+      brlnReviewScreen("Destino 64",value,i,pages);tft.save(name+"-"+std::to_string(i+1));
+      auto title=std::find(tft.printed.begin(),tft.printed.end(),std::string("Destino 64"));
+      assert(title!=tft.printed.end());
+      std::vector<std::string> rows(title+1,tft.printed.end());
+      assert(!rows.empty() && rows.size()<=3);
+      for(auto &row:rows){assert(row.size()<=19);shown+=row;}
+      assert(rows.back().size()*2>=rows.front().size()); // No lone fragment.
+    }
+    assert(shown==value);
+    return pages;
+  };
+  String segwit="bc1qu25unny90u9wcmkezvv0uf6zqnz7tgl2uxwesd";
+  assert(reviewed(segwit,"address-p2wpkh")==1);
   String address="bc1p"+String(58,'q');
-  assert(brlnPageCount(address,38)==2);
-  for(unsigned i=0;i<2;i++){brlnReviewScreen("Destino 64",address,i,2);tft.save("address-"+std::to_string(i+1));}
+  assert(reviewed(address,"address")==2);
   brlnAmountScreen("Valor 64","2100000000000000");tft.save("amount");
   brlnAmountScreen("Valor maximo","18446744073709551615");tft.save("amount-max");
   brlnAmountScreen("Taxa da rede","1234");tft.save("fee");
   for(int reject=0;reject<2;reject++){acceptCount=0;rejectAt=reject;assert(!brlnReviewText("Destino",address));assert(acceptCount==reject+1);}
   acceptCount=0;rejectAt=-1;assert(brlnReviewText("Destino",address));assert(acceptCount==2);
   brlnInfoScreen("12+ chars, no spaces","");tft.save("error");
+  // Signing status and refusals stay in Portuguese on the device.
+  assert(brlnLabel("Signing PSBT...")=="Assinando" && brlnLabel("7 chunks")=="7 partes");
+  brlnInfoScreen("Please wait","Signing PSBT...");tft.save("signing");
+  brlnInfoScreen("Receiving PSBT","7 chunks");tft.save("receiving");
+  brlnInfoScreen("PSBT unsupported","BRLN: BIP84 inputs only");tft.save("refused");
+  for(auto &row:tft.printed) assert(row.find("PSBT")==std::string::npos && row.find("BRLN:")==std::string::npos);
   String longText(200,'x');brlnInfoScreen(longText,"");assert(brlnInfoPages==3);
   std::cout<<"Rendered production screens; text bounds/minimum size and physical page rejection passed.\n";
 }

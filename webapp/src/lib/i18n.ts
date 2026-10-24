@@ -191,7 +191,7 @@ const en: Record<string, string> = {
   'Reinstalar ou instalar em outro Signer': 'Reinstall or install on another Signer',
   'Use o passo 1 da configuração. A instalação não apaga a memória de dados; não use em um Signer com carteira que precise preservar sem ter o backup.': 'Use step 1 of the setup. Installing does not erase the data memory; do not use it on a Signer with a wallet you must keep unless you have the backup.',
   'Abrir instalação': 'Open installation',
-  'Use sem fundos reais': 'Use without real funds',
+  'Use apenas valores pequenos': 'Use small amounts only',
   'Protótipo sem auditoria independente. USB não é air gap. Este app não controla o saldo nem os canais do LND. O protótipo usa ESP32 da Espressif; o backup BIP39 é independente deste Signer e do LightningOS.': 'Prototype without an independent audit. USB is not an air gap. This app does not control the LND balance or channels. The prototype uses an Espressif ESP32; the BIP39 backup is independent of this Signer and LightningOS.',
   // Firmware installer
   'Hardware': 'Hardware',

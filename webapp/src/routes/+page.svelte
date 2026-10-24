@@ -449,7 +449,7 @@
       <div class="actions"><button class="btn-secondary" on:click={() => { view = 'setup'; step = 1 }}>{$t('Abrir instalação')}</button></div>
     </section>
     <section class="section-card card warnbox">
-      <p class="eyebrow">{$t('Piloto experimental')}</p><h3>{$t('Use sem fundos reais')}</h3>
+      <p class="eyebrow">{$t('Piloto experimental')}</p><h3>{$t('Use apenas valores pequenos')}</h3>
       <p class="muted">{$t('Protótipo sem auditoria independente. USB não é air gap. Este app não controla o saldo nem os canais do LND. O protótipo usa ESP32 da Espressif; o backup BIP39 é independente deste Signer e do LightningOS.')}</p>
     </section>
   </div>

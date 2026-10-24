@@ -261,7 +261,7 @@ CommandResponse reviewAndSignPsbt(struct wally_psbt *psbt, struct ext_key *root,
     uint64_t amount=0;
     bool reviewed=readPsbtOutputAmount(psbt,i,&amount) &&
       brlnReviewText(title,psbtOutputDescription(psbt,i,mainnet)) &&
-      brlnReviewAmount("Valor "+String(i+1),int64ToString(amount));
+      brlnReviewAmount(title,int64ToString(amount));
     if(!reviewed) {
       sendCommandOutput(reviewResponseCommand,"review_rejected");
       return {"Operation canceled","Output rejected"};

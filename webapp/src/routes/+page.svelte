@@ -203,17 +203,27 @@
     if (!signed || broadcastState === 'done') return
     const expected = signed.txid
     if (broadcastState === 'unknown') {
-      await getTxHex(expected); broadcastState='done'; scanned=false; message='Transação encontrada no node.'; return
+      await getTxHex(expected); broadcasted('Transação encontrada no node.'); return
     }
     broadcastState='unknown'
     clearSummary(); updatedAt=0
     try {
       const result = await api<{txid:string}>('broadcast',{hex:signed.hex})
       if (result.txid !== expected) throw new Error('Txid divergente.')
-      broadcastState='done'; message='Transação transmitida ao seu node.'; scanned=false
     } catch { throw new Error('Resultado desconhecido. Consulte o txid ' + expected + ' antes de qualquer nova tentativa. Você pode exportar a transação assinada.') }
+    broadcasted('Transação transmitida ao seu node.')
   }
-  function closeProposal() { proposal=null; signed=null; coins=[]; scanned=false; message='Proposta encerrada. Sincronize a conta antes de preparar outra.' }
+  // The spent coins are gone: refresh balance and history while the summary stays visible.
+  function broadcasted(text: string) {
+    broadcastState='done'; message=text; coins=[]; scanned=false; syncMessage=''
+    void refresh().catch(() => { /* refresh reports its own failure */ })
+  }
+  function closeProposal() {
+    const fresh = broadcastState === 'done' && scanned
+    proposal=null; signed=null
+    if (fresh) { message='Proposta encerrada.'; return }
+    coins=[]; scanned=false; message='Proposta encerrada. Sincronize a conta antes de preparar outra.'
+  }
   onMount(() => {
     initializeAppearance()
     window.addEventListener('hashchange', initializeAppearance)

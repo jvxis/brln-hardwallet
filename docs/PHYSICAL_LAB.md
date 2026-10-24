@@ -1,5 +1,34 @@
 # BRLN T-Display: physical lab validation
 
+## Fresh first-run journey through LOS 0.5.48 (2026-10-24)
+
+Firmware `f9aaec8` (issue #7) moved PSBT review to balanced rows: on the COM5
+board, `Destino 1` and `Troco 2` each fit one screen as 3 x 14 characters and the
+signing states read "Assinando" and "Entradas assinadas". The first browser
+installation of that firmware through LOS ended with a dark screen: esptool-js
+0.7.0's hard reset only released RTS without pulsing EN, so the chip stayed in
+the flasher stub until a serial reset. `4f61d5c` resets with DTR/RTS set together
+(EN pulse, IO0 high); a real browser installation with it returned directly to the
+hash screen, and the same check through LOS returned to the BRLN screen. Both
+installations preserved the test wallet (`647804d1` read back after unlock). The
+CI firmware hash `059f1605a997be5d503d85a64c8063ec178ef7731192768a5346627cddf28fb1`
+is identical for `f9aaec8` and `4f61d5c` (reproducible build).
+
+At the owner's request the board was then fully erased (`erase_flash`; the first
+4 MB read back as 0xFF), destroying the old test wallet. The complete journey
+then ran through LOS-TEST2 in the owner's browser: installer flash; on the
+device "Preparar memória" with both confirmations; hash approval after camera
+comparison with the published value; brln-3 pairing; local wallet creation
+(password twice, automatic seed, 24 words written and checked; no camera during
+secrets); public-account import (fingerprint `d11bc45b`, replacing the old
+browser account), club Electrum sync, and a receive address identical on the
+Signer and in the app (`bc1q0jx3x8gyeu0jpzzt4a3puhrmkzt6mfxrc3v0gr`). After lock,
+disconnect, reconnection (board reboot) and a second unlock, the app accepted the
+same account and issued the next address
+(`bc1qklpgrhu04g5npg3h9t0w57wv6trytejp9qqgr8`), so storage persisted.
+Remaining: recovery of the new words on a second board, passphrase unlock. The
+receive screen still splits 19 + 19 + 4 on one page (review screens are balanced).
+
 ## LOS 0.5.48 session and on-device signing review (2026-10-24)
 
 LOS-TEST2 runs the official 0.5.48-Beta with the Hardwallet overlay of

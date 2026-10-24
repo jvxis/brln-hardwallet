@@ -84,8 +84,7 @@ String brlnLabel(const String &text) {
   if(text=="Enter passphrase") return "Usar passphrase";
   if(text=="Confirm signing" || text=="Sign reviewed PSBT?") return "Assinar agora?";
   if(text=="Outputs and fee reviewed" || text=="Review complete") return "Destinos e taxa ja conferidos";
-  if(text=="BRLN experimental") return "EM TESTE";
-  if(text=="No funds until tested") return "Use sem fundos reais";
+  if(text=="Signer connected") return "Signer conectado";
   if(text=="Operation complete") return "Concluido";
   if(text=="Cancelled / invalid") return "Cancelado / invalido";
   if(text=="Cancelled" || text=="Operation canceled") return "Cancelado";
@@ -204,7 +203,7 @@ String brlnWrap(const String &text) {
 void brlnInfoScreen(const String &message,const String &additional) {
   if(message=="Wallet ready" || message=="Wallet unlocked") {
     brlnInfoPage=0; brlnInfoPages=1;
-    brlnFrame("","","EM TESTE");
+    brlnFrame("","","");
     brlnCentered(brlnLabel(message),38,2);
     tft.setTextColor(tft.color565(78,224,193),BRLN_BACKGROUND);
     brlnCentered("Continue no",66,2);

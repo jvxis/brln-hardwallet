@@ -80,7 +80,7 @@ CommandResponse executeCommand(Command c) {
   }
   if (c.cmd == "/capabilities") {
     sendCommandOutput(c.cmd, "brln-3 mainnet bip84 local-secrets physical-review explicit-passphrase");
-    return {"BRLN experimental", "No funds until tested"};
+    return {"Signer connected", ""};
   }
   if (brln::localCommand(c.cmd.c_str())) {
     if (!brln::allowedLocalCommand(c.cmd.c_str(), c.data.c_str())) {

@@ -177,6 +177,6 @@ CommandResponse executeBrlnLocal(String command) {
   brlnClear(password);brlnClear(repeat);brlnClear(mnemonic);brlnClear(passphrase);
   if(!ok){global.authenticated=false;brlnClear(global.mnemonic);brlnClear(global.passphrase);}
   sendCommandOutput(command,ok?"1":"0 cancelled_or_invalid");
-  return {ok?(unlocking?"Wallet unlocked":"Wallet ready"):"Cancelled / invalid",ok?"Continue in app":"BRLN experimental"};
+  return {ok?(unlocking?"Wallet unlocked":"Wallet ready"):"Cancelled / invalid",ok?"Continue in app":""};
 }
 #endif

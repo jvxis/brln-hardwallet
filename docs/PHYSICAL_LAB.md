@@ -1,5 +1,35 @@
 # BRLN T-Display: physical lab validation
 
+## LOS 0.5.48 session and on-device signing review (2026-10-24)
+
+LOS-TEST2 runs the official 0.5.48-Beta with the Hardwallet overlay of
+jvxis/brln-os-light#286 and image `67ae61e` (details in that repository's
+`docs/HARDWALLET_VALIDATION.md`). The COM5 board keeps firmware `c880ef1` and
+its test wallet (fingerprint `647804d1`).
+
+Through LOS in the owner's browser: brln-3 pairing and authenticated
+`/capabilities`, normal unlock on the buttons ("Desbloqueada"), synchronization
+through the club Electrum ("Sincronização concluída", empty history), and a
+receive address shown on the Signer, in the app and in its QR
+(`bc1qww9mwtrk94vyjll632wpya5m2y0wp936d970fw`; camera read and bech32 checksum
+confirmed).
+
+Signing review used the independent Python brln-3 host with one unlock (the
+password was typed on the device; no camera capture during entry). PSBTs were
+built by the app's `preparePayment`/`createPsbt` for the wallet's public account
+with synthetic UTXOs; nothing was broadcast. The device refused without any
+button: owned change at `1/600` (`BRLN: one destination`), an input at `0/600`
+(`BRLN: BIP84 inputs only`) and two destinations plus change
+(`BRLN: 1-2 outputs`). For the app-shaped proposal the device showed
+`Destino 1` (full address over two pages), 20000 sats, **`Troco 2`**
+(`bc1qu25unny90u9wcmkezvv0uf6zqnz7tgl2uxwesd`, two pages), 79295 sats, fee 705
+and "Assinar agora?"; the owner approved and the app's `finalizePsbt` verified
+the signature (txid `28db72c9c383de42c6f78d6ba781eed9d2971700951b1f2ca7144a75e47750fc`,
+141 vB). The same proposal was then rejected on the device
+(`review_rejected`) and the session ended locked. UX notes: a 42-character
+address splits into 38 + 4 characters, and the signing wait screen still reads
+"Signing PSBT...".
+
 ## Signer-independent checks of c880ef1 (2026-10-23)
 
 An independent brln-3 host written with Python `cryptography` (no app code)

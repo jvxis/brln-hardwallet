@@ -1,14 +1,16 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import QRCode from 'qrcode'
-  import { initializeAppearance } from '$lib/appearance'
+  import { initializeAppearance, rememberDisplay } from '$lib/appearance'
+  import { t, num, dateTime } from '$lib/i18n'
+  import { reportHeight, reveal, parseDisplayMessage } from '$lib/embed'
   import { BRLNDevice } from '$lib/brln-device'
   import FirmwareInstaller from '$lib/FirmwareInstaller.svelte'
   import { api, scanAccount, getTxHex } from '$lib/brln-chain'
   import { ACCOUNT_INDEX_LIMIT, ACCOUNT_PATH, publicAccount, preparePayment } from '$lib/brln-wallet'
   import { deriveAddress, finalizePsbt } from '$lib/bitcoin'
   import { loadAccounts, saveAccounts } from '$lib/storage'
-  import { loadSummary, saveSummary, clearSummary, updatedLabel, revalidateSelection } from '$lib/brln-snapshot'
+  import { loadSummary, saveSummary, clearSummary, revalidateSelection } from '$lib/brln-snapshot'
   import type { WalletAccount, UtxoRecord, UnsignedTransaction } from '$lib/types'
 
   let connected = false, unlocked = false, busy = false, message = '', failure = false
@@ -22,11 +24,17 @@
   let step = 1, firmwareDone = false, firmwareSkipped = false
   let receiveQR = '', receiveChecked = false
   let confirmation: HTMLDialogElement
-  let confirmationText = ''
+  let confirmationText = '', dialogTop = 0
+  let page: HTMLElement
   let resolveConfirmation: ((accepted:boolean)=>void) | null = null
   function askConfirmation(text:string): Promise<boolean> {
     confirmationText=text
     confirmation.returnValue='cancel'
+    // Inside the LightningOS iframe the viewport is the whole page: open the
+    // dialog beside the control that triggered it and ask LightningOS to show it.
+    const anchor = (document.activeElement as HTMLElement | null)?.getBoundingClientRect()
+    dialogTop = Math.max(16, Math.min((anchor?.top ?? 120) - 60, Math.max(16, (page?.getBoundingClientRect().height ?? 0) - 320)))
+    reveal(dialogTop)
     return new Promise(resolve => { resolveConfirmation=resolve; confirmation.showModal() })
   }
   function finishConfirmation() {
@@ -52,9 +60,13 @@
     { n: 1, title: 'Firmware', detail: firmwareDone ? 'Instalado e verificado' : firmwareReady ? 'Já instalado' : 'Instalar pelo navegador', done: firmwareReady },
     { n: 2, title: 'Conectar', detail: connected ? 'Pareado por USB' : 'Parear por USB', done: connected },
     { n: 3, title: 'Carteira', detail: walletReady ? 'Aberta e conta pública salva' : 'Criar, recuperar ou desbloquear', done: walletReady },
-    { n: 4, title: 'Pronto', detail: account ? 'Conta ' + account.fingerprint : 'Resumo e backup', done: walletReady },
+    { n: 4, title: 'Pronto', detail: account ? 'Conta {fingerprint}' : 'Resumo e backup', done: walletReady },
   ]
   $: signerLabel = connected ? unlocked ? 'Desbloqueado' : 'Bloqueado' : 'Desconectado'
+  function ago(at: number, current: number) {
+    const minutes = Math.max(0, Math.floor((current - at) / 60000))
+    return minutes === 0 ? $t('Atualizado há menos de 1 minuto') : minutes < 60 ? $t('Atualizado há {n} min', { n: minutes }) : $t('Última atualização: {date}', { date: $dateTime(at) })
+  }
   $: sourceLabel = source === 'club' ? 'Electrum do clube' : source === 'local' ? 'Electrum do meu node' : 'Electrum'
   async function run(action: () => Promise<void>) {
     if (busy) return
@@ -203,168 +215,171 @@
   onMount(() => {
     initializeAppearance()
     window.addEventListener('hashchange', initializeAppearance)
+    const display = (event: MessageEvent) => { const update = parseDisplayMessage(event); if (update) rememberDisplay(update.appearance, update.lang) }
+    window.addEventListener('message', display)
+    const stopHeight = reportHeight(page)
     try { const saved = loadAccounts()[0]; if (saved) account=publicAccount(saved) } catch { message='Configuração local inválida. Importe novamente a conta pública.'; failure=true }
     if(account){const cached=loadSummary(account);if(cached){updatedAt=cached.updatedAt;cachedBalance=cached.balance;history=cached.history;source=cached.source}}
     view = account ? 'wallet' : 'setup'
     void synchronize()
     const clock=window.setInterval(()=>now=Date.now(),30000)
-    return () => { clearInterval(clock); resolveConfirmation?.(false); window.removeEventListener('hashchange', initializeAppearance); syncController?.abort(); void device.disconnect() }
+    return () => { clearInterval(clock); stopHeight(); window.removeEventListener('message', display); resolveConfirmation?.(false); window.removeEventListener('hashchange', initializeAppearance); syncController?.abort(); void device.disconnect() }
   })
 </script>
 
 <svelte:head><link rel="stylesheet" href="/los-theme/theme.css" /><title>BR⚡LN Hardwallet</title><meta name="description" content="Coordenador Bitcoin local com assinador ESP32 e BR⚡LN LightningOS" /></svelte:head>
 
-<dialog bind:this={confirmation} on:close={finishConfirmation} aria-labelledby="confirmation-title"><form method="dialog"><p class="eyebrow">Confirmação</p><h2 id="confirmation-title">Confira antes de continuar</h2><p>{confirmationText}</p><div class="actions end"><button class="btn-secondary" value="cancel">Cancelar</button><button class="btn-primary" value="accept">Sim, confirmo</button></div></form></dialog>
+<dialog bind:this={confirmation} on:close={finishConfirmation} aria-labelledby="confirmation-title" style="top:{dialogTop}px"><form method="dialog"><p class="eyebrow">{$t('Confirmação')}</p><h2 id="confirmation-title">{$t('Confira antes de continuar')}</h2><p>{$t(confirmationText)}</p><div class="actions end"><button class="btn-secondary" value="cancel">{$t('Cancelar')}</button><button class="btn-primary" value="accept">{$t('Sim, confirmo')}</button></div></form></dialog>
 
-<main>
+<main bind:this={page}>
   <header class="hero">
     <div class="hero-main">
       <img src="/brln-logo.png" alt="BR⚡LN" />
       <div>
-        <p class="eyebrow">Carteira Bitcoin com assinador físico</p>
-        <h1>Hardwallet BR⚡LN</h1>
-        <p class="lead">O BR⚡LN LightningOS consulta a blockchain; o BR⚡LN Signer confere e assina. Seed, senha e passphrase só entram pelos botões do Signer.</p>
-        <div class="chips"><span>Chaves no Signer</span><span>Sem custódia do clube</span><span>Mainnet · BIP84</span><span class="warn">Piloto experimental</span></div>
+        <p class="eyebrow">{$t('Carteira Bitcoin com assinador físico')}</p>
+        <h1>{$t('Hardwallet BR⚡LN')}</h1>
+        <p class="lead">{$t('O BR⚡LN LightningOS consulta a blockchain; o BR⚡LN Signer confere e assina. Seed, senha e passphrase só entram pelos botões do Signer.')}</p>
+        <div class="chips"><span>{$t('Chaves no Signer')}</span><span>{$t('Sem custódia do clube')}</span><span>{$t('Mainnet · BIP84')}</span><span class="warn">{$t('Piloto experimental')}</span></div>
       </div>
     </div>
-    <div class="flow" aria-label="Fluxo">
-      <div><span>Seu node</span><strong>{height === null ? 'LightningOS' : 'Bloco ' + height.toLocaleString('pt-BR')}</strong></div>
+    <div class="flow">
+      <div><span>{$t('Seu node')}</span><strong>{height === null ? 'LightningOS' : $t('Bloco {height}', { height: $num(height) })}</strong></div>
       <i aria-hidden="true"></i>
-      <div><span>Signer</span><strong>{signerLabel}</strong></div>
+      <div><span>{$t('Signer')}</span><strong>{$t(signerLabel)}</strong></div>
     </div>
   </header>
 
-  <section class="stats" aria-label="Resumo">
-    <div class="stat"><span>Saldo</span><strong>{updatedAt ? shownBalance.toLocaleString('pt-BR') + ' sats' : '—'}</strong><small>{updatedAt ? updatedLabel(updatedAt, now) : account ? 'Ainda não sincronizado' : 'Configure o Signer'}</small></div>
-    <div class="stat"><span>BR⚡LN Signer</span><strong class:good={unlocked} class:mid={connected && !unlocked}>{signerLabel}</strong><small>{connected ? unlocked ? 'Pronto para conferir e assinar' : 'Desbloqueie para assinar' : 'Conecte por USB quando precisar assinar'}</small></div>
-    <div class="stat"><span>Fonte</span><strong>{sourceLabel}</strong><small>{source === 'club' ? 'Servidor público · TCP sem TLS' : source === 'local' ? 'Consultas ficam no seu node' : 'Consultando…'}</small></div>
-    <div class="stat"><span>Conta pública</span><strong class="mono">{account ? account.fingerprint : '—'}</strong><small>{account ? ACCOUNT_PATH : 'Salva ao abrir a carteira'}</small></div>
+  <section class="stats" aria-label={$t('Resumo')}>
+    <div class="stat"><span>{$t('Saldo')}</span><strong>{updatedAt ? $num(shownBalance) + ' sats' : '—'}</strong><small>{updatedAt ? ago(updatedAt, now) : account ? $t('Ainda não sincronizado') : $t('Configure o Signer')}</small></div>
+    <div class="stat"><span>{$t('BR⚡LN Signer')}</span><strong class:good={unlocked} class:mid={connected && !unlocked}>{$t(signerLabel)}</strong><small>{$t(connected ? unlocked ? 'Pronto para conferir e assinar' : 'Desbloqueie para assinar' : 'Conecte por USB quando precisar assinar')}</small></div>
+    <div class="stat"><span>{$t('Fonte')}</span><strong>{$t(sourceLabel)}</strong><small>{$t(source === 'club' ? 'Servidor público · TCP sem TLS' : source === 'local' ? 'Consultas ficam no seu node' : 'Consultando…')}</small></div>
+    <div class="stat"><span>{$t('Conta pública')}</span><strong class="mono">{account ? account.fingerprint : '—'}</strong><small>{account ? ACCOUNT_PATH : $t('Salva ao abrir a carteira')}</small></div>
   </section>
 
-  <nav class="pills" aria-label="Seções">
-    <button aria-pressed={view === 'setup'} class:on={view === 'setup'} on:click={() => view = 'setup'}>Configurar Signer</button>
-    <button aria-pressed={view === 'wallet'} class:on={view === 'wallet'} on:click={() => view = 'wallet'}>Carteira</button>
-    <button aria-pressed={view === 'settings'} class:on={view === 'settings'} on:click={() => view = 'settings'}>Ajustes</button>
+  <nav class="pills">
+    <button aria-pressed={view === 'setup'} class:on={view === 'setup'} on:click={() => view = 'setup'}>{$t('Configurar Signer')}</button>
+    <button aria-pressed={view === 'wallet'} class:on={view === 'wallet'} on:click={() => view = 'wallet'}>{$t('Carteira')}</button>
+    <button aria-pressed={view === 'settings'} class:on={view === 'settings'} on:click={() => view = 'settings'}>{$t('Ajustes')}</button>
   </nav>
 
-  {#if message}<p class="banner" class:failure role="status" aria-live="polite">{busy ? 'Em andamento · ' : ''}{message}</p>{/if}
-  {#if syncMessage}<div class="banner subtle" class:failure={syncFailure} role="status" aria-live="polite"><span>{syncMessage}</span>{#if syncController}<button class="link" on:click={() => syncController?.abort()}>Cancelar sincronização</button>{/if}</div>{/if}
+  {#if message}<p class="banner" class:failure role="status" aria-live="polite">{busy ? $t('Em andamento') + ' · ' : ''}{$t(message)}</p>{/if}
+  {#if syncMessage}<div class="banner subtle" class:failure={syncFailure} role="status" aria-live="polite"><span>{$t(syncMessage)}</span>{#if syncController}<button class="link" on:click={() => syncController?.abort()}>{$t('Cancelar sincronização')}</button>{/if}</div>{/if}
 
   {#if view === 'setup'}
   <div class="grid">
     <section class="section-card card">
       <ol class="stepper">
         {#each steps as item}
-          <li><button class:current={step === item.n} class:done={item.done} on:click={() => step = item.n}><b>{item.done ? '✓' : item.n}</b><span>{item.title}</span></button></li>
+          <li><button class:current={step === item.n} class:done={item.done} on:click={() => step = item.n}><b>{item.done ? '✓' : item.n}</b><span>{$t(item.title)}</span></button></li>
         {/each}
       </ol>
       {#if step === 1}
-        <p class="eyebrow">Passo 1 de 4</p><h2>Instale o firmware</h2>
-        <p class="muted">Grave o firmware do BR⚡LN Signer pelo navegador, com a placa ligada a este computador. O LightningOS fornece e confere os arquivos.</p>
+        <p class="eyebrow">{$t('Passo {n} de 4', { n: 1 })}</p><h2>{$t('Instale o firmware')}</h2>
+        <p class="muted">{$t('Grave o firmware do BR⚡LN Signer pelo navegador, com a placa ligada a este computador. O LightningOS fornece e confere os arquivos.')}</p>
         <FirmwareInstaller bind:busy bind:done={firmwareDone} {connected} hasProposal={!!proposal} />
-        <div class="actions end"><button class="btn-secondary" disabled={busy} on:click={() => { firmwareSkipped = true; step = 2 }}>Já tenho o firmware</button><button class="btn-primary" disabled={busy || !firmwareReady} on:click={() => step = 2}>Próximo</button></div>
+        <div class="actions end"><button class="btn-secondary" disabled={busy} on:click={() => { firmwareSkipped = true; step = 2 }}>{$t('Já tenho o firmware')}</button><button class="btn-primary" disabled={busy || !firmwareReady} on:click={() => step = 2}>{$t('Próximo')}</button></div>
       {:else if step === 2}
-        <p class="eyebrow">Passo 2 de 4</p><h2>Conecte o BR⚡LN Signer</h2>
-        <p class="muted">Ligue o Signer por USB a este computador e use Chrome ou Edge. O app reinicia a placa e mostra um código de 8 dígitos: compare com a tela do Signer antes de confirmar.</p>
-        <div class="callout"><b>1</b><span>Selecione a porta da T-Display no seletor do navegador.</span></div>
-        <div class="callout"><b>2</b><span>Compare o código de pareamento no Signer e no app.</span></div>
+        <p class="eyebrow">{$t('Passo {n} de 4', { n: 2 })}</p><h2>{$t('Conecte o BR⚡LN Signer')}</h2>
+        <p class="muted">{$t('Ligue o Signer por USB a este computador e use Chrome ou Edge. O app reinicia a placa e mostra um código de 8 dígitos: compare com a tela do Signer antes de confirmar.')}</p>
+        <div class="callout"><b>1</b><span>{$t('Selecione a porta da T-Display no seletor do navegador.')}</span></div>
+        <div class="callout"><b>2</b><span>{$t('Compare o código de pareamento no Signer e no app.')}</span></div>
         <div class="actions end">
-          {#if connected}<button class="btn-secondary" disabled={busy} on:click={() => run(() => device.disconnect())}>Desconectar</button>{/if}
-          <button class="btn-primary" disabled={busy || connected} on:click={() => run(connectSigner)}>{connected ? 'Conectado' : 'Conectar por USB'}</button>
-          {#if connected}<button class="btn-primary" on:click={() => step = 3}>Próximo</button>{/if}
+          {#if connected}<button class="btn-secondary" disabled={busy} on:click={() => run(() => device.disconnect())}>{$t('Desconectar')}</button>{/if}
+          <button class="btn-primary" disabled={busy || connected} on:click={() => run(connectSigner)}>{$t(connected ? 'Conectado' : 'Conectar por USB')}</button>
+          {#if connected}<button class="btn-primary" on:click={() => step = 3}>{$t('Próximo')}</button>{/if}
         </div>
       {:else if step === 3}
-        <p class="eyebrow">Passo 3 de 4</p><h2>Abra sua carteira</h2>
-        <p class="muted">Escolha no app e continue nos botões do Signer. Ao final, a conta pública é salva neste navegador automaticamente para consultar saldo e histórico sem o Signer.</p>
-        {#if !connected}<div class="callout warn"><span>Conecte o Signer no passo 2 primeiro.</span><button class="btn-secondary" on:click={() => step = 2}>Ir para conectar</button></div>{/if}
+        <p class="eyebrow">{$t('Passo {n} de 4', { n: 3 })}</p><h2>{$t('Abra sua carteira')}</h2>
+        <p class="muted">{$t('Escolha no app e continue nos botões do Signer. Ao final, a conta pública é salva neste navegador automaticamente para consultar saldo e histórico sem o Signer.')}</p>
+        {#if !connected}<div class="callout warn"><span>{$t('Conecte o Signer no passo 2 primeiro.')}</span><button class="btn-secondary" on:click={() => step = 2}>{$t('Ir para conectar')}</button></div>{/if}
         <div class="choices">
-          <button class="choice" disabled={busy || !connected || !!proposal} on:click={() => run(() => localAction('create'))}><strong>Criar carteira nova</strong><span>Senha nos botões, seed gerada no Signer e 24 palavras para anotar.</span></button>
-          <button class="choice" disabled={busy || !connected || !!proposal} on:click={() => run(() => localAction('restore'))}><strong>Recuperar carteira</strong><span>Digite 12 ou 24 palavras BIP39 nos botões do Signer.</span></button>
-          <button class="choice" disabled={busy || !connected || !!proposal} on:click={() => run(() => localAction('unlock'))}><strong>Desbloquear carteira</strong><span>Este Signer já tem carteira: digite a senha nos botões.</span></button>
+          <button class="choice" disabled={busy || !connected || !!proposal} on:click={() => run(() => localAction('create'))}><strong>{$t('Criar carteira nova')}</strong><span>{$t('Senha nos botões, seed gerada no Signer e 24 palavras para anotar.')}</span></button>
+          <button class="choice" disabled={busy || !connected || !!proposal} on:click={() => run(() => localAction('restore'))}><strong>{$t('Recuperar carteira')}</strong><span>{$t('Digite 12 ou 24 palavras BIP39 nos botões do Signer.')}</span></button>
+          <button class="choice" disabled={busy || !connected || !!proposal} on:click={() => run(() => localAction('unlock'))}><strong>{$t('Desbloquear carteira')}</strong><span>{$t('Este Signer já tem carteira: digite a senha nos botões.')}</span></button>
         </div>
       {:else}
-        <p class="eyebrow">Passo 4 de 4</p><h2>{walletReady ? 'Tudo pronto' : 'Quase lá'}</h2>
+        <p class="eyebrow">{$t('Passo {n} de 4', { n: 4 })}</p><h2>{$t(walletReady ? 'Tudo pronto' : 'Quase lá')}</h2>
         {#if account}
-          <div class="summary"><div><span>Conta</span><strong class="mono">{account.fingerprint}</strong></div><div><span>Caminho</span><strong class="mono">{ACCOUNT_PATH}</strong></div><div><span>Signer</span><strong>{signerLabel}</strong></div></div>
-          <p class="muted">Guarde as palavras offline. Elas recuperam a carteira em outro Signer ou em outra carteira compatível com BIP84. A configuração pública pode ser exportada em Ajustes.</p>
-          <div class="actions end"><button class="btn-secondary" disabled={busy || !unlocked} on:click={() => run(() => localAction('backup'))}>Conferir backup no Signer</button><button class="btn-primary" on:click={() => { view = 'wallet'; tab = 'receive' }}>Ir para a carteira</button></div>
-        {:else}<p class="muted">Abra uma carteira no passo 3 para salvar a conta pública.</p><div class="actions end"><button class="btn-primary" on:click={() => step = 3}>Voltar ao passo 3</button></div>{/if}
+          <div class="summary"><div><span>{$t('Conta')}</span><strong class="mono">{account.fingerprint}</strong></div><div><span>{$t('Caminho')}</span><strong class="mono">{ACCOUNT_PATH}</strong></div><div><span>{$t('Signer')}</span><strong>{$t(signerLabel)}</strong></div></div>
+          <p class="muted">{$t('Guarde as palavras offline. Elas recuperam a carteira em outro Signer ou em outra carteira compatível com BIP84. A configuração pública pode ser exportada em Ajustes.')}</p>
+          <div class="actions end"><button class="btn-secondary" disabled={busy || !unlocked} on:click={() => run(() => localAction('backup'))}>{$t('Conferir backup no Signer')}</button><button class="btn-primary" on:click={() => { view = 'wallet'; tab = 'receive' }}>{$t('Ir para a carteira')}</button></div>
+        {:else}<p class="muted">{$t('Abra uma carteira no passo 3 para salvar a conta pública.')}</p><div class="actions end"><button class="btn-primary" on:click={() => step = 3}>{$t('Voltar ao passo 3')}</button></div>{/if}
       {/if}
     </section>
     <aside class="section-card card side">
-      <p class="eyebrow">Progresso</p><h3>Configuração do Signer</h3>
-      <ul class="checklist">{#each steps as item}<li class:done={item.done}><b>{item.done ? '✓' : item.n}</b><div><strong>{item.title}</strong><span>{item.detail}</span></div></li>{/each}</ul>
-      <div class="note"><strong>Segurança</strong><span>Seed, senha e passphrase nunca passam pelo computador. O app só recebe a conta pública e as assinaturas.</span></div>
+      <p class="eyebrow">{$t('Progresso')}</p><h3>{$t('Configuração do Signer')}</h3>
+      <ul class="checklist">{#each steps as item}<li class:done={item.done}><b>{item.done ? '✓' : item.n}</b><div><strong>{$t(item.title)}</strong><span>{$t(item.detail, { fingerprint: account?.fingerprint ?? '' })}</span></div></li>{/each}</ul>
+      <div class="note"><strong>{$t('Segurança')}</strong><span>{$t('Seed, senha e passphrase nunca passam pelo computador. O app só recebe a conta pública e as assinaturas.')}</span></div>
     </aside>
   </div>
   {/if}
 
   {#if view === 'wallet'}
   {#if !account}
-    <section class="section-card card empty"><h2>Nenhuma carteira neste navegador</h2><p class="muted">Configure o BR⚡LN Signer para salvar a conta pública e acompanhar saldo e histórico.</p><button class="btn-primary" on:click={() => view = 'setup'}>Configurar Signer</button></section>
+    <section class="section-card card empty"><h2>{$t('Nenhuma carteira neste navegador')}</h2><p class="muted">{$t('Configure o BR⚡LN Signer para salvar a conta pública e acompanhar saldo e histórico.')}</p><button class="btn-primary" on:click={() => view = 'setup'}>{$t('Configurar Signer')}</button></section>
   {:else}
   <div class="grid">
     <section class="section-card card">
       <div class="row between">
-        <nav class="pills small" aria-label="Carteira">
-          <button aria-pressed={tab==='receive'} class:on={tab==='receive'} on:click={() => tab='receive'}>Receber</button>
-          <button aria-pressed={tab==='send'} class:on={tab==='send'} on:click={() => tab='send'}>Enviar</button>
-          <button aria-pressed={tab==='history'} class:on={tab==='history'} on:click={() => tab='history'}>Histórico <em>{history.length}</em></button>
+        <nav class="pills small">
+          <button aria-pressed={tab==='receive'} class:on={tab==='receive'} on:click={() => tab='receive'}>{$t('Receber')}</button>
+          <button aria-pressed={tab==='send'} class:on={tab==='send'} on:click={() => tab='send'}>{$t('Enviar')}</button>
+          <button aria-pressed={tab==='history'} class:on={tab==='history'} on:click={() => tab='history'}>{$t('Histórico')} <em>{history.length}</em></button>
         </nav>
-        <button class="btn-secondary" disabled={busy || !!syncController || !!proposal} on:click={() => synchronize()}>Sincronizar</button>
+        <button class="btn-secondary" disabled={busy || !!syncController || !!proposal} on:click={() => synchronize()}>{$t('Sincronizar')}</button>
       </div>
       {#if tab === 'receive'}
-        <p class="eyebrow">Receber</p><h2>Novo endereço conferido no Signer</h2>
-        <p class="muted">O endereço só aparece aqui depois de exibido no BR⚡LN Signer. Compare todos os caracteres antes de compartilhar.</p>
-        {#if !unlocked}<div class="callout warn"><span>{connected ? 'Desbloqueie o Signer para conferir o endereço.' : 'Conecte e desbloqueie o Signer para conferir o endereço.'}</span>{#if connected}<button class="btn-secondary" disabled={busy} on:click={() => run(() => localAction('unlock'))}>Desbloquear</button>{:else}<button class="btn-secondary" disabled={busy} on:click={() => run(connectSigner)}>Conectar por USB</button>{/if}</div>{/if}
-        <div class="actions"><button class="btn-primary" disabled={busy || !updatedAt || !unlocked || !!proposal} on:click={() => run(showReceive)}>Conferir endereço para receber</button></div>
-        {#if receive}<div class="value"><span>Endereço</span><p class="mono big">{receive}</p><label class="check"><input type="checkbox" bind:checked={receiveChecked} /> Conferi todos os caracteres no BR⚡LN Signer e são iguais.</label></div>{/if}
+        <p class="eyebrow">{$t('Receber')}</p><h2>{$t('Novo endereço conferido no Signer')}</h2>
+        <p class="muted">{$t('O endereço só aparece aqui depois de exibido no BR⚡LN Signer. Compare todos os caracteres antes de compartilhar.')}</p>
+        {#if !unlocked}<div class="callout warn"><span>{$t(connected ? 'Desbloqueie o Signer para conferir o endereço.' : 'Conecte e desbloqueie o Signer para conferir o endereço.')}</span>{#if connected}<button class="btn-secondary" disabled={busy} on:click={() => run(() => localAction('unlock'))}>{$t('Desbloquear')}</button>{:else}<button class="btn-secondary" disabled={busy} on:click={() => run(connectSigner)}>{$t('Conectar por USB')}</button>{/if}</div>{/if}
+        <div class="actions"><button class="btn-primary" disabled={busy || !updatedAt || !unlocked || !!proposal} on:click={() => run(showReceive)}>{$t('Conferir endereço para receber')}</button></div>
+        {#if receive}<div class="value"><span>{$t('Endereço')}</span><p class="mono big">{receive}</p><label class="check"><input type="checkbox" bind:checked={receiveChecked} /> {$t('Conferi todos os caracteres no BR⚡LN Signer e são iguais.')}</label></div>{/if}
       {:else if tab === 'send'}
-        <p class="eyebrow">Enviar</p><h2>Prepare a transação</h2>
-        <p class="muted">Os fundos selecionados são consultados de novo antes de preparar. Você confere e assina no Signer; a transmissão é uma ação separada.</p>
-        {#if scanned && !coins.length}<p class="muted">Nenhum saldo disponível para enviar nesta conta.</p>{/if}
-        {#if coins.length}<fieldset class="coins" disabled={busy || !!syncController || !!proposal}><legend>UTXOs · somente confirmados podem ser gastos</legend>{#each coins as coin}<label class="coin"><input type="checkbox" bind:checked={coin.selected} disabled={!coin.status.confirmed} /><span><strong>{coin.value.toLocaleString('pt-BR')} sats</strong><small class="mono">{coin.txid}:{coin.vout}</small></span></label>{/each}</fieldset>{/if}
+        <p class="eyebrow">{$t('Enviar')}</p><h2>{$t('Prepare a transação')}</h2>
+        <p class="muted">{$t('Os fundos selecionados são consultados de novo antes de preparar. Você confere e assina no Signer; a transmissão é uma ação separada.')}</p>
+        {#if scanned && !coins.length}<p class="muted">{$t('Nenhum saldo disponível para enviar nesta conta.')}</p>{/if}
+        {#if coins.length}<fieldset class="coins" disabled={busy || !!syncController || !!proposal}><legend>{$t('UTXOs · somente confirmados podem ser gastos')}</legend>{#each coins as coin}<label class="coin"><input type="checkbox" bind:checked={coin.selected} disabled={!coin.status.confirmed} /><span><strong>{$num(coin.value)} sats</strong><small class="mono">{coin.txid}:{coin.vout}</small></span></label>{/each}</fieldset>{/if}
         <fieldset class="form" disabled={busy || !!syncController || !!proposal || !scanned}>
-          <label class="field">Endereço de destino<input class="input-field" bind:value={address} autocomplete="off" spellcheck="false" placeholder="bc1…" /></label>
+          <label class="field">{$t('Endereço de destino')}<input class="input-field" bind:value={address} autocomplete="off" spellcheck="false" placeholder="bc1…" /></label>
           <div class="two">
-            <label class="field">Valor em sats<input class="input-field" type="number" bind:value={amount} min="1" step="1" disabled={sendAll} /></label>
-            <label class="field">Taxa em sat/vB<div class="inline"><input class="input-field" type="number" bind:value={rate} min="1" max="1000" step="0.1" /><button type="button" class="btn-secondary" on:click={() => run(async () => {rate=(await api<{sat_per_vbyte:number}>('fees')).sat_per_vbyte})}>Consultar</button></div></label>
+            <label class="field">{$t('Valor em sats')}<input class="input-field" type="number" bind:value={amount} min="1" step="1" disabled={sendAll} /></label>
+            <label class="field">{$t('Taxa em sat/vB')}<div class="inline"><input class="input-field" type="number" bind:value={rate} min="1" max="1000" step="0.1" /><button type="button" class="btn-secondary" on:click={() => run(async () => {rate=(await api<{sat_per_vbyte:number}>('fees')).sat_per_vbyte})}>{$t('Consultar')}</button></div></label>
           </div>
-          <label class="check"><input type="checkbox" bind:checked={sendAll} /> Enviar todo o saldo selecionado, sem troco (o valor é calculado descontando a taxa)</label>
-          <div class="actions"><button type="button" class="btn-primary" disabled={!selected.length} on:click={() => run(prepare)}>Preparar transação</button></div>
+          <label class="check"><input type="checkbox" bind:checked={sendAll} /> {$t('Enviar todo o saldo selecionado, sem troco (o valor é calculado descontando a taxa)')}</label>
+          <div class="actions"><button type="button" class="btn-primary" disabled={!selected.length} on:click={() => run(prepare)}>{$t('Preparar transação')}</button></div>
         </fieldset>
       {:else}
-        <p class="eyebrow">Histórico</p><h2>Transações desta conta</h2>
-        {#if !updatedAt}<p class="muted">Sincronize a conta para consultar o histórico.</p>{:else if !history.length}<p class="muted">Nenhuma transação encontrada nesta conta.</p>{:else}<ul class="transactions">{#each history as tx}<li><div><strong>{tx.height>0 ? `Confirmada no bloco ${tx.height.toLocaleString('pt-BR')}` : 'Não confirmada'}</strong><small class="mono">{tx.txid}</small></div><button class="btn-secondary" disabled={busy} on:click={() => run(() => copy(tx.txid))}>Copiar ID</button></li>{/each}</ul>{/if}
+        <p class="eyebrow">{$t('Histórico')}</p><h2>{$t('Transações desta conta')}</h2>
+        {#if !updatedAt}<p class="muted">{$t('Sincronize a conta para consultar o histórico.')}</p>{:else if !history.length}<p class="muted">{$t('Nenhuma transação encontrada nesta conta.')}</p>{:else}<ul class="transactions">{#each history as tx}<li><div><strong>{tx.height>0 ? $t('Confirmada no bloco {height}', { height: $num(tx.height) }) : $t('Não confirmada')}</strong><small class="mono">{tx.txid}</small></div><button class="btn-secondary" disabled={busy} on:click={() => run(() => copy(tx.txid))}>{$t('Copiar ID')}</button></li>{/each}</ul>{/if}
       {/if}
     </section>
     <aside class="section-card card side">
       {#if tab === 'receive'}
-        <p class="eyebrow">Compartilhar</p><h3>QR code</h3>
-        {#if receive && receiveChecked}<img class="qr" src={receiveQR} alt="QR code do endereço Bitcoin conferido" width="256" height="256" /><button class="btn-secondary full" on:click={() => run(() => copy(receive))}>Copiar endereço</button>
-        {:else}<div class="placeholder">{receive ? 'Marque a conferência para liberar o QR e a cópia.' : 'Gere um endereço conferido no Signer.'}</div>{/if}
-        <ul class="checklist small"><li class:done={connected}><b>{connected ? '✓' : '1'}</b><div><strong>Signer conectado</strong></div></li><li class:done={unlocked}><b>{unlocked ? '✓' : '2'}</b><div><strong>Carteira desbloqueada</strong></div></li><li class:done={!!receive}><b>{receive ? '✓' : '3'}</b><div><strong>Endereço exibido no Signer</strong></div></li><li class:done={receiveChecked}><b>{receiveChecked ? '✓' : '4'}</b><div><strong>Conferido por você</strong></div></li></ul>
+        <p class="eyebrow">{$t('Compartilhar')}</p><h3>{$t('QR code')}</h3>
+        {#if receive && receiveChecked}<img class="qr" src={receiveQR} alt={$t('QR code do endereço Bitcoin conferido')} width="256" height="256" /><button class="btn-secondary full" on:click={() => run(() => copy(receive))}>{$t('Copiar endereço')}</button>
+        {:else}<div class="placeholder">{$t(receive ? 'Marque a conferência para liberar o QR e a cópia.' : 'Gere um endereço conferido no Signer.')}</div>{/if}
+        <ul class="checklist small"><li class:done={connected}><b>{connected ? '✓' : '1'}</b><div><strong>{$t('Signer conectado')}</strong></div></li><li class:done={unlocked}><b>{unlocked ? '✓' : '2'}</b><div><strong>{$t('Carteira desbloqueada')}</strong></div></li><li class:done={!!receive}><b>{receive ? '✓' : '3'}</b><div><strong>{$t('Endereço exibido no Signer')}</strong></div></li><li class:done={receiveChecked}><b>{receiveChecked ? '✓' : '4'}</b><div><strong>{$t('Conferido por você')}</strong></div></li></ul>
       {:else if tab === 'send'}
-        <p class="eyebrow">Revisão segura</p><h3>{signed ? 'Assinatura verificada' : proposal ? 'Proposta congelada' : 'Plano da transação'}</h3>
+        <p class="eyebrow">{$t('Revisão segura')}</p><h3>{$t(signed ? 'Assinatura verificada' : proposal ? 'Proposta congelada' : 'Plano da transação')}</h3>
         {#if proposal}
-          {#each proposal.outputs as output}<div class="output"><span>{output.change ? 'Troco' : 'Destino'} · {output.amount.toLocaleString('pt-BR')} sats</span><p class="mono">{output.address}</p></div>{/each}
-          <div class="output"><span>Taxa</span><p>{proposal.fee.toLocaleString('pt-BR')} sats · {proposal.feeRate.toFixed(2)} sat/vB</p></div>
+          {#each proposal.outputs as output}<div class="output"><span>{$t(output.change ? 'Troco' : 'Destino')} · {$num(output.amount)} sats</span><p class="mono">{output.address}</p></div>{/each}
+          <div class="output"><span>{$t('Taxa')}</span><p>{$num(proposal.fee)} sats · {proposal.feeRate.toFixed(2)} sat/vB</p></div>
           {#if !signed}
-            {#if !unlocked}<div class="callout warn"><span>Conecte e desbloqueie o Signer para assinar.</span></div>{/if}
-            <button class="btn-primary full" disabled={busy || !unlocked} on:click={() => run(sign)}>Conferir e assinar no BR⚡LN Signer</button>
+            {#if !unlocked}<div class="callout warn"><span>{$t('Conecte e desbloqueie o Signer para assinar.')}</span></div>{/if}
+            <button class="btn-primary full" disabled={busy || !unlocked} on:click={() => run(sign)}>{$t('Conferir e assinar no BR⚡LN Signer')}</button>
           {:else}
-            <div class="output"><span>Txid</span><p class="mono">{signed.txid}</p><p>Taxa final: {signed.fee} sats · {signed.feeRate.toFixed(2)} sat/vB</p></div>
-            <button class="btn-primary full" disabled={busy || broadcastState==='done'} on:click={() => run(broadcast)}>{broadcastState==='unknown' ? 'Consultar resultado no node' : broadcastState==='done' ? 'Transmitida' : 'Transmitir pelo Electrum selecionado'}</button>
-            <button class="btn-secondary full" on:click={() => signed && download('brln-' + signed.txid + '.hex',signed.hex,'text/plain')}>Exportar transação assinada</button>
+            <div class="output"><span>{$t('Txid')}</span><p class="mono">{signed.txid}</p><p>{$t('Taxa final: {fee} sats · {rate} sat/vB', { fee: $num(signed.fee), rate: signed.feeRate.toFixed(2) })}</p></div>
+            <button class="btn-primary full" disabled={busy || broadcastState==='done'} on:click={() => run(broadcast)}>{$t(broadcastState==='unknown' ? 'Consultar resultado no node' : broadcastState==='done' ? 'Transmitida' : 'Transmitir pelo Electrum selecionado')}</button>
+            <button class="btn-secondary full" on:click={() => signed && download('brln-' + signed.txid + '.hex',signed.hex,'text/plain')}>{$t('Exportar transação assinada')}</button>
           {/if}
-          <button class="link" disabled={busy || broadcastState==='unknown'} on:click={closeProposal}>Encerrar proposta</button>
+          <button class="link" disabled={busy || broadcastState==='unknown'} on:click={closeProposal}>{$t('Encerrar proposta')}</button>
         {:else}
-          <ul class="checklist small"><li class:done={selected.length > 0}><b>{selected.length ? '✓' : '1'}</b><div><strong>UTXOs</strong><span>{selected.length} selecionados · {selected.reduce((s,c)=>s+c.value,0).toLocaleString('pt-BR')} sats</span></div></li><li class:done={address.trim().length > 0}><b>{address.trim() ? '✓' : '2'}</b><div><strong>Destino</strong><span>Um destinatário por transação</span></div></li><li class:done={sendAll || amount > 0}><b>{sendAll || amount > 0 ? '✓' : '3'}</b><div><strong>Valor</strong><span>{sendAll ? 'Todo o saldo selecionado' : amount > 0 ? amount.toLocaleString('pt-BR') + ' sats' : 'Informe o valor'}</span></div></li><li class:done={rate >= 1}><b>{rate >= 1 ? '✓' : '4'}</b><div><strong>Taxa</strong><span>{rate} sat/vB · acima de 10% pede confirmação</span></div></li></ul>
-          <div class="note"><strong>Revise antes de assinar</strong><span>A proposta fica congelada: cada saída e a taxa aparecem aqui e na tela do Signer.</span></div>
+          <ul class="checklist small"><li class:done={selected.length > 0}><b>{selected.length ? '✓' : '1'}</b><div><strong>{$t('UTXOs')}</strong><span>{$t('{count} selecionados · {amount} sats', { count: selected.length, amount: $num(selected.reduce((s,c)=>s+c.value,0)) })}</span></div></li><li class:done={address.trim().length > 0}><b>{address.trim() ? '✓' : '2'}</b><div><strong>{$t('Destino')}</strong><span>{$t('Um destinatário por transação')}</span></div></li><li class:done={sendAll || amount > 0}><b>{sendAll || amount > 0 ? '✓' : '3'}</b><div><strong>{$t('Valor')}</strong><span>{sendAll ? $t('Todo o saldo selecionado') : amount > 0 ? $num(amount) + ' sats' : $t('Informe o valor')}</span></div></li><li class:done={rate >= 1}><b>{rate >= 1 ? '✓' : '4'}</b><div><strong>{$t('Taxa')}</strong><span>{$t('{rate} sat/vB · acima de 10% pede confirmação', { rate })}</span></div></li></ul>
+          <div class="note"><strong>{$t('Revise antes de assinar')}</strong><span>{$t('A proposta fica congelada: cada saída e a taxa aparecem aqui e na tela do Signer.')}</span></div>
         {/if}
       {:else}
-        <p class="eyebrow">Resumo</p><h3>Atividade</h3>
-        <div class="summary column"><div><span>Transações</span><strong>{history.length}</strong></div><div><span>Não confirmadas</span><strong>{history.filter(tx => tx.height <= 0).length}</strong></div><div><span>Última consulta</span><strong>{updatedAt ? new Date(updatedAt).toLocaleString('pt-BR') : '—'}</strong></div></div>
+        <p class="eyebrow">{$t('Resumo')}</p><h3>{$t('Atividade')}</h3>
+        <div class="summary column"><div><span>{$t('Transações')}</span><strong>{history.length}</strong></div><div><span>{$t('Não confirmadas')}</span><strong>{history.filter(tx => tx.height <= 0).length}</strong></div><div><span>{$t('Última consulta')}</span><strong>{updatedAt ? $dateTime(updatedAt) : '—'}</strong></div></div>
       {/if}
     </aside>
   </div>
@@ -374,45 +389,45 @@
   {#if view === 'settings'}
   <div class="settings">
     <section class="section-card card">
-      <p class="eyebrow">BR⚡LN Signer</p><h3>Conexão e carteira</h3>
-      <p class="muted">Estado: <strong>{signerLabel}</strong>. Conectar reinicia a placa e pede um novo pareamento.</p>
+      <p class="eyebrow">{$t('BR⚡LN Signer')}</p><h3>{$t('Conexão e carteira')}</h3>
+      <p class="muted">{$t('Estado')}: <strong>{$t(signerLabel)}</strong>. {$t('Conectar reinicia a placa e pede um novo pareamento.')}</p>
       <div class="actions">
-        <button class="btn-primary" disabled={busy || connected} on:click={() => run(connectSigner)}>Conectar por USB</button>
-        <button class="btn-secondary" disabled={busy || !connected} on:click={() => run(() => device.disconnect())}>Desconectar</button>
-        <button class="btn-secondary" disabled={busy || !connected || !!proposal} on:click={() => run(() => localAction('unlock'))}>Desbloquear carteira</button>
-        <button class="btn-secondary" disabled={busy || !unlocked} on:click={() => run(() => device.logout())}>Bloquear</button>
-        <button class="btn-secondary" disabled={busy || !unlocked} on:click={() => run(() => localAction('backup'))}>Conferir backup</button>
+        <button class="btn-primary" disabled={busy || connected} on:click={() => run(connectSigner)}>{$t('Conectar por USB')}</button>
+        <button class="btn-secondary" disabled={busy || !connected} on:click={() => run(() => device.disconnect())}>{$t('Desconectar')}</button>
+        <button class="btn-secondary" disabled={busy || !connected || !!proposal} on:click={() => run(() => localAction('unlock'))}>{$t('Desbloquear carteira')}</button>
+        <button class="btn-secondary" disabled={busy || !unlocked} on:click={() => run(() => device.logout())}>{$t('Bloquear')}</button>
+        <button class="btn-secondary" disabled={busy || !unlocked} on:click={() => run(() => localAction('backup'))}>{$t('Conferir backup')}</button>
       </div>
     </section>
     <section class="section-card card">
-      <p class="eyebrow">Avançado</p><h3>Carteira com passphrase</h3>
-      <p class="muted">Cada passphrase abre uma carteira diferente; não é a senha do Signer e não há aviso de passphrase incorreta. Digite somente no Signer. A conta pública dessa carteira substitui a salva, após confirmação.</p>
-      <div class="actions"><button class="btn-secondary" disabled={busy || !connected || !!proposal} on:click={() => run(() => localAction('unlock-passphrase'))}>Abrir carteira com passphrase</button></div>
+      <p class="eyebrow">{$t('Avançado')}</p><h3>{$t('Carteira com passphrase')}</h3>
+      <p class="muted">{$t('Cada passphrase abre uma carteira diferente; não é a senha do Signer e não há aviso de passphrase incorreta. Digite somente no Signer. A conta pública dessa carteira substitui a salva, após confirmação.')}</p>
+      <div class="actions"><button class="btn-secondary" disabled={busy || !connected || !!proposal} on:click={() => run(() => localAction('unlock-passphrase'))}>{$t('Abrir carteira com passphrase')}</button></div>
     </section>
     <section class="section-card card">
-      <p class="eyebrow">Conta pública</p><h3>Configuração e backup</h3>
-      <p class="muted">Permite consultar saldo e histórico com o Signer desconectado e revela sua atividade financeira: guarde com privacidade. As palavras ficam offline.</p>
+      <p class="eyebrow">{$t('Conta pública')}</p><h3>{$t('Configuração e backup')}</h3>
+      <p class="muted">{$t('Permite consultar saldo e histórico com o Signer desconectado e revela sua atividade financeira: guarde com privacidade. As palavras ficam offline.')}</p>
       {#if account}<p class="mono small-text">{account.xpub}</p>{/if}
       <div class="actions">
-        <button class="btn-secondary" disabled={busy || !!syncController || !unlocked || !!proposal} on:click={() => run(importDevice)}>Importar do BR⚡LN Signer</button>
-        <label class="btn-secondary file">Importar configuração pública<input type="file" accept="application/json,.json" disabled={busy || !!syncController || !!proposal} on:change={event => run(() => importConfig(event))} /></label>
-        <button class="btn-secondary" disabled={busy || !account} on:click={() => account && download('brln-conta-publica.json',JSON.stringify(publicAccount(account),null,2))}>Exportar configuração</button>
+        <button class="btn-secondary" disabled={busy || !!syncController || !unlocked || !!proposal} on:click={() => run(importDevice)}>{$t('Importar do BR⚡LN Signer')}</button>
+        <label class="btn-secondary file">{$t('Importar configuração pública')}<input type="file" accept="application/json,.json" disabled={busy || !!syncController || !!proposal} on:change={event => run(() => importConfig(event))} /></label>
+        <button class="btn-secondary" disabled={busy || !account} on:click={() => account && download('brln-conta-publica.json',JSON.stringify(publicAccount(account),null,2))}>{$t('Exportar configuração')}</button>
       </div>
     </section>
     <section class="section-card card">
-      <p class="eyebrow">Consultas</p><h3>{sourceLabel}</h3>
-      {#if source === 'club'}<p class="muted">O LightningOS consulta o servidor público electrum.br-ln.com:50001 pela internet, por TCP sem TLS: o servidor e intermediários podem observar as consultas. As chaves continuam no Signer. A fonte é escolhida na loja do LightningOS, sem fallback automático.</p>
-      {:else}<p class="muted">As consultas usam o Electrum do seu node. A fonte é escolhida na loja do LightningOS, sem fallback automático.</p>{/if}
-      <p class="muted">Node · {height === null ? 'indisponível' : 'bloco ' + height.toLocaleString('pt-BR')} · Bitcoin mainnet · BIP84</p>
+      <p class="eyebrow">{$t('Consultas')}</p><h3>{$t(sourceLabel)}</h3>
+      {#if source === 'club'}<p class="muted">{$t('O LightningOS consulta o servidor público electrum.br-ln.com:50001 pela internet, por TCP sem TLS: o servidor e intermediários podem observar as consultas. As chaves continuam no Signer. A fonte é escolhida na loja do LightningOS, sem fallback automático.')}</p>
+      {:else}<p class="muted">{$t('As consultas usam o Electrum do seu node. A fonte é escolhida na loja do LightningOS, sem fallback automático.')}</p>{/if}
+      <p class="muted">{$t('Node · {height} · Bitcoin mainnet · BIP84', { height: height === null ? $t('indisponível') : $t('bloco {height}', { height: $num(height) }) })}</p>
     </section>
     <section class="section-card card">
-      <p class="eyebrow">Firmware</p><h3>Reinstalar ou instalar em outro Signer</h3>
-      <p class="muted">Use o passo 1 da configuração. A instalação não apaga a memória de dados; não use em um Signer com carteira que precise preservar sem ter o backup.</p>
-      <div class="actions"><button class="btn-secondary" on:click={() => { view = 'setup'; step = 1 }}>Abrir instalação</button></div>
+      <p class="eyebrow">{$t('Firmware')}</p><h3>{$t('Reinstalar ou instalar em outro Signer')}</h3>
+      <p class="muted">{$t('Use o passo 1 da configuração. A instalação não apaga a memória de dados; não use em um Signer com carteira que precise preservar sem ter o backup.')}</p>
+      <div class="actions"><button class="btn-secondary" on:click={() => { view = 'setup'; step = 1 }}>{$t('Abrir instalação')}</button></div>
     </section>
     <section class="section-card card warnbox">
-      <p class="eyebrow">Piloto experimental</p><h3>Use sem fundos reais</h3>
-      <p class="muted">Protótipo sem auditoria independente. USB não é air gap. Este app não controla o saldo nem os canais do LND. O protótipo usa ESP32 da Espressif; o backup BIP39 é independente deste Signer e do LightningOS.</p>
+      <p class="eyebrow">{$t('Piloto experimental')}</p><h3>{$t('Use sem fundos reais')}</h3>
+      <p class="muted">{$t('Protótipo sem auditoria independente. USB não é air gap. Este app não controla o saldo nem os canais do LND. O protótipo usa ESP32 da Espressif; o backup BIP39 é independente deste Signer e do LightningOS.')}</p>
     </section>
   </div>
   {/if}
@@ -532,7 +547,7 @@
   .file{position:relative;overflow:hidden}
   .file input{position:absolute;inset:0;opacity:0;cursor:pointer}
   .warnbox{border-color:rgb(var(--color-brass)/.3)}
-  dialog{max-width:520px;width:calc(100% - 32px);color:rgb(var(--color-fog));background:rgb(var(--color-slate));border:1px solid rgb(var(--color-glow)/.35);border-radius:24px;padding:24px;box-shadow:var(--shadow-panel)}
+  dialog{position:fixed;margin:0 auto;bottom:auto;max-width:520px;width:calc(100% - 32px);color:rgb(var(--color-fog));background:rgb(var(--color-slate));border:1px solid rgb(var(--color-glow)/.35);border-radius:24px;padding:24px;box-shadow:var(--shadow-panel)}
   dialog::backdrop{background:#000a}
   dialog p{color:rgb(var(--color-fog)/.75);line-height:1.6}
   @media(max-width:1100px){.grid{grid-template-columns:1fr}.side{position:static}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.hero{grid-template-columns:1fr}.flow{display:none}}

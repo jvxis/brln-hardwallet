@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import { rememberInstaller } from './storage'
+  import { t } from './i18n'
   import { identifyBoard, loadFirmware, resetToApplication, writeFirmware, FIRMWARE_ROOT, type FirmwareBundle, type FirmwareLoader } from './brln-firmware'
   export let busy = false
   export let connected = false
@@ -79,36 +80,36 @@
 
 <div class="installer">
   <div class="facts">
-    <div><span>Hardware</span><strong>LilyGO T-Display original</strong><small>ESP32 · 1,14″ · dois botões · 4 ou 16 MB</small></div>
-    <div><span>Firmware</span><strong>{bundle ? bundle.manifest.version : '—'}</strong><small>{bundle ? '4 arquivos · SHA-256 conferido' : 'verificando…'}</small></div>
-    <div><span>Memória de dados</span><strong>Não é apagada</strong><small>Sem carteira, o Signer pede "Preparar memória"</small></div>
+    <div><span>{$t('Hardware')}</span><strong>{$t('LilyGO T-Display original')}</strong><small>{$t('ESP32 · 1,14″ · dois botões · 4 ou 16 MB')}</small></div>
+    <div><span>{$t('Firmware')}</span><strong>{bundle ? bundle.manifest.version : '—'}</strong><small>{$t(bundle ? '4 arquivos · SHA-256 conferido' : 'verificando…')}</small></div>
+    <div><span>{$t('Memória de dados')}</span><strong>{$t('Não é apagada')}</strong><small>{$t('Sem carteira, o Signer pede "Preparar memória"')}</small></div>
   </div>
   {#if bundle}
-    <details><summary>Versão e verificação dos arquivos</summary>
-      <p class="mono">Código-fonte: {bundle.manifest.source_commit}</p>
-      <p>Os hashes conferem a integridade dos arquivos. A confiança no firmware também depende da revisão do código, do build e da imagem do app instalada no BR⚡LN LightningOS.</p>
+    <details><summary>{$t('Versão e verificação dos arquivos')}</summary>
+      <p class="mono">{$t('Código-fonte: {commit}', { commit: bundle.manifest.source_commit })}</p>
+      <p>{$t('Os hashes conferem a integridade dos arquivos. A confiança no firmware também depende da revisão do código, do build e da imagem do app instalada no BR⚡LN LightningOS.')}</p>
       {#each bundle.manifest.parts as part}<p class="mono">{part.path} · {part.size} bytes<br />SHA-256: {part.sha256}</p>{/each}
-      <a href={FIRMWARE_ROOT + 'SHA256SUMS'} download>Baixar lista SHA-256</a>
+      <a href={FIRMWARE_ROOT + 'SHA256SUMS'} download>{$t('Baixar lista SHA-256')}</a>
     </details>
   {/if}
   <label class="ack"><input type="checkbox" bind:checked={acknowledged} disabled={busy} />
-    <span>Esta é a T-Display original e não contém uma carteira que preciso preservar. Autorizo substituir o firmware atual.</span>
+    <span>{$t('Esta é a T-Display original e não contém uma carteira que preciso preservar. Autorizo substituir o firmware atual.')}</span>
   </label>
-  {#if !supported}<p class="notice">Use Chrome ou Edge no computador, com HTTPS confiável e suporte a Web Serial.</p>{/if}
-  {#if connected}<p class="notice">Desconecte o BR⚡LN Signer antes de instalar o firmware.</p>{/if}
-  {#if hasProposal}<p class="notice">Encerre a proposta de transação antes de instalar o firmware.</p>{/if}
+  {#if !supported}<p class="notice">{$t('Use Chrome ou Edge no computador, com HTTPS confiável e suporte a Web Serial.')}</p>{/if}
+  {#if connected}<p class="notice">{$t('Desconecte o BR⚡LN Signer antes de instalar o firmware.')}</p>{/if}
+  {#if hasProposal}<p class="notice">{$t('Encerre a proposta de transação antes de instalar o firmware.')}</p>{/if}
   <div class="actions">
     {#if phase === 'ready'}
-      <button class="btn-primary" on:click={install}>Confirmar e instalar firmware</button>
-      <button class="btn-secondary" on:click={cancel}>Cancelar sem gravar</button>
+      <button class="btn-primary" on:click={install}>{$t('Confirmar e instalar firmware')}</button>
+      <button class="btn-secondary" on:click={cancel}>{$t('Cancelar sem gravar')}</button>
     {:else}
-      <button class="btn-primary" disabled={busy || connected || hasProposal || !supported || !bundle || !acknowledged} on:click={connect}>Selecionar BR⚡LN Signer USB</button>
-      {#if !bundle && phase !== 'loading'}<button class="btn-secondary" disabled={busy} on:click={prepare}>Carregar firmware novamente</button>{/if}
+      <button class="btn-primary" disabled={busy || connected || hasProposal || !supported || !bundle || !acknowledged} on:click={connect}>{$t('Selecionar BR⚡LN Signer USB')}</button>
+      {#if !bundle && phase !== 'loading'}<button class="btn-secondary" disabled={busy} on:click={prepare}>{$t('Carregar firmware novamente')}</button>{/if}
     {/if}
   </div>
-  {#if phase === 'writing'}<progress max="100" value={progress} aria-label="Progresso da instalação"></progress><p>{Math.floor(progress)}% · gravação e verificação</p>{/if}
-  <p class="state" class:error={phase === 'error'} class:ok={phase === 'done'} role="status" aria-live="polite">{message}</p>
-  <details><summary>Se o BR⚡LN Signer não conectar</summary><p>Use um cabo com dados e feche o monitor serial, Arduino IDE e outras abas conectadas ao BR⚡LN Signer. Se necessário, mantenha BOOT (GPIO0) pressionado, pressione e solte RESET e solte BOOT quando a conexão começar. Em alguns modelos, o sistema precisa do driver da ponte USB.</p></details>
+  {#if phase === 'writing'}<progress max="100" value={progress} aria-label={$t('Progresso da instalação')}></progress><p>{$t('{percent}% · gravação e verificação', { percent: Math.floor(progress) })}</p>{/if}
+  <p class="state" class:error={phase === 'error'} class:ok={phase === 'done'} role="status" aria-live="polite">{$t(message)}</p>
+  <details><summary>{$t('Se o BR⚡LN Signer não conectar')}</summary><p>{$t('Use um cabo com dados e feche o monitor serial, Arduino IDE e outras abas conectadas ao BR⚡LN Signer. Se necessário, mantenha BOOT (GPIO0) pressionado, pressione e solte RESET e solte BOOT quando a conexão começar. Em alguns modelos, o sistema precisa do driver da ponte USB.')}</p></details>
 </div>
 
 <style>

@@ -1,4 +1,5 @@
 import { parseAppearance, type Appearance } from './los-appearance'
+import { parseLang, type Lang } from './i18n'
 import type {
   AddressRecord,
   HistoryRecord,
@@ -360,6 +361,11 @@ export function saveAppearance(value: Appearance) {
   const checked = parseAppearance(value)
   if (!checked) return
   try { localStorage.setItem('brln-los-appearance', JSON.stringify(checked)) } catch { /* Optional preference. */ }
+}
+export const loadLanguage = () => parseLang(read<unknown>('brln-los-language', null))
+export function saveLanguage(value: Lang) {
+  if (!parseLang(value)) return
+  try { localStorage.setItem('brln-los-language', JSON.stringify(value)) } catch { /* Optional preference. */ }
 }
 export const installerWasSeen = () => read<boolean>('brln-installer-seen', false) === true
 export function rememberInstaller() {

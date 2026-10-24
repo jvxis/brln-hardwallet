@@ -166,7 +166,9 @@
   }
   async function localAction(operation: 'unlock' | 'unlock-passphrase' | 'create' | 'restore' | 'backup') {
     message='Continue pelos dois botões do BR⚡LN Signer.'
-    if (operation !== 'backup') { receive=''; proposal=null; signed=null }
+    // Only operations that can open another wallet discard the current work; a
+    // normal unlock keeps the frozen proposal (signing re-checks the account).
+    if (operation === 'create' || operation === 'restore' || operation === 'unlock-passphrase') { receive=''; proposal=null; signed=null }
     await device.local(operation)
     if (operation === 'backup') { message='Conferência do backup encerrada no BR⚡LN Signer.'; return }
     const adopted = await adoptSignerAccount(operation === 'unlock-passphrase'
@@ -301,7 +303,7 @@
         <div class="choices">
           <button class="choice" disabled={busy || !connected || !!proposal} on:click={() => run(() => localAction('create'))}><strong>{$t('Criar carteira nova')}</strong><span>{$t('Senha nos botões, seed gerada no Signer e 24 palavras para anotar.')}</span></button>
           <button class="choice" disabled={busy || !connected || !!proposal} on:click={() => run(() => localAction('restore'))}><strong>{$t('Recuperar carteira')}</strong><span>{$t('Digite 12 ou 24 palavras BIP39 nos botões do Signer.')}</span></button>
-          <button class="choice" disabled={busy || !connected || !!proposal} on:click={() => run(() => localAction('unlock'))}><strong>{$t('Desbloquear carteira')}</strong><span>{$t('Este Signer já tem carteira: digite a senha nos botões.')}</span></button>
+          <button class="choice" disabled={busy || !connected} on:click={() => run(() => localAction('unlock'))}><strong>{$t('Desbloquear carteira')}</strong><span>{$t('Este Signer já tem carteira: digite a senha nos botões.')}</span></button>
         </div>
       {:else}
         <p class="eyebrow">{$t('Passo {n} de 4', { n: 4 })}</p><h2>{$t(walletReady ? 'Tudo pronto' : 'Quase lá')}</h2>
@@ -401,7 +403,7 @@
       <div class="actions">
         <button class="btn-primary" disabled={busy || connected} on:click={() => run(connectSigner)}>{$t('Conectar por USB')}</button>
         <button class="btn-secondary" disabled={busy || !connected} on:click={() => run(() => device.disconnect())}>{$t('Desconectar')}</button>
-        <button class="btn-secondary" disabled={busy || !connected || !!proposal} on:click={() => run(() => localAction('unlock'))}>{$t('Desbloquear carteira')}</button>
+        <button class="btn-secondary" disabled={busy || !connected} on:click={() => run(() => localAction('unlock'))}>{$t('Desbloquear carteira')}</button>
         <button class="btn-secondary" disabled={busy || !unlocked} on:click={() => run(() => device.logout())}>{$t('Bloquear')}</button>
         <button class="btn-secondary" disabled={busy || !unlocked} on:click={() => run(() => localAction('backup'))}>{$t('Conferir backup')}</button>
       </div>

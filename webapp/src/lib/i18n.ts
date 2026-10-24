@@ -227,7 +227,9 @@ const en: Record<string, string> = {
   'Seleção cancelada. Nenhum firmware foi gravado.': 'Selection cancelled. No firmware was written.',
   'Não foi possível preparar este BR⚡LN Signer. Confira modelo, cabo e porta; feche outros programas que usam o USB.': 'This BR⚡LN Signer could not be prepared. Check the model, cable and port; close other programs using USB.',
   'Gravando e verificando o firmware. Não retire o cabo nem feche esta página.': 'Writing and verifying the firmware. Do not unplug the cable or close this page.',
-  'Gravação verificada. O BR⚡LN Signer reinicia sozinho: confirme "Preparar memória" se aparecer e confira o hash na tela.': 'Write verified. The BR⚡LN Signer restarts on its own: confirm "Preparar memória" if it appears and check the hash on the screen.',
+  'Gravação verificada. O BR⚡LN Signer reinicia sozinho: confirme "Preparar memória" se aparecer e compare o hash na tela com o hash acima.': 'Write verified. The BR⚡LN Signer restarts on its own: confirm "Preparar memória" if it appears and compare the hash on its screen with the hash above.',
+  'Hash que o Signer vai mostrar': 'Hash the Signer will show',
+  'Na primeira inicialização após a gravação, o Signer mostra estes 64 dígitos. Só aperte CONFIRMAR se forem iguais.': 'On its first boot after the write, the Signer shows these 64 digits. Press CONFIRMAR only if they match.',
   'A instalação não foi concluída e verificada. Não crie uma carteira. Reconecte o BR⚡LN Signer e repita a preparação; não há repetição automática.': 'The installation was not completed and verified. Do not create a wallet. Reconnect the BR⚡LN Signer and repeat the preparation; there is no automatic retry.',
   'Preparação cancelada. Nenhum firmware foi gravado.': 'Preparation cancelled. No firmware was written.',
   // Page messages

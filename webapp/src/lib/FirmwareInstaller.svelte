@@ -2,7 +2,7 @@
   import { onMount } from 'svelte'
   import { rememberInstaller } from './storage'
   import { t } from './i18n'
-  import { identifyBoard, loadFirmware, resetToApplication, writeFirmware, FIRMWARE_ROOT, type FirmwareBundle, type FirmwareLoader } from './brln-firmware'
+  import { espImageHash, identifyBoard, loadFirmware, resetToApplication, writeFirmware, FIRMWARE_ROOT, type FirmwareBundle, type FirmwareLoader } from './brln-firmware'
   export let busy = false
   export let connected = false
   export let hasProposal = false
@@ -12,6 +12,8 @@
   let phase: 'loading' | 'idle' | 'connecting' | 'ready' | 'writing' | 'done' | 'error' = 'loading'
   let message = 'Verificando o firmware incluído no app…'
   let bundle: FirmwareBundle | null = null
+  /** The 64 digits the Signer asks the owner to approve on its first boot. */
+  let deviceHash = ''
   let loader: FirmwareLoader | null = null
   let transport: { disconnect(): Promise<void> } | null = null
   let ownsPort = false
@@ -24,8 +26,8 @@
     transport = null; loader = null; ownsPort = false; busy = false
   }
   async function prepare() {
-    bundle = null; phase = 'loading'; message = 'Verificando o firmware incluído no app…'
-    try { bundle = await loadFirmware(); phase = 'idle'; message = 'Arquivos verificados. Conecte o BR⚡LN Signer a este computador por um cabo USB de dados.' }
+    bundle = null; deviceHash = ''; phase = 'loading'; message = 'Verificando o firmware incluído no app…'
+    try { const loaded = await loadFirmware(); deviceHash = await espImageHash(loaded.binaries[3]); bundle = loaded; phase = 'idle'; message = 'Arquivos verificados. Conecte o BR⚡LN Signer a este computador por um cabo USB de dados.' }
     catch { phase = 'error'; message = 'Não foi possível verificar o firmware. Confira sua sessão do BR⚡LN LightningOS e a versão do app; tente carregar novamente.' }
   }
   async function connect() {
@@ -61,7 +63,7 @@
     try {
       await writeFirmware(loader, bundle, value => progress = value)
       rememberInstaller(); phase = 'done'; done = true
-      message = 'Gravação verificada. O BR⚡LN Signer reinicia sozinho: confirme "Preparar memória" se aparecer e confira o hash na tela.'
+      message = 'Gravação verificada. O BR⚡LN Signer reinicia sozinho: confirme "Preparar memória" se aparecer e compare o hash na tela com o hash acima.'
     } catch {
       phase = 'error'; message = 'A instalação não foi concluída e verificada. Não crie uma carteira. Reconecte o BR⚡LN Signer e repita a preparação; não há repetição automática.'
     } finally { await release(); acknowledged = false }
@@ -84,6 +86,11 @@
     <div><span>{$t('Firmware')}</span><strong>{bundle ? bundle.manifest.version : '—'}</strong><small>{$t(bundle ? '4 arquivos · SHA-256 conferido' : 'verificando…')}</small></div>
     <div><span>{$t('Memória de dados')}</span><strong>{$t('Não é apagada')}</strong><small>{$t('Sem carteira, o Signer pede "Preparar memória"')}</small></div>
   </div>
+  {#if deviceHash}
+    <div class="hash"><span>{$t('Hash que o Signer vai mostrar')}</span>
+      <p class="mono">{#each [0, 1, 2, 3] as row}{deviceHash.slice(row * 16, row * 16 + 16)}<br />{/each}</p>
+      <small>{$t('Na primeira inicialização após a gravação, o Signer mostra estes 64 dígitos. Só aperte CONFIRMAR se forem iguais.')}</small></div>
+  {/if}
   {#if bundle}
     <details><summary>{$t('Versão e verificação dos arquivos')}</summary>
       <p class="mono">{$t('Código-fonte: {commit}', { commit: bundle.manifest.source_commit })}</p>
@@ -119,6 +126,10 @@
   .facts strong{display:block;margin-top:6px;font-size:15px}
   .facts small{display:block;margin-top:4px;font-size:12px;color:rgb(var(--color-fog)/.55)}
   p{overflow-wrap:anywhere;color:rgb(var(--color-fog)/.75);font-size:14px;line-height:1.6}
+  .hash{margin-bottom:18px;border:1px solid rgb(var(--color-brass)/.5);background:rgb(var(--color-brass)/.08);border-radius:16px;padding:14px}
+  .hash span{display:block;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.2em;color:rgb(var(--color-fog)/.45)}
+  .hash p.mono{margin:8px 0;font-size:16px;letter-spacing:.08em;color:rgb(var(--color-brass));line-height:1.5}
+  .hash small{font-size:12px;color:rgb(var(--color-fog)/.6)}
   .ack{display:flex;gap:12px;margin:18px 0;font-size:14px;line-height:1.5;border:1px solid rgb(255 255 255/.1);background:rgb(var(--color-ink)/.35);border-radius:16px;padding:14px}
   .ack input{flex:none;width:18px;height:18px;margin-top:2px;accent-color:rgb(var(--color-glow))}
   .actions{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}

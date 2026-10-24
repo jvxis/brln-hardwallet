@@ -63,6 +63,16 @@ export async function verifyBundle(bundle: FirmwareBundle): Promise<void> {
   }
 }
 
+// The SHA-256 appended to the application image: the 64 digits the Signer shows
+// for approval on its first boot (same as tools/esp_image_hash.py).
+export async function espImageHash(image: Uint8Array): Promise<string> {
+  if (image.length < 56 || image[0] !== 0xe9 || image[23] !== 1) throw new Error('Imagem ESP sem hash anexado.')
+  const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', image.slice(0, -32)))
+  const embedded = image.slice(-32)
+  if (!digest.every((byte, index) => byte === embedded[index])) throw new Error('Hash anexado da imagem ESP inválido.')
+  return Array.from(embedded, byte => byte.toString(16).padStart(2, '0')).join('')
+}
+
 export async function loadFirmware(): Promise<FirmwareBundle> {
   const manifest = validateManifest(JSON.parse(new TextDecoder().decode(await readLocal('manifest.json', 8192))))
   const binaries = await Promise.all(manifest.parts.map(part => readLocal(part.path, part.size)))

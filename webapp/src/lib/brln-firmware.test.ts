@@ -109,6 +109,20 @@ describe('browser firmware boundary', () => {
   })
 })
 
+describe('hash shown by the Signer', () => {
+  it('reads the verified SHA-256 appended to the application image', async () => {
+    const { espImageHash } = await import('./brln-firmware')
+    const content = new Uint8Array(64).map((_, i) => i); content[0] = 0xe9; content[23] = 1
+    const digest = createHash('sha256').update(content).digest()
+    const image = new Uint8Array([...content, ...digest])
+    expect(await espImageHash(image)).toBe(digest.toString('hex'))
+    image[40] ^= 1
+    await expect(espImageHash(image)).rejects.toThrow('inválido')
+    content[23] = 0
+    await expect(espImageHash(new Uint8Array([...content, ...digest]))).rejects.toThrow('sem hash')
+  })
+})
+
 describe('reset after writing', () => {
   it('pulses EN with IO0 high so the new firmware boots instead of the flasher stub', async () => {
     const calls: Array<{ dataTerminalReady: boolean; requestToSend: boolean }> = []

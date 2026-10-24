@@ -38,7 +38,12 @@ For the 0.5.49 club pilot, `4d80f4e` makes the installer show the hash the
 Signer asks to approve (read from the verified `firmware.bin`); before, members
 had nothing to compare it with. On LOS-TEST2 (overlay `6799f9e`, backup
 `before-pin-4d80f4e`) the browser showed `f15ca565…1843dad` in the Signer's
-4 x 16 layout, identical to CI. Firmware is unchanged from `4e77a03`. Repeated blocks in the
+4 x 16 layout, identical to CI. Firmware is unchanged from `4e77a03`.
+`14498d5` adds **Apagar tudo** to the installer: a confirmation, a full chip erase
+before writing (`eraseAll`), then MD5 checks that NVS (0x9000, 20 KB) and the
+SPIFFS data partition (0x290000, 1.375 MB) read back as 0xFF before reset.
+Covered by unit tests and seen in the TEST2 installer. It has not yet run on a
+physical board, because the COM5 board holds the owner's funded wallet. Repeated blocks in the
 owner's screenshot came from page stitching, not from the DOM.
 
 ## Fresh first-run journey through LOS 0.5.48 (2026-10-24)

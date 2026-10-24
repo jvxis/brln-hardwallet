@@ -227,7 +227,7 @@ const en: Record<string, string> = {
   'Não foi possível preparar este BR⚡LN Signer. Confira modelo, cabo e porta; feche outros programas que usam o USB.': 'This BR⚡LN Signer could not be prepared. Check the model, cable and port; close other programs using USB.',
   'Gravando e verificando o firmware. Não retire o cabo nem feche esta página.': 'Writing and verifying the firmware. Do not unplug the cable or close this page.',
   'Gravação verificada. O BR⚡LN Signer reinicia sozinho: confirme "Preparar memória" se aparecer e compare o hash na tela com o hash acima.': 'Write verified. The BR⚡LN Signer restarts on its own: confirm "Preparar memória" if it appears and compare the hash on its screen with the hash above.',
-  'Hash que o Signer vai mostrar': 'Hash the Signer will show',
+  'Hash do firmware que será gravado': 'Hash of the firmware to be written',
   'Apagar toda a memória do BR⚡LN Signer? A carteira guardada nele será destruída e só poderá ser recuperada com as palavras anotadas.': 'Erase the whole BR⚡LN Signer memory? The wallet stored on it will be destroyed and can only be recovered with the written-down words.',
   'Apagamento cancelado. Nada foi gravado nem apagado.': 'Erase cancelled. Nothing was written or erased.',
   'Apagando toda a memória, gravando e verificando o firmware. O apagamento leva até 1 minuto: não retire o cabo nem feche esta página.': 'Erasing the whole memory, writing and verifying the firmware. Erasing takes up to 1 minute: do not unplug the cable or close this page.',
@@ -239,7 +239,7 @@ const en: Record<string, string> = {
   'Apagar tudo e instalar firmware': 'Erase everything and install firmware',
   'Use o passo 1 da configuração. Por padrão, a instalação mantém a carteira guardada no Signer; a opção Apagar tudo apaga a memória inteira para começar do zero.': 'Use step 1 of the setup. By default the installation keeps the wallet stored on the Signer; the Erase everything option erases the whole memory to start from scratch.',
   'O apagamento da memória não foi confirmado. Não crie uma carteira; reconecte o BR⚡LN Signer e repita a instalação com "Apagar tudo".': 'The memory erase was not confirmed. Do not create a wallet; reconnect the BR⚡LN Signer and repeat the installation with "Erase everything".',
-  'Na primeira inicialização após a gravação, o Signer mostra estes 64 dígitos. Só aperte CONFIRMAR se forem iguais.': 'On its first boot after the write, the Signer shows these 64 digits. Press CONFIRMAR only if they match.',
+  'Calculado a partir do arquivo fornecido pelo LightningOS, sem consultar a placa. Na primeira inicialização após a gravação, o Signer mostra estes mesmos 64 dígitos: só aperte CONFIRMAR se forem iguais.': 'Computed from the file provided by LightningOS, without reading the board. On its first boot after the write, the Signer shows these same 64 digits: press CONFIRMAR only if they match.',
   'A instalação não foi concluída e verificada. Não crie uma carteira. Reconecte o BR⚡LN Signer e repita a preparação; não há repetição automática.': 'The installation was not completed and verified. Do not create a wallet. Reconnect the BR⚡LN Signer and repeat the preparation; there is no automatic retry.',
   'Preparação cancelada. Nenhum firmware foi gravado.': 'Preparation cancelled. No firmware was written.',
   // Page messages

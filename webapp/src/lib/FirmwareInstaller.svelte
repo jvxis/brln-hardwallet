@@ -94,9 +94,9 @@
     <div><span>{$t('Memória de dados')}</span><strong>{$t(eraseAll ? 'É apagada' : 'Não é apagada')}</strong><small>{$t(eraseAll ? 'A carteira deste Signer é destruída' : 'Sem carteira, o Signer pede "Preparar memória"')}</small></div>
   </div>
   {#if deviceHash}
-    <div class="hash"><span>{$t('Hash que o Signer vai mostrar')}</span>
+    <div class="hash"><span>{$t('Hash do firmware que será gravado')}</span>
       <p class="mono">{#each [0, 1, 2, 3] as row}{deviceHash.slice(row * 16, row * 16 + 16)}<br />{/each}</p>
-      <small>{$t('Na primeira inicialização após a gravação, o Signer mostra estes 64 dígitos. Só aperte CONFIRMAR se forem iguais.')}</small></div>
+      <small>{$t('Calculado a partir do arquivo fornecido pelo LightningOS, sem consultar a placa. Na primeira inicialização após a gravação, o Signer mostra estes mesmos 64 dígitos: só aperte CONFIRMAR se forem iguais.')}</small></div>
   {/if}
   {#if bundle}
     <details><summary>{$t('Versão e verificação dos arquivos')}</summary>

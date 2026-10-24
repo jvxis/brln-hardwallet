@@ -19,7 +19,20 @@ address title ("Destino 1", "Troco 2"). After the broadcast the app showed "—"
 for the balance next to a stale "sync complete" message and kept the spent coin
 listed, while the open proposal disabled "Sincronizar" (workaround: "Encerrar
 proposta", then sync). It now refreshes balance and history at once, keeping the
-signed summary visible, and a broadcast proposal no longer blocks a sync. Repeated blocks in the
+signed summary visible, and a broadcast proposal no longer blocks a sync.
+`f8cccdf` also clears destination, amount and send-all after the broadcast, so
+the plan card starts empty. At the owner's request `4e77a03` removed the test
+wording from the device ("EM TESTE", "Use sem fundos reais"); LightningOS keeps
+the pilot notice, and the connection screen reads "Signer conectado". CI firmware
+ESP image hash for `4e77a03`:
+`f15ca565b627bed07a3063704a06927233d97a13662810fc3c8dc52bd1843dad`.
+
+LOS-TEST2 then received overlay `e142f92` with image `sha-4e77a03` (backup
+`before-pin-4e77a03`; LND kept its PID). The installer served the four files
+identical to CI. In a browser, the language toggle kept the app document, and
+leaving for another LOS page and returning kept the same document (hidden, not
+unmounted), so an open USB session survives LOS navigation. The board still runs
+the previous firmware until it is reinstalled through LOS. Repeated blocks in the
 owner's screenshot came from page stitching, not from the DOM.
 
 ## Fresh first-run journey through LOS 0.5.48 (2026-10-24)

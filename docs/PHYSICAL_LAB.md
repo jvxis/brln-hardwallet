@@ -1,5 +1,27 @@
 # BRLN T-Display: physical lab validation
 
+## Owner's real-funds send through LOS 0.5.48 (2026-10-24)
+
+The pilot rule is no real funds; the owner chose to use their own. They received
+1,000 sats on wallet `d11bc45b` and, after confirmation, sent 500 sats to
+`bc1q0mqdl2t4rda5rfh8h8ca9drqv4qz8vamfxw4y5` at 1 sat/vB from the LOS Send tab
+(Signer connected and unlocked there). The camera recorded the device review:
+`Valor 1` 500 sats, `Troco 2` `bc1qy6xa2npws802c6mwml6a2wxsmkajutsc2ung9w`,
+`Valor 2` 359 sats, `Taxa da rede` 141 sats, "Assinar agora?", "Assinando",
+"Entradas assinadas: 1". Every value matched the app's review panel. The owner
+approved with the buttons and broadcast it separately; txid
+`55c9c3a13352ef67c831124833e01b0a9d583ade6b49e7e64fc15d015847c93f` showed as
+pending at the destination.
+
+Findings fixed in `a1fdc4e`: the amount screen showed "Valor N" instead of
+naming the output, so the change amount read "Valor 2"; it now repeats the
+address title ("Destino 1", "Troco 2"). After the broadcast the app showed "—"
+for the balance next to a stale "sync complete" message and kept the spent coin
+listed, while the open proposal disabled "Sincronizar" (workaround: "Encerrar
+proposta", then sync). It now refreshes balance and history at once, keeping the
+signed summary visible, and a broadcast proposal no longer blocks a sync. Repeated blocks in the
+owner's screenshot came from page stitching, not from the DOM.
+
 ## Fresh first-run journey through LOS 0.5.48 (2026-10-24)
 
 Firmware `f9aaec8` (issue #7) moved PSBT review to balanced rows: on the COM5

@@ -45,6 +45,8 @@
   let receive = '', proposal: UnsignedTransaction | null = null
   let signed: ReturnType<typeof finalizePsbt> | null = null
   let broadcastState: 'new' | 'unknown' | 'done' = 'new'
+  // A broadcast proposal no longer holds coins, so it does not block a sync.
+  $: holdsCoins = !!proposal && broadcastState !== 'done'
   const device = new BRLNDevice({
     confirmPair: code => askConfirmation('Confira o código ' + code + ' na tela do BR⚡LN Signer. Os códigos são iguais?'),
     psbtReview: step => { if (step) message = 'Confira o endereço completo, valor, troco e taxa no BR⚡LN Signer. Aprove pelos botões.' },
@@ -104,7 +106,7 @@
     } finally { syncController = null }
   }
   async function synchronize() {
-    if(syncController || proposal)return
+    if(syncController || holdsCoins)return
     try { await refresh() } catch(error) { syncFailure=true; syncMessage=(error instanceof Error?error.message:'Falha na sincronização.')+(updatedAt?' A última consulta continua visível; os dados podem estar desatualizados.':'') }
   }
   async function sameDevice() {
@@ -344,7 +346,7 @@
           <button aria-pressed={tab==='send'} class:on={tab==='send'} on:click={() => tab='send'}>{$t('Enviar')}</button>
           <button aria-pressed={tab==='history'} class:on={tab==='history'} on:click={() => tab='history'}>{$t('Histórico')} <em>{history.length}</em></button>
         </nav>
-        <button class="btn-secondary" disabled={busy || !!syncController || !!proposal} on:click={() => synchronize()}>{$t('Sincronizar')}</button>
+        <button class="btn-secondary" disabled={busy || !!syncController || holdsCoins} on:click={() => synchronize()}>{$t('Sincronizar')}</button>
       </div>
       {#if tab === 'receive'}
         <p class="eyebrow">{$t('Receber')}</p><h2>{$t('Novo endereço conferido no Signer')}</h2>

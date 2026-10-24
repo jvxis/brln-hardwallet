@@ -117,6 +117,22 @@ int main(){
   assert(reviewed(segwit,"address-p2wpkh")==1);
   String address="bc1p"+String(58,'q');
   assert(reviewed(address,"address")==2);
+  // Receive address / xpub comparison screen: frame prints footer and two
+  // actions first; every following row is part of the value.
+  auto shownPublic=[&](const String &value,const std::string &name){
+    unsigned pages=brlnReviewPages(value); std::string shown;
+    for(unsigned i=0;i<pages;i++){
+      brlnPublicScreen(value,i,pages);tft.save(name+"-"+std::to_string(i+1));
+      std::vector<std::string> rows(tft.printed.begin()+3,tft.printed.end());
+      assert(!rows.empty() && rows.size()<=3);
+      for(auto &row:rows){assert(row.size()<=19);shown+=row;}
+      assert(rows.back().size()*2>=rows.front().size());
+    }
+    assert(shown==value);
+    return pages;
+  };
+  assert(shownPublic("bc1q0jx3x8gyeu0jpzzt4a3puhrmkzt6mfxrc3v0gr","receive")==1);
+  assert(shownPublic("xpub6CatWdiZiodmUeTDp8LT5or8nmbKNcuyvz7WyksVFkKB4RHwCD3XyuvPEbvqAQY3rAPshWcMLoP2fMFMKHPJ4ZeZXYVUhLv1VMrjPC7PW6V","xpub")==2);
   brlnAmountScreen("Valor 64","2100000000000000");tft.save("amount");
   brlnAmountScreen("Valor maximo","18446744073709551615");tft.save("amount-max");
   brlnAmountScreen("Taxa da rede","1234");tft.save("fee");

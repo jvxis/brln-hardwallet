@@ -228,17 +228,28 @@ unsigned brlnReviewPages(const String &text) {
   return brlnPageCount(text,BRLN_REVIEW_ROWS*BRLN_REVIEW_ROW);
 }
 
-void brlnReviewScreen(const String &title,const String &text,unsigned page,unsigned pages) {
-  brlnFrame("CANCELAR",page+1<pages?"PROXIMO":"CONFIRMAR",pages>1?String(page+1)+"/"+String(pages):"");
-  brlnCentered(title,32,2);
-  tft.setTextColor(tft.color565(255,204,72),BRLN_BACKGROUND);
+// One page of a value as balanced rows; y3/y2/y1 place three, two or one row.
+void brlnValueRows(const String &text,unsigned page,unsigned pages,int y3,int y2,int y1) {
   unsigned length=text.length(), per=(length+pages-1)/pages;
   unsigned start=min(length,page*per), end=min(length,start+per);
   unsigned rows=max(1U,(end-start+BRLN_REVIEW_ROW-1)/BRLN_REVIEW_ROW);
   unsigned width=max(1U,(end-start+rows-1)/rows);
-  int y=rows==3?51:rows==2?60:70;
+  int y=rows==3?y3:rows==2?y2:y1;
   for(unsigned row=0;row<rows && start+row*width<end;row++)
     brlnCentered(text.substring(start+row*width,min(end,start+(row+1)*width)),y+row*19,2);
+}
+
+void brlnReviewScreen(const String &title,const String &text,unsigned page,unsigned pages) {
+  brlnFrame("CANCELAR",page+1<pages?"PROXIMO":"CONFIRMAR",pages>1?String(page+1)+"/"+String(pages):"");
+  brlnCentered(title,32,2);
+  tft.setTextColor(tft.color565(255,204,72),BRLN_BACKGROUND);
+  brlnValueRows(text,page,pages,51,60,70);
+}
+
+// Public address or xpub shown for comparison: same balanced rows, no title.
+void brlnPublicScreen(const String &text,unsigned page,unsigned pages) {
+  brlnFrame("PAGINA","QR",String(page+1)+"/"+String(pages));
+  brlnValueRows(text,page,pages,40,49,59);
 }
 
 bool brlnReviewText(const String &title,const String &text) {

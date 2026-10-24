@@ -206,15 +206,14 @@ Command decryptAndExtractCommand(const String &ecryptedData) {
 EventData toggleDatanAndQR(String data, bool showQR) {
 #ifdef BOWSER_BRLN
   // Public address/xpub: every character stays available at a readable size.
-  unsigned page=0, pages=brlnPageCount(data,57);
+  unsigned page=0, pages=brlnReviewPages(data);
   armInputForPrompt();
   while(true) {
     if(showQR) {
       // Keep the complete QR area; labels must not obscure its modules.
       showQRCode(data);
     } else {
-      brlnFrame("PAGINA","QR",String(page+1)+"/"+String(pages));
-      brlnLines(data,page*57,36,3);
+      brlnPublicScreen(data,page,pages);
     }
     EventData event=awaitEvent();
     if(event.type!=EVENT_BUTTON_ACTION) return event;

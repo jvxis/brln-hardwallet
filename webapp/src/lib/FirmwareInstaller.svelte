@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import { installerWasSeen, rememberInstaller } from './storage'
-  import { identifyBoard, loadFirmware, writeFirmware, FIRMWARE_ROOT, type FirmwareBundle, type FirmwareLoader } from './brln-firmware'
+  import { identifyBoard, loadFirmware, resetToApplication, writeFirmware, FIRMWARE_ROOT, type FirmwareBundle, type FirmwareLoader } from './brln-firmware'
   export let busy = false
   export let connected = false
   export let hasProposal = false
@@ -36,11 +36,14 @@
       // Keep requestPort directly in the click's user activation; no fetch/import before it.
       port = await navigator.serial.requestPort()
       ownsPort = true
-      const { ESPLoader, Transport } = await import('esptool-js')
+      const { ESPLoader, Transport, HardReset } = await import('esptool-js')
       const serial = new Transport(port, false)
+      const selected = port
       transport = serial
       loader = new ESPLoader({ transport: serial, baudrate: 115200, romBaudrate: 115200,
-        debugLogging: false, enableTracing: false, terminal: { clean() {}, write() {}, writeLine() {} } })
+        debugLogging: false, enableTracing: false, terminal: { clean() {}, write() {}, writeLine() {} },
+        // Boot the new firmware after writing; see resetToApplication.
+        resetConstructors: { hardReset: (t) => Object.assign(new HardReset(t), { reset: () => resetToApplication(selected) }) } })
       const flash = await identifyBoard(loader)
       phase = 'ready'; message = `ESP32 com ${flash === '16MB' ? '16 MB' : '4 MB'} identificado. Confira o modelo do BR⚡LN Signer antes de confirmar a gravação.`
     } catch (error) {

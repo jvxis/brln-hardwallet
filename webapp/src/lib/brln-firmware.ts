@@ -82,6 +82,16 @@ export interface FirmwareLoader {
   after(mode: 'hard_reset'): Promise<void>
 }
 
+// esptool-js 0.7.0's HardReset only releases RTS (no EN pulse) and may resend a
+// stale DTR, so the chip stays in the flasher stub with a dark screen. Pulse EN
+// with IO0 kept high, changing both lines together like the app's pairing reset.
+export type SignalPort = { setSignals(signals: { dataTerminalReady: boolean; requestToSend: boolean }): Promise<void> }
+export async function resetToApplication(port: SignalPort, wait = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms))) {
+  await port.setSignals({ dataTerminalReady: false, requestToSend: true })
+  await wait(100)
+  await port.setSignals({ dataTerminalReady: false, requestToSend: false })
+}
+
 // Both original T-Display capacities use the SAME pinned 4 MB image/layout.
 // Never enlarge partitions or rewrite image headers based on detected capacity.
 function supportedFlash(size: string | undefined): size is '4MB' | '16MB' {

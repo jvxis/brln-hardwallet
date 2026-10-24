@@ -108,3 +108,14 @@ describe('browser firmware boundary', () => {
     await expect(loadFirmware()).rejects.toThrow('Tamanho')
   })
 })
+
+describe('reset after writing', () => {
+  it('pulses EN with IO0 high so the new firmware boots instead of the flasher stub', async () => {
+    const calls: Array<{ dataTerminalReady: boolean; requestToSend: boolean }> = []
+    const waits: number[] = []
+    const { resetToApplication } = await import('./brln-firmware')
+    await resetToApplication({ setSignals: async signals => { calls.push(signals) } }, async ms => { waits.push(ms) })
+    expect(calls).toEqual([{ dataTerminalReady: false, requestToSend: true }, { dataTerminalReady: false, requestToSend: false }])
+    expect(waits).toEqual([100])
+  })
+})

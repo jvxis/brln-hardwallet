@@ -32,7 +32,13 @@ LOS-TEST2 then received overlay `e142f92` with image `sha-4e77a03` (backup
 identical to CI. In a browser, the language toggle kept the app document, and
 leaving for another LOS page and returning kept the same document (hidden, not
 unmounted), so an open USB session survives LOS navigation. The board still runs
-the previous firmware until it is reinstalled through LOS. Repeated blocks in the
+the previous firmware until it is reinstalled through LOS.
+
+For the 0.5.49 club pilot, `4d80f4e` makes the installer show the hash the
+Signer asks to approve (read from the verified `firmware.bin`); before, members
+had nothing to compare it with. On LOS-TEST2 (overlay `6799f9e`, backup
+`before-pin-4d80f4e`) the browser showed `f15ca565…1843dad` in the Signer's
+4 x 16 layout, identical to CI. Firmware is unchanged from `4e77a03`. Repeated blocks in the
 owner's screenshot came from page stitching, not from the DOM.
 
 ## Fresh first-run journey through LOS 0.5.48 (2026-10-24)

@@ -215,9 +215,11 @@
     } catch { throw new Error('Resultado desconhecido. Consulte o txid ' + expected + ' antes de qualquer nova tentativa. Você pode exportar a transação assinada.') }
     broadcasted('Transação transmitida ao seu node.')
   }
-  // The spent coins are gone: refresh balance and history while the summary stays visible.
+  // The spent coins are gone: refresh balance and history while the summary stays
+  // visible, and start the next send from an empty form.
   function broadcasted(text: string) {
     broadcastState='done'; message=text; coins=[]; scanned=false; syncMessage=''
+    address=''; amount=0; sendAll=false
     void refresh().catch(() => { /* refresh reports its own failure */ })
   }
   function closeProposal() {

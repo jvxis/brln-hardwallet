@@ -1,5 +1,30 @@
 # BRLN T-Display: physical lab validation
 
+## Keypad recovery of the funded wallet through LOS (2026-10-30)
+
+`d7b28dc` adds `/brln-restore-keypad`: the 24 words are entered on a 3 x 3 grid
+of letter groups shown by the Signer and reshuffled per letter; the app sends
+only the clicked cell. LOS-TEST2 (official 0.5.50-Beta plus overlay
+`agent/0.5.51-hardwallet-keypad` `6d534532`, backup `before-pin-d7b28dc-b`)
+served firmware hash
+`ac65fff567c7723024de2dd2147d0cab8bfda5998028a8518991ce86b1b83d3b`.
+
+On the COM5 board, the owner ran the installer with **Apagar tudo**. That
+destroyed wallet `d11bc45b` on the board; its paper backup had been verified on
+the device beforehand. The owner then:
+
+1. confirmed "Preparar memoria" twice and approved the hash;
+2. paired the board;
+3. chose **Recuperar carteira**, entered the password and the word count on the
+   buttons, and entered the 24 words through the app keypad.
+
+The app saved the same public account, `d11bc45b`, without asking to replace
+the stored one, and synchronized the same 359 sats.
+
+The camera was off from password entry onward. Not measured: the time the
+entry took, and keypad behaviour on a wrong word or a BIP39 checksum failure.
+Those cases are covered only by the native and app tests.
+
 ## Owner's real-funds send through LOS 0.5.48 (2026-10-24)
 
 The pilot rule is no real funds; the owner chose to use their own. They received

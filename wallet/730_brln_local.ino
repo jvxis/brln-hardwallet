@@ -108,6 +108,74 @@ bool brlnWord(const String &title,String &word) {
   }
 }
 
+// Restore with the computer keypad. The app may send only
+// "/brln-key <cell|back|done|cancel>" over the authenticated channel; any
+// other line ends the restore. Buttons: upper APAGAR, lower FIM.
+static const char *brlnWordAt(int index) { return bip39_get_word_by_index(NULL,index); }
+
+int brlnAwaitKeypad() {
+  armInputForPrompt();unsigned long started=millis();
+  while(uint32_t(millis()-started)<15UL*60*1000) {
+    char key=pollInputKey();
+    if(key=='*') return brln::KEYPAD_BACK;
+    if(key=='#') return brln::KEYPAD_DONE;
+    if(Serial.available()) {
+      String line=Serial.readStringUntil('\n');line.trim();
+      if(!line.length()) continue;
+      Command c=extractCommand(line);
+      if(!isEncryptedCommand(c.cmd)) return brln::KEYPAD_CANCEL;
+      c=decryptAndExtractCommand(line);
+      int received=c.cmd=="/brln-key"?brln::keypadKey(c.data.c_str()):brln::KEYPAD_INVALID;
+      return received==brln::KEYPAD_INVALID?brln::KEYPAD_CANCEL:received;
+    }
+    delay(10);
+  }
+  return brln::KEYPAD_CANCEL;
+}
+
+// Word position and letter count only: never a group, letter or word.
+void brlnKeypadState(int word,int total,size_t letters,const char *phase) {
+  sendCommandOutput("/brln-keypad",String(word)+" "+String(total)+" "+String(letters)+" "+phase);
+}
+
+// One letter per click, on a grid reshuffled with the hardware RNG every time.
+// A single remaining word, or FIM with the whole word typed, is confirmed here.
+bool brlnKeypadWord(int index,int total,String &word) {
+  const String title="Palavra "+String(index)+"/"+String(total);
+  uint8_t groups[brln::KEYPAD_MAX_LETTERS]={0},cells[9]={0};
+  size_t count=0;bool ok=false;
+  while(true) {
+    brln::keypadShuffle(cells,esp_random);
+    brlnKeypadScreen(cells,title);
+    brlnKeypadState(index,total,count,"grid");
+    int key=brlnAwaitKeypad();
+    if(key==brln::KEYPAD_CANCEL) break;
+    if(key==brln::KEYPAD_BACK) {if(count)count--;continue;}
+    const bool exact=key==brln::KEYPAD_DONE;
+    if(!exact) {if(count==brln::KEYPAD_MAX_LETTERS)continue;groups[count++]=cells[key-1];}
+    int found[3]={0};
+    size_t matches=count?brln::keypadCandidates(groups,count,exact,brlnWordAt,found,3):0;
+    if(!matches || matches>3) {
+      if(!exact && !matches) count--;
+      if(!matches) {showMessage("No matching word","Check on the grid");delay(1500);}
+      continue;
+    }
+    if(!exact && matches>1) continue;
+    brlnKeypadState(index,total,count,"device");
+    const char *items[4]={brlnWordAt(found[0]),matches>1?brlnWordAt(found[1]):"Cancel",matches>2?brlnWordAt(found[2]):"Cancel","Cancel"};
+    int choice=0;
+    if(matches>1) {
+      choice=brlnChoice(title,items,int(matches)+1);
+      if(choice<0) break;
+      if(choice==int(matches)) continue;
+    }
+    if(brlnConfirm(title,String(items[choice]))) {word=items[choice];ok=true;break;}
+    if(!exact && count) count--;
+  }
+  clearSensitiveBytes(groups,sizeof(groups));clearSensitiveBytes(cells,sizeof(cells));
+  return ok;
+}
+
 bool brlnReview(const String &mnemonic) {
   int words=1;for(size_t i=0;i<mnemonic.length();i++)if(mnemonic[i]==' ')words++;
   for(int i=0;i<words;i++) {
@@ -119,6 +187,7 @@ bool brlnReview(const String &mnemonic) {
 CommandResponse executeBrlnLocal(String command) {
   const bool advanced=command=="/brln-unlock-passphrase";
   const bool unlocking=command=="/brln-unlock" || advanced;
+  const bool keypad=command=="/brln-restore-keypad", restoring=command=="/brln-restore" || keypad;
   if(!brlnConfirm("Local operation",command.substring(6))) {
     sendCommandOutput(command,"0 cancelled");return {"Cancelled",""};
   }
@@ -131,7 +200,7 @@ CommandResponse executeBrlnLocal(String command) {
   }
   global.authenticated=false;brlnClear(global.mnemonic);brlnClear(global.passphrase);
   String password="",repeat="",mnemonic="",passphrase="";
-  bool ok=false;
+  bool ok=false,invalidWords=false;
   do {
     if(!brlnText("Wallet password",password,true,32))break;
     if(password.length()<12 || password.indexOf(' ')!=-1) {showMessage("12+ chars, no spaces","");break;}
@@ -145,15 +214,18 @@ CommandResponse executeBrlnLocal(String command) {
       global.passphrase=passphrase;global.authenticated=true;ok=true;break;
     }
     if(!brlnText("Repeat password",repeat,true,32) || password!=repeat)break;
-    if(command=="/brln-restore") {
+    if(restoring) {
       const char *counts[]={"12 words","24 words","Cancel"};int choice=brlnChoice("Restore BIP39",counts,3);
       if(choice<0 || choice==2)break;int count=choice==0?12:24;bool complete=true;
       for(int i=0;i<count;i++) {
         String word="";
-        if(!brlnWord("Word "+String(i+1)+"/"+String(count),word)){complete=false;break;}
+        if(!(keypad?brlnKeypadWord(i+1,count,word):brlnWord("Word "+String(i+1)+"/"+String(count),word))){complete=false;break;}
         if(i)mnemonic+=" ";mnemonic+=word;brlnClear(word);
       }
-      if(!complete || !mnemonicIsValid(mnemonic))break;
+      if(!complete)break;
+      // A wrong word usually fails the BIP39 checksum: say so instead of a generic cancel.
+      if(!mnemonicIsValid(mnemonic)){invalidWords=true;break;}
+      if(keypad)sendCommandOutput("/brln-keypad","review");
     } else {
       const char *methods[]={"Hardware RNG","100 dice rolls","Cancel"};
       int choice=brlnChoice("Create BIP39",methods,3);if(choice<0 || choice==2)break;
@@ -168,7 +240,7 @@ CommandResponse executeBrlnLocal(String command) {
       if(mnemonic=="" || !mnemonicIsValid(mnemonic))break;
     }
     if(!brlnReview(mnemonic))break;
-    brlnWorkingScreen(command=="/brln-restore"?"Recuperando":"Criando carteira");
+    brlnWorkingScreen(restoring?"Recuperando":"Criando carteira");
     HwwInitData data=initHww(password,mnemonic,"",true);
     armInputForPrompt(); // Discard held/extra presses during persistence.
     ok=data.success;if(ok){global.passwordVerifier=data.passwordVerifier;global.mnemonic=data.mnemonic;global.authenticated=true;}
@@ -176,7 +248,8 @@ CommandResponse executeBrlnLocal(String command) {
   }while(false);
   brlnClear(password);brlnClear(repeat);brlnClear(mnemonic);brlnClear(passphrase);
   if(!ok){global.authenticated=false;brlnClear(global.mnemonic);brlnClear(global.passphrase);}
-  sendCommandOutput(command,ok?"1":"0 cancelled_or_invalid");
+  sendCommandOutput(command,ok?"1":invalidWords?"0 invalid_words":"0 cancelled_or_invalid");
+  if(invalidWords) return {"Invalid words","Check your backup"};
   return {ok?(unlocking?"Wallet unlocked":"Wallet ready"):"Cancelled / invalid",ok?"Continue in app":""};
 }
 #endif

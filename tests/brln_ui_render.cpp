@@ -22,6 +22,7 @@ struct String : std::string {
 #include "../wallet/brln_brand.h"
 #include "../wallet/brln_hash_gate.h"
 #include "../wallet/brln_password_entry.h"
+#include "../wallet/brln_keypad.h"
 #include "../libraries/TFT_eSPI/Fonts/glcdfont.c"
 struct Display {
   uint16_t pixels[240*135]={}; int x=0,y=0,size=2; uint16_t fg=0xffff,bg=0; bool swap=false;
@@ -38,6 +39,7 @@ struct Display {
   void setSwapBytes(bool s){swap=s;}
   uint16_t color565(int r,int g,int b){return ((r&248)<<8)|((g&252)<<3)|(b>>3);}
   void drawFastHLine(int a,int b,int w,uint16_t c){for(int i=0;i<w;i++)pixel(a+i,b,c);}
+  void drawRect(int a,int b,int w,int h,uint16_t c){assert(a>=0&&b>=0&&a+w<=240&&b+h<=135);for(int i=0;i<w;i++){pixel(a+i,b,c);pixel(a+i,b+h-1,c);}for(int j=0;j<h;j++){pixel(a,b+j,c);pixel(a+w-1,b+j,c);}}
   void pushImage(int a,int b,int w,int h,const uint16_t*p){for(int j=0;j<h;j++)for(int i=0;i<w;i++)pixel(a+i,b+j,p[j*w+i]);}
   void fillTriangle(int ax,int ay,int bx,int by,int cx,int cy,uint16_t c){
     for(int j=min(ay,min(by,cy));j<=max(ay,max(by,cy));j++)for(int i=min(ax,min(bx,cx));i<=max(ax,max(bx,cx));i++){
@@ -88,6 +90,15 @@ int main(){
   brlnLocalScreen("Wallet password","5 chars","Selected: MINIMO 12");tft.save("short-password");
   brlnLocalScreen("Repeat password","32 chars","Selected: a");tft.save("repeat");
   brlnLocalScreen("Word 24/24","aban_","Selected: USE WORD");tft.save("restore");
+  brlnLocalScreen("Local operation","restore-keypad","A: confirm");tft.save("restore-keypad-confirm");
+  // Every group in every cell stays inside its cell, above the footer line.
+  for(int shift=0;shift<9;shift++){
+    uint8_t cells[9];for(int c=0;c<9;c++)cells[c]=uint8_t((c+shift)%9);
+    brlnKeypadScreen(cells,"Palavra 24/24");
+    assert(tft.printed.size()==12 && tft.printed[2]=="FIM" && tft.printed[0]=="Palavra 24/24");
+    for(int c=0;c<9;c++) assert(tft.printed[3+c]==brln::KEYPAD_GROUPS[cells[c]]);
+  }
+  tft.save("restore-keypad");
   brlnLocalScreen("Write word 24/24","abandon","A: confirm");tft.save("word");
   brlnLocalScreen("Storage unavailable","Format ERASES wallet","A: confirm");tft.save("erase");
   brlnLocalScreen("Create BIP39","Hardware RNG","Choose on device");tft.save("entropy-auto");

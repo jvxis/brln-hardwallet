@@ -99,3 +99,55 @@ describe('explicit local wallet modes', () => {
     }
   })
 })
+
+describe('keypad restore', () => {
+  const connected = async (announced: string) => {
+    const connect = vi.spyOn(BowserDevice.prototype, 'connect').mockResolvedValue()
+    const d = device()
+    vi.spyOn(d as any, 'request').mockResolvedValue(announced)
+    const disconnect = vi.spyOn(d, 'disconnect').mockResolvedValue()
+    try { await d.connect() } finally { connect.mockRestore() }
+    return { d, disconnect }
+  }
+  it('keeps older firmware working and detects the keypad capability', async () => {
+    expect((await connected(BRLN_CAPABILITIES)).d.keypadRestore).toBe(false)
+    expect((await connected(BRLN_CAPABILITIES + ' keypad-restore')).d.keypadRestore).toBe(true)
+    await expect(connected(BRLN_CAPABILITIES + ' remote-seed')).rejects.toThrow('Firmware incompatível')
+    await expect(connected('keypad-restore ' + BRLN_CAPABILITIES)).rejects.toThrow('Firmware incompatível')
+  })
+  it('refuses a keypad restore on firmware without it', async () => {
+    const d = device()
+    const request = vi.spyOn(d as any, 'request')
+    await expect(d.restoreWithKeypad(() => {})).rejects.toThrow('Atualize o firmware')
+    expect(request).not.toHaveBeenCalled()
+  })
+  it('sends only cell positions and controls, encrypted, while a restore runs', async () => {
+    const d = device(); d.keypadRestore = true
+    const send = vi.spyOn(d as any, 'send').mockResolvedValue(undefined)
+    await expect(d.keypadKey(5)).rejects.toThrow('Nenhuma recuperação')
+    let finish: (value: string) => void = () => {}
+    const request = vi.spyOn(d as any, 'request').mockImplementation(() => new Promise(resolve => { finish = resolve }))
+    const states: unknown[] = []
+    const restore = d.restoreWithKeypad(state => states.push(state))
+    expect(request).toHaveBeenCalledWith('/brln-restore-keypad', [], true, 3600000)
+    for (const key of [1, 9, 'back', 'done', 'cancel'] as const) await d.keypadKey(key)
+    expect(send.mock.calls).toEqual([1, 9, 'back', 'done', 'cancel'].map(key => ['/brln-key', [key]]))
+    for (const bad of [0, 10, 1.5, NaN]) await expect(d.keypadKey(bad)).rejects.toThrow('Posição inválida')
+    // Device status lines reach the page; malformed ones are dropped.
+    const event = (data: string) => (d as any).handleEvent('/brln-keypad', data)
+    expect(event('3 24 2 grid') && event('3 24 2 device') && event('review')).toBe(true)
+    for (const bad of ['0 24 0 grid', '25 24 0 grid', '1 13 0 grid', '1 24 9 grid', '1 24 0 secret', '1 24 0 grid abandon']) expect(event(bad)).toBe(true)
+    expect(states).toEqual([{ phase: 'grid', word: 3, total: 24, letters: 2 }, { phase: 'device', word: 3, total: 24, letters: 2 }, { phase: 'review' }])
+    expect((d as any).handleEvent('/other', '')).toBe(false)
+    finish('1')
+    await restore
+    expect(d.authenticated).toBe(true)
+    await expect(d.keypadKey(1)).rejects.toThrow('Nenhuma recuperação')
+  })
+  it('reports words that fail the BIP39 checksum', async () => {
+    const d = device(); d.keypadRestore = true
+    vi.spyOn(d as any, 'request').mockResolvedValue('0 invalid_words')
+    await expect(d.restoreWithKeypad(() => {})).rejects.toThrow('seed válida')
+    expect(d.authenticated).toBe(false)
+  })
+})

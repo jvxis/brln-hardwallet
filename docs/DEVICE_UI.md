@@ -27,6 +27,11 @@ They describe the action on that screen rather than internal A/B/#/* names.
   appears before encryption/storage. Completion explicitly directs the owner
   back to the LOS app. No additional physical confirmation is required.
 - Pairing: compare the code with the browser. No physical approval is implied.
+- Keypad restore: a 3 x 3 grid of letter groups (`abc` ... `yz`), reshuffled for
+  every letter, with `Palavra N/24` in the footer. The owner clicks the same cell
+  in the app. Upper APAGAR removes a letter; lower FIM ends a word typed in full.
+  A single remaining word, or a choice among up to three, is confirmed here with
+  the usual CANCELAR / CONFIRMAR controls.
 - Transaction review: upper cancels on every page. Lower advances every full
   address page, then confirms its separate value screen. Fee and final signing
   remain separate physical approvals. No address character is abbreviated.

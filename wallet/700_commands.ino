@@ -79,7 +79,7 @@ CommandResponse executeCommand(Command c) {
     return {"Use local controls", "Host secrets refused"};
   }
   if (c.cmd == "/capabilities") {
-    sendCommandOutput(c.cmd, "brln-3 mainnet bip84 local-secrets physical-review explicit-passphrase");
+    sendCommandOutput(c.cmd, "brln-3 mainnet bip84 local-secrets physical-review explicit-passphrase keypad-restore");
     return {"Signer connected", ""};
   }
   if (brln::localCommand(c.cmd.c_str())) {

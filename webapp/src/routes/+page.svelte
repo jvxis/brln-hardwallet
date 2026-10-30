@@ -4,7 +4,7 @@
   import { initializeAppearance, rememberDisplay } from '$lib/appearance'
   import { t, num, dateTime } from '$lib/i18n'
   import { reportHeight, reveal, parseDisplayMessage } from '$lib/embed'
-  import { BRLNDevice } from '$lib/brln-device'
+  import { BRLNDevice, type KeypadKey, type KeypadState } from '$lib/brln-device'
   import FirmwareInstaller from '$lib/FirmwareInstaller.svelte'
   import { api, scanAccount, getTxHex } from '$lib/brln-chain'
   import { ACCOUNT_INDEX_LIMIT, ACCOUNT_PATH, publicAccount, preparePayment } from '$lib/brln-wallet'
@@ -14,6 +14,9 @@
   import type { WalletAccount, UtxoRecord, UnsignedTransaction } from '$lib/types'
 
   let connected = false, unlocked = false, busy = false, message = '', failure = false
+  // Keypad restore: the Signer shows the shuffled letter groups; a click waits
+  // for the next state, because the grid changes after every letter.
+  let keypadSupported = false, keypad: KeypadState | null = null, keypadSent = false
   let account: WalletAccount | null = null
   let coins: UtxoRecord[] = [], history: Array<{txid:string;height:number}> = []
   let height: number | null = null, scanned = false, address = '', amount = 0, rate = 1, sendAll = false
@@ -50,7 +53,7 @@
   const device = new BRLNDevice({
     confirmPair: code => askConfirmation('Confira o código ' + code + ' na tela do BR⚡LN Signer. Os códigos são iguais?'),
     psbtReview: step => { if (step) message = 'Confira o endereço completo, valor, troco e taxa no BR⚡LN Signer. Aprove pelos botões.' },
-    log: () => {}, state: () => { connected = device.connected; unlocked = device.authenticated },
+    log: () => {}, state: () => { connected = device.connected; unlocked = device.authenticated; keypadSupported = device.keypadRestore },
   })
   $: balance = coins.reduce((sum, coin) => sum + coin.value, 0)
   $: shownBalance = scanned ? balance : cachedBalance
@@ -74,7 +77,7 @@
     if (busy) return
     busy = true; failure = false; message = ''
     try { await action() } catch (e) { failure = true; message = e instanceof Error ? e.message : 'Operação recusada.' }
-    finally { busy = false; connected = device.connected; unlocked = device.authenticated }
+    finally { busy = false; connected = device.connected; unlocked = device.authenticated; keypadSupported = device.keypadRestore }
   }
   function persist(next: WalletAccount) { next = publicAccount(next); saveAccounts([next]); account = next }
   async function refresh() {
@@ -166,20 +169,36 @@
     message = 'BR⚡LN Signer pareado. O canal USB é cifrado e autenticado.'
     if (view === 'setup' && step === 2) step = 3
   }
-  async function localAction(operation: 'unlock' | 'unlock-passphrase' | 'create' | 'restore' | 'backup') {
-    message='Continue pelos dois botões do BR⚡LN Signer.'
+  async function localAction(operation: 'unlock' | 'unlock-passphrase' | 'create' | 'restore' | 'restore-keypad' | 'backup') {
+    message = operation === 'restore-keypad' ? 'Digite a senha duas vezes e escolha o número de palavras nos botões do Signer. Depois, as palavras entram pelo teclado desta página.' : 'Continue pelos dois botões do BR⚡LN Signer.'
     // Only operations that can open another wallet discard the current work; a
     // normal unlock keeps the frozen proposal (signing re-checks the account).
-    if (operation === 'create' || operation === 'restore' || operation === 'unlock-passphrase') { receive=''; proposal=null; signed=null }
-    await device.local(operation)
+    if (operation === 'create' || operation === 'restore' || operation === 'restore-keypad' || operation === 'unlock-passphrase') { receive=''; proposal=null; signed=null }
+    if (operation === 'restore-keypad') {
+      try { await device.restoreWithKeypad(state => { keypad = state; keypadSent = false }) }
+      finally { keypad = null; keypadSent = false }
+    } else await device.local(operation)
     if (operation === 'backup') { message='Conferência do backup encerrada no BR⚡LN Signer.'; return }
     const adopted = await adoptSignerAccount(operation === 'unlock-passphrase'
       ? 'Esta passphrase abre outra carteira. Usar a conta pública dela neste navegador? A conta salva atualmente será substituída.'
       : 'O BR⚡LN Signer abriu uma carteira diferente da conta salva neste navegador. Substituir a conta pública salva?')
     message = operation === 'create' ? 'Carteira criada e conta pública salva. Guarde as 24 palavras offline.' :
-      operation === 'restore' ? 'Carteira recuperada e conta pública salva. Confira se o saldo e os endereços conferem.' :
+      operation === 'restore' || operation === 'restore-keypad' ? 'Carteira recuperada e conta pública salva. Confira se o saldo e os endereços conferem.' :
       operation === 'unlock-passphrase' ? 'Carteira com passphrase aberta.' : 'Carteira desbloqueada.'
     if (adopted && view === 'setup') step = 4
+  }
+  async function keypadPress(key: KeypadKey) {
+    if (!keypad || keypad.phase !== 'grid' || keypadSent) return
+    keypadSent = true
+    try { await device.keypadKey(key) } catch (e) { keypadSent = false; failure = true; message = e instanceof Error ? e.message : 'Operação recusada.' }
+  }
+  // Numeric keypad keys follow the grid: 7 8 9 is the top row.
+  const keypadCodes: Record<string, number> = { Numpad7: 1, Numpad8: 2, Numpad9: 3, Numpad4: 4, Numpad5: 5, Numpad6: 6, Numpad1: 7, Numpad2: 8, Numpad3: 9 }
+  function keypadShortcut(event: KeyboardEvent) {
+    if (!keypad || keypad.phase !== 'grid') return
+    const key: KeypadKey | undefined = keypadCodes[event.code] ?? (event.key === 'Backspace' ? 'back' : event.key === 'Enter' ? 'done' : undefined)
+    if (key === undefined) return
+    event.preventDefault(); void keypadPress(key)
   }
   async function prepare() {
     if (!account || !scanned) throw new Error('Sincronize a conta primeiro.')
@@ -243,6 +262,8 @@
   })
 </script>
 
+<svelte:window on:keydown={keypadShortcut} />
+
 <svelte:head><link rel="stylesheet" href="/los-theme/theme.css" /><title>BR⚡LN Hardwallet</title><meta name="description" content="Coordenador Bitcoin local com assinador ESP32 e BR⚡LN LightningOS" /></svelte:head>
 
 <dialog bind:this={confirmation} on:close={finishConfirmation} aria-labelledby="confirmation-title" style="top:{dialogTop}px"><form method="dialog"><p class="eyebrow">{$t('Confirmação')}</p><h2 id="confirmation-title">{$t('Confira antes de continuar')}</h2><p>{$t(confirmationText)}</p><div class="actions end"><button class="btn-secondary" value="cancel">{$t('Cancelar')}</button><button class="btn-primary" value="accept">{$t('Sim, confirmo')}</button></div></form></dialog>
@@ -284,6 +305,32 @@
     <button aria-pressed={view === 'settings'} class:on={view === 'settings'} on:click={() => view = 'settings'}>{$t('Ajustes')}</button>
   </nav>
 
+  {#if keypad}
+  <section class="section-card card keypad-card" aria-live="polite">
+    <p class="eyebrow">{$t('Recuperação pelo teclado')}</p>
+    {#if keypad.phase === 'review'}
+      <h2>{$t('Confira as palavras no Signer')}</h2>
+      <p class="muted">{$t('O Signer mostra as palavras recuperadas, uma por tela. Compare com o papel e confirme nos botões.')}</p>
+    {:else}
+      <h2>{$t('Palavra {word} de {total}', { word: keypad.word, total: keypad.total })}</h2>
+      <p class="muted">{$t('Letras digitadas: {letters}', { letters: keypad.letters })}</p>
+      {#if keypad.phase === 'device'}
+        <div class="callout"><span>{$t('Confirme a palavra nos botões do Signer.')}</span></div>
+      {:else}
+        <p>{$t('Ache no Signer o grupo com a próxima letra e clique na mesma posição. A grade muda a cada letra.')}</p>
+        <div class="keypad" role="group" aria-label={$t('Grade do Signer')}>
+          {#each [1, 2, 3, 4, 5, 6, 7, 8, 9] as cell}<button disabled={keypadSent} aria-label={$t('Posição {n}', { n: cell })} on:click={() => keypadPress(cell)}></button>{/each}
+        </div>
+        <div class="actions">
+          <button class="btn-secondary" disabled={keypadSent || keypad.letters === 0} on:click={() => keypadPress('back')}>{$t('Apagar letra')}</button>
+          <button class="btn-primary" disabled={keypadSent || keypad.letters === 0} on:click={() => keypadPress('done')}>{$t('Fim da palavra')}</button>
+          <button class="link" disabled={keypadSent} on:click={() => keypadPress('cancel')}>{$t('Cancelar recuperação')}</button>
+        </div>
+        <p class="muted small-text">{$t('Atalhos: teclado numérico na mesma disposição da grade, Backspace apaga e Enter encerra a palavra. O computador só recebe posições: as letras ficam no Signer.')}</p>
+      {/if}
+    {/if}
+  </section>
+  {/if}
   {#if message}<p class="banner" class:failure role="status" aria-live="polite">{busy ? $t('Em andamento') + ' · ' : ''}{$t(message)}</p>{/if}
   {#if syncMessage}<div class="banner subtle" class:failure={syncFailure} role="status" aria-live="polite"><span>{$t(syncMessage)}</span>{#if syncController}<button class="link" on:click={() => syncController?.abort()}>{$t('Cancelar sincronização')}</button>{/if}</div>{/if}
 
@@ -316,9 +363,10 @@
         {#if !connected}<div class="callout warn"><span>{$t('Conecte o Signer no passo 2 primeiro.')}</span><button class="btn-secondary" on:click={() => step = 2}>{$t('Ir para conectar')}</button></div>{/if}
         <div class="choices">
           <button class="choice" disabled={busy || !connected || !!proposal} on:click={() => run(() => localAction('create'))}><strong>{$t('Criar carteira nova')}</strong><span>{$t('Senha nos botões, seed gerada no Signer e 24 palavras para anotar.')}</span></button>
-          <button class="choice" disabled={busy || !connected || !!proposal} on:click={() => run(() => localAction('restore'))}><strong>{$t('Recuperar carteira')}</strong><span>{$t('Digite 12 ou 24 palavras BIP39 nos botões do Signer.')}</span></button>
+          <button class="choice" disabled={busy || !connected || !!proposal} on:click={() => run(() => localAction(keypadSupported ? 'restore-keypad' : 'restore'))}><strong>{$t('Recuperar carteira')}</strong><span>{$t(keypadSupported ? 'Digite 12 ou 24 palavras BIP39 clicando numa grade embaralhada do Signer: o computador só vê posições.' : 'Digite 12 ou 24 palavras BIP39 nos botões do Signer.')}</span></button>
           <button class="choice" disabled={busy || !connected} on:click={() => run(() => localAction('unlock'))}><strong>{$t('Desbloquear carteira')}</strong><span>{$t('Este Signer já tem carteira: digite a senha nos botões.')}</span></button>
         </div>
+        {#if keypadSupported}<button class="link" disabled={busy || !connected || !!proposal} on:click={() => run(() => localAction('restore'))}>{$t('Prefiro digitar as palavras nos botões do Signer')}</button>{/if}
       {:else}
         <p class="eyebrow">{$t('Passo {n} de 4', { n: 4 })}</p><h2>{$t(walletReady ? 'Tudo pronto' : 'Quase lá')}</h2>
         {#if account}
@@ -458,6 +506,11 @@
 
 <style>
   :global(*){box-sizing:border-box}
+  .keypad-card{margin-bottom:16px;border-color:rgb(var(--color-glow)/.4)}
+  .keypad{display:grid;grid-template-columns:repeat(3,minmax(0,96px));gap:10px;margin:14px 0}
+  .keypad button{height:56px;border-radius:14px;border:1px solid rgb(var(--color-glow)/.5);background:rgb(var(--color-ink)/.4);cursor:pointer}
+  .keypad button:hover:not(:disabled){background:rgb(var(--color-glow)/.18)}
+  .keypad button:disabled{opacity:.45;cursor:wait}
   :global(body){margin:0;line-height:1.5}
   /* LOS component bases (Tailwind in LOS); theme.css overrides per visual theme. */
   :global(.btn-primary),:global(.btn-secondary){display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:999px;padding:10px 18px;font:inherit;font-size:14px;font-weight:600;cursor:pointer;transition:background .15s,border-color .15s;text-decoration:none}

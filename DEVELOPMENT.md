@@ -14,8 +14,9 @@ placas do clube e a revisão independente são bloqueadores da promoção.
 - Perfil `brln_tdisplay`; botões GPIO 0/35, sem câmera, teclado ou microSD.
 - Seed, senha e passphrase entram pelos controles físicos. O firmware recusa
   `/password`, `/restore`, `/create`, `/wipe`, `/seed` vindos do protocolo legado.
-- `/capabilities`: `brln-3 mainnet bip84 local-secrets physical-review explicit-passphrase`.
-  O app exige exatamente essa string e desconecta firmware com outra versão.
+- `/capabilities`: `brln-3 mainnet bip84 local-secrets physical-review explicit-passphrase`,
+  seguida opcionalmente de `keypad-restore`. O app exige esse conjunto, na ordem,
+  aceita só os acréscimos conhecidos e desconecta firmware com outra versão.
 - Pareamento brln-3: o app envia `/brln-pair-commit <SHA256(chave do app)>`, o
   Signer responde com a própria chave efêmera e só então o app revela a sua em
   `/brln-pair-reveal`. Sem esse commitment, um intermediário na USB poderia testar
@@ -27,9 +28,23 @@ placas do clube e a revisão independente são bloqueadores da promoção.
   [brln_channel.h](wallet/brln_channel.h) e `brln-channel.ts` são conferidos com
   os mesmos vetores nos testes nativos e do app.
 - Comandos locais sem argumentos: `/brln-create`, `/brln-restore`,
-  `/brln-unlock`, `/brln-unlock-passphrase`, `/brln-backup`. Aprovação física;
-  nenhum segredo na resposta, apenas `1` ou `0 <motivo>`. Argumentos e opções
-  extras em `/pair` são recusados.
+  `/brln-restore-keypad`, `/brln-unlock`, `/brln-unlock-passphrase`,
+  `/brln-backup`. Aprovação física; nenhum segredo na resposta, apenas `1` ou
+  `0 <motivo>` (`0 invalid_words` quando as palavras falham no checksum BIP39).
+  Argumentos e opções extras em `/pair` são recusados.
+- Recuperação pelo teclado (`/brln-restore-keypad`,
+  [brln_keypad.h](wallet/brln_keypad.h)):
+  - Senha e número de palavras continuam nos botões.
+  - Para cada letra, o Signer desenha uma grade 3×3 com os grupos `abc def ghi
+    jkl mno pqr stu vwx yz`, embaralhada com `esp_random`.
+  - O app envia apenas `/brln-key <1-9|back|done|cancel>` pelo canal brln-3.
+    Qualquer outra linha encerra a recuperação, e fora dela `/brln-key` é recusado.
+  - O Signer informa só `/brln-keypad <palavra> <total> <letras> <grid|device>` e
+    `/brln-keypad review`: nunca grupo, letra ou palavra.
+  - A palavra é resolvida e confirmada nos botões. 82% das palavras BIP39 se
+    resolvem sozinhas, em média com 4,4 cliques; as demais pedem FIM com a
+    palavra inteira e, em 121 casos, escolha entre até 3 opções no Signer.
+  - O computador aprende só a quantidade de letras e o ritmo.
 - Conta do app: BIP84 `m/84'/0'/0'`, mainnet, xpub pública, fingerprint,
   índices de recebimento/troco (0–499 por ramo). Não usa a seed do LND.
 - Escopo de assinatura do perfil BRLN ([brln_psbt_policy.h](wallet/brln_psbt_policy.h)):

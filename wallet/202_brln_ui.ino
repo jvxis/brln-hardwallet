@@ -57,6 +57,11 @@ String brlnLabel(const String &text) {
   if(text=="BIP39 passphrase") return "Passphrase BIP39";
   if(text=="create") return "Criar carteira?";
   if(text=="restore") return "Recuperar carteira?";
+  if(text=="restore-keypad") return "Recuperar pelo PC?";
+  if(text=="No matching word") return "Nenhuma palavra";
+  if(text=="Check on the grid") return "Confira na grade";
+  if(text=="Invalid words") return "Palavras invalidas";
+  if(text=="Check your backup") return "Confira o backup";
   if(text=="unlock") return "Desbloquear?";
   if(text=="unlock-passphrase") return "Com passphrase?";
   if(text=="backup") return "Conferir backup?";
@@ -258,6 +263,20 @@ bool brlnReviewText(const String &title,const String &text) {
     if(!awaitPhysicalReviewApproval()) return false;
   }
   return true;
+}
+
+// Restore keypad: the app shows the same 3 x 3 cells, blank. Each cell holds a
+// letter group; cells[c] is the group in cell c (row by row), new per letter.
+void brlnKeypadScreen(const uint8_t cells[9],const String &footer) {
+  brlnFrame("APAGAR","FIM",footer);
+  for(int c=0;c<9;c++) {
+    int x=6+(c%3)*76, y=29+(c/3)*26;
+    tft.drawRect(x,y,74,24,tft.color565(78,224,193));
+    String group=brln::KEYPAD_GROUPS[cells[c]];
+    tft.setTextColor(tft.color565(255,204,72),BRLN_BACKGROUND);
+    tft.setTextSize(2); tft.setCursor(x+(74-int(group.length())*12)/2,y+4); tft.print(group);
+  }
+  tft.setTextColor(TFT_WHITE,BRLN_BACKGROUND);
 }
 #endif
 

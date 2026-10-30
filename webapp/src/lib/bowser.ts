@@ -319,6 +319,7 @@ export class BowserDevice implements DeviceAdapter {
         this.handlePsbtReview(data)
         return
       }
+      if (this.handleEvent(command, data)) return
       const pending = this.pending.get(command)
       if (pending) {
         this.pending.delete(command)
@@ -392,7 +393,10 @@ export class BowserDevice implements DeviceAdapter {
     }
   }
 
-  private async send(
+  // Subclasses consume device-initiated status lines here; true stops handling.
+  protected handleEvent(_command: string, _data: string): boolean { return false }
+
+  protected async send(
     command: string,
     args: Array<string | number> = [],
     secure = true,

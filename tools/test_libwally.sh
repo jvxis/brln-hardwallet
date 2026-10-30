@@ -51,3 +51,9 @@ g++ -std=c++11 -Wall -Wextra -Werror -pedantic "${common_flags[@]}" \
   "${output_directory}/libwally.o" \
   -o "${output_directory}/brln_channel_test"
 "${output_directory}/brln_channel_test"
+g++ -std=c++11 -Wall -Wextra -Werror -pedantic "${common_flags[@]}" \
+  -fsanitize=address,undefined -fno-omit-frame-pointer \
+  "${repository_root}/tests/brln_keypad_test.cpp" \
+  "${output_directory}/libwally.o" \
+  -o "${output_directory}/brln_keypad_test"
+"${output_directory}/brln_keypad_test"

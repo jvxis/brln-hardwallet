@@ -10,6 +10,6 @@ inline bool localCommand(const char *command) { return std::strncmp(command,"/br
 inline bool allowedLocalCommand(const char *command, const char *arguments) {
   if (arguments[0]) return false;
   return !std::strcmp(command,"/brln-unlock") || !std::strcmp(command,"/brln-unlock-passphrase") || !std::strcmp(command,"/brln-create") ||
-    !std::strcmp(command,"/brln-restore") || !std::strcmp(command,"/brln-backup");
+    !std::strcmp(command,"/brln-restore") || !std::strcmp(command,"/brln-restore-keypad") || !std::strcmp(command,"/brln-backup");
 }
 }
